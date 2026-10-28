@@ -1,0 +1,9 @@
+# Normaliza fin de línea en el repositorio para que los checksums de los scripts
+# y los diffs sean iguales en cualquier máquina.
+* text=auto
+*.sql text eol=crlf
+*.ps1 text eol=crlf
+*.sh  text eol=lf
+*.png binary
+*.jpg binary
+*.webp binary

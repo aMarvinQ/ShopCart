@@ -1,0 +1,25 @@
+# Dependencias y compilados
+node_modules/
+dist/
+build/
+coverage/
+
+# Variables de entorno: nunca se versionan secretos
+.env
+.env.*
+!.env.example
+
+# Archivos subidos por usuarios
+api/uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE y sistema operativo
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+.DS_Store

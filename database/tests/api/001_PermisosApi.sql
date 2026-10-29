@@ -36,6 +36,18 @@ BEGIN
     SET @Fallas += 1;
 END
 
+-- Uso práctico de un TVP. La revisión de todos los tipos está en tests/integridad/005: un tipo
+-- sin permiso es invisible para la API, así que desde aquí no se podría detectar.
+BEGIN TRY
+    DECLARE @Variantes dbo.TT_Catalogo_Variante;
+    INSERT INTO @Variantes (NumeroLinea, SKU, Precio, ExistenciaInicial) VALUES (1, 'PRUEBA-TVP', 10.00, 0);
+    PRINT N'OK     Puede declarar y llenar un TVP (dbo.TT_Catalogo_Variante).';
+END TRY
+BEGIN CATCH
+    PRINT N'FALLA  No puede usar dbo.TT_Catalogo_Variante: ' + ERROR_MESSAGE();
+    SET @Fallas += 1;
+END CATCH
+
 BEGIN TRY
     SELECT TOP (1) @Script = Script FROM Despliegue.VersionEsquema;
     PRINT N'FALLA  Pudo leer Despliegue.VersionEsquema.';

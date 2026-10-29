@@ -1,0 +1,83 @@
+# Catálogo de errores de la base de datos
+
+Los stored procedures informan los errores de negocio con `THROW` usando un **número** y un mensaje que empieza con un **código estable**:
+
+```
+THROW 51101, N'CORREO_REGISTRADO: ya existe una cuenta con ese correo.', 1;
+```
+
+La API decide el estado HTTP según el **rango del número** y devuelve el código (lo que va antes de `:`) en su respuesta. El texto después de `:` es una descripción para desarrolladores; el mensaje para el usuario final lo arma el frontend a partir del código.
+
+| Rango | Significado | HTTP |
+|---|---|---|
+| 50001–50099 | Validación de datos | 400 / 422 |
+| 50100–50199 | No encontrado | 404 |
+| 50200–50299 | Permiso o propiedad | 403 |
+| 50300–50399 | Autenticación | 401 |
+| 51000–51999 | Conflicto de negocio | 409 |
+| 59000–59999 | Configuración incompleta de la base (error del servidor, no del usuario) | 500 |
+| 2627 / 2601 | Violación de `UNIQUE` no prevista por el SP | 409 |
+| 547 | Violación de `CHECK` o llave foránea no prevista por el SP | 409 / 422 |
+| Otros | Error interno: no se expone el detalle | 500 |
+
+## Validación (400 / 422)
+
+| Número | Código | Cuándo |
+|---|---|---|
+| 50001 | `CORREO_INVALIDO` | Correo vacío, sin formato `x@y.z`, con espacios o de más de 254 caracteres. |
+| 50002 | `HASH_INVALIDO` | La contraseña no llegó como hash Argon2id (la base nunca recibe contraseñas en claro). |
+| 50003 | `NOMBRE_INVALIDO` | Nombre o apellido vacío o de más de 100 caracteres. |
+| 50004 | `TELEFONO_INVALIDO` | Teléfono con caracteres distintos de dígitos, espacios, `+` y `-`, o de más de 20. |
+| 50005 | `ROL_INVALIDO` | Un usuario interno solo puede ser `OPERADOR` o `ADMIN`. |
+| 50006 | `PARAMETRO_REQUERIDO` | Falta un parámetro obligatorio o tiene un tamaño inválido (p. ej. un hash de token que no mide 32 bytes). |
+| 50007 | `PAGINACION_INVALIDA` | Página menor que 1 o tamaño de página fuera de 1–100. |
+| 50008 | `BUSQUEDA_INVALIDA` | Texto de búsqueda de más de 100 caracteres. |
+
+## No encontrado (404)
+
+| Número | Código | Cuándo |
+|---|---|---|
+| 50101 | `USUARIO_NO_ENCONTRADO` | El usuario no existe o está desactivado. |
+
+## Permiso (403)
+
+| Número | Código | Cuándo |
+|---|---|---|
+| 50201 | `PERMISO_DENEGADO` | Quien ejecuta la acción no tiene el rol requerido o está desactivado. El SP lo valida aunque la API ya lo haya hecho. |
+
+## Autenticación (401)
+
+| Número | Código | Cuándo |
+|---|---|---|
+| 50301 | `USUARIO_INACTIVO` | Inicio de sesión de una cuenta desactivada o inexistente. |
+
+### Resultados de la rotación de sesión
+
+`SP_Seguridad_RotarSesion` **no lanza error** en estos casos: devuelve una fila con `Resultado`, porque algunos deben guardar cambios (revocar la sesión) y un `THROW` los revertiría. La API responde **401** a todo lo que no sea `ROTADO`.
+
+| Resultado | Significado | Efecto |
+|---|---|---|
+| `ROTADO` | Token válido. | Se emite el nuevo token y el actual queda revocado. |
+| `ROTACION_CONCURRENTE` | El token se rotó hace menos de `SESION_SEGUNDOS_GRACIA` (otra pestaña renovó al mismo tiempo). | Ninguno: la sesión sigue con el token nuevo. |
+| `REUSO_DETECTADO` | Se presentó un token ya rotado fuera del plazo de gracia: se asume robado. | Se revoca toda la sesión (familia). |
+| `SESION_EXPIRADA` | Venció por inactividad o por el máximo de la sesión. | Ninguno. |
+| `USUARIO_INACTIVO` | El usuario fue desactivado. | Se revoca toda la sesión. |
+| `SESION_INVALIDA` | El token no existe o fue revocado (cierre de sesión, cambio de contraseña...). | Ninguno. |
+
+## Conflicto (409)
+
+| Número | Código | Cuándo |
+|---|---|---|
+| 51010 | `TRANSICION_NO_PERMITIDA` | Cambio de estado de pedido que no está en `TransicionEstadoPedido` (trigger). |
+| 51011 | `ESTADO_INICIAL_INVALIDO` | Pedido creado en un estado que no es el inicial (trigger). |
+| 51101 | `CORREO_REGISTRADO` | Ya existe una cuenta con ese correo (sin distinguir mayúsculas). |
+| 51102 | `USUARIO_SISTEMA_PROTEGIDO` | Intento de modificar el usuario de sistema. |
+| 51103 | `AUTODESACTIVACION_NO_PERMITIDA` | Un administrador intentó desactivarse a sí mismo. |
+| 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
+| 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
+
+## Configuración (500)
+
+| Número | Código | Cuándo |
+|---|---|---|
+| 59001 | `CONFIGURACION_INCOMPLETA` | Falta un dato que carga la semilla (rol, parámetro de sesión). Indica un despliegue incompleto, no un error del usuario. |

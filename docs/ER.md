@@ -242,6 +242,200 @@ erDiagram
     }
 ```
 
+## Checkout
+
+```mermaid
+erDiagram
+    Carrito ||--o{ Checkout : "se paga con"
+    Usuario |o--o{ Checkout : "NULL = invitado"
+    Direccion |o--o{ Checkout : "copiada de"
+    MetodoEnvio ||--o{ Checkout : "envío"
+    Cupon |o--o{ Checkout : "descuento"
+    Checkout ||--|{ CheckoutDetalle : "líneas congeladas"
+    CheckoutDetalle ||--o| ReservaInventario : "reserva"
+
+    Checkout {
+        bigint IDCheckout PK
+        int IDCarrito FK
+        int IDUsuario FK "NULL = invitado"
+        uniqueidentifier ClaveIdempotencia "UK con IDCarrito"
+        nvarchar CorreoContacto
+        int IDDireccion FK "NULL; FK compuesta con IDUsuario"
+        nvarchar EnvioLinea1 "snapshot de la dirección"
+        int IDMetodoEnvio FK
+        int IDCupon FK "NULL"
+        decimal Subtotal
+        decimal Descuento
+        decimal CostoEnvio
+        decimal Total "= Subtotal - Descuento + CostoEnvio"
+        varchar Estado "PENDIENTE, COMPLETADO, EXPIRADO, CANCELADO"
+        datetime2 FechaExpiracion
+        datetime2 FechaCierre "NULL mientras está PENDIENTE"
+    }
+    CheckoutDetalle {
+        bigint IDCheckout PK, FK
+        int IDVariante PK, FK
+        int Cantidad
+        decimal PrecioUnitario "congelado"
+        decimal DescuentoLinea "cupón prorrateado"
+    }
+    ReservaInventario {
+        bigint IDReservaInventario PK
+        bigint IDCheckout FK "FK compuesta a CheckoutDetalle"
+        int IDVariante FK
+        int Cantidad
+        varchar Estado "ACTIVA, CONSUMIDA, LIBERADA"
+        datetime2 FechaExpiracion "vencida = deja de contar"
+        datetime2 FechaCierre "NULL mientras está ACTIVA"
+    }
+```
+
+## Pedidos, pagos y devoluciones
+
+```mermaid
+erDiagram
+    Checkout ||--o| Pedido : "genera"
+    Checkout ||--o{ Pago : "intentos de cobro"
+    Pedido ||--o| Pago : "pago aprobado"
+    EstadoPedido ||--o{ Pedido : "estado actual"
+    EstadoPedido ||--o{ TransicionEstadoPedido : "origen / destino"
+    Pedido ||--|{ PedidoDetalle : "líneas"
+    Pedido ||--|{ PedidoHistorialEstado : "cambios de estado"
+    Pedido ||--o| CuponUso : "uso del cupón"
+    Cupon ||--o{ CuponUso : "usado en"
+    Pedido ||--o{ Devolucion : "devoluciones"
+    Devolucion ||--|{ DevolucionDetalle : "líneas devueltas"
+    PedidoDetalle ||--o{ DevolucionDetalle : "devuelta en"
+    Pedido |o--o{ MovimientoInventario : "venta / cancelación"
+    Devolucion |o--o{ MovimientoInventario : "reingreso"
+
+    EstadoPedido {
+        tinyint IDEstadoPedido PK
+        varchar Codigo UK "PAGADO, EN_PREPARACION, ..."
+        nvarchar Nombre
+        tinyint Orden
+        bit EsInicial
+        bit EsFinal
+        bit CuentaComoVenta "lo usan los reportes"
+    }
+    TransicionEstadoPedido {
+        tinyint IDEstadoOrigen PK, FK
+        tinyint IDEstadoDestino PK, FK
+        bit PermiteCliente "cancelar su propio pedido"
+    }
+    Pedido {
+        int IDPedido PK
+        varchar NumeroPedido UK "SC-000123 (secuencia)"
+        bigint IDCheckout UK, FK "un pedido por checkout"
+        int IDUsuario FK "NULL = invitado"
+        binary TokenSeguimientoHash UK "enlace de seguimiento"
+        tinyint IDEstadoPedido FK
+        nvarchar EnvioLinea1 "snapshot de dirección"
+        nvarchar NombreMetodoEnvio "snapshot"
+        varchar CodigoCupon "snapshot, NULL"
+        decimal Subtotal
+        decimal Descuento
+        decimal CostoEnvio
+        decimal Total
+        decimal BaseImponible "Total = BaseImponible + IVA"
+        decimal IVA
+        datetime2 FechaPedido
+        rowversion VersionFila
+    }
+    PedidoDetalle {
+        int IDPedidoDetalle PK
+        int IDPedido FK
+        int IDVariante FK
+        int IDCategoria FK "categoría al vender"
+        varchar SKU "snapshot"
+        nvarchar NombreProducto "snapshot"
+        int Cantidad
+        decimal PrecioUnitario
+        decimal DescuentoLinea
+        decimal TotalLinea "= Cantidad x Precio - Descuento"
+        int CantidadDevuelta "0 a Cantidad"
+    }
+    PedidoHistorialEstado {
+        bigint IDPedidoHistorialEstado PK
+        int IDPedido FK
+        tinyint IDEstadoAnterior FK "NULL al crear"
+        tinyint IDEstadoNuevo FK
+        int IDUsuario FK "NULL solo al crear un pedido de invitado"
+        nvarchar Comentario "NULL"
+        datetime2 Fecha
+    }
+    Pago {
+        bigint IDPago PK
+        bigint IDCheckout FK
+        int IDPedido FK "solo si APROBADO; FK compuesta con IDCheckout"
+        varchar Estado "APROBADO o RECHAZADO"
+        varchar Marca "VISA, MASTERCARD, AMEX"
+        char Ultimos4
+        varchar CodigoAutorizacion "NULL si RECHAZADO"
+        varchar MotivoRechazo "NULL si APROBADO"
+        decimal Monto
+        varchar ReferenciaExterna UK
+    }
+    CuponUso {
+        int IDCuponUso PK
+        int IDCupon FK "FK compuesta con IDPedido"
+        int IDPedido UK, FK
+        int IDUsuario FK "NULL = invitado"
+        nvarchar CorreoCliente "límite por cliente"
+        decimal MontoDescontado
+        datetime2 FechaReversion "NULL; al cancelar el pedido"
+    }
+    Devolucion {
+        int IDDevolucion PK
+        int IDPedido FK
+        nvarchar Motivo
+        decimal MontoReembolso
+        int IDUsuario FK "Operador"
+        datetime2 Fecha
+    }
+    DevolucionDetalle {
+        int IDDevolucionDetalle PK
+        int IDDevolucion FK "FK compuesta con IDPedido"
+        int IDPedido FK
+        int IDPedidoDetalle FK "FK compuesta con IDPedido"
+        int Cantidad
+        decimal MontoReembolso
+    }
+```
+
+## Transversal
+
+```mermaid
+erDiagram
+    Usuario ||--o{ Bitacora : "realiza"
+
+    Parametro {
+        tinyint IDParametro PK
+        varchar Clave UK "MINUTOS_RESERVA, TASA_IVA, ..."
+        nvarchar Valor "validado según TipoDato"
+        varchar TipoDato "ENTERO, DECIMAL, TEXTO"
+        nvarchar Descripcion
+    }
+    Bitacora {
+        bigint IDBitacora PK
+        datetime2 Fecha
+        int IDUsuario FK
+        varchar Modulo "CATALOGO, INVENTARIO, CUPONES, PEDIDOS, ..."
+        varchar Entidad
+        varchar IDEntidad
+        varchar Accion "CREAR, MODIFICAR, ACTIVAR, DESACTIVAR, CAMBIAR_ESTADO"
+        nvarchar ValorAnterior "JSON"
+        nvarchar ValorNuevo "JSON"
+    }
+```
+
+### Triggers
+
+| Trigger | Garantía |
+|---|---|
+| `TR_Pedido_Estado` | Un pedido nace en el estado inicial; un cambio de estado solo se acepta si está en `TransicionEstadoPedido`; cada creación y cambio inserta su fila en `PedidoHistorialEstado` con el usuario tomado de `SESSION_CONTEXT`. Sin usuario identificado, el cambio se rechaza. |
+| `TR_MovimientoInventario_Inmutable`, `TR_HistorialPrecio_Inmutable`, `TR_PedidoHistorialEstado_Inmutable`, `TR_Bitacora_Inmutable` | Registros de auditoría *append-only*: no admiten `UPDATE` ni `DELETE`. Un error se corrige con un registro nuevo (por ejemplo, un ajuste de inventario). |
+
 ### Reglas que garantiza la base de datos
 
 | Regla | Mecanismo |
@@ -264,3 +458,17 @@ erDiagram
 | Un carrito pertenece a un cliente o a un invitado, nunca a ambos ni a ninguno | `CK_Carrito_Propietario` |
 | Un solo carrito activo por cliente | Índice único filtrado `UQ_Carrito_UsuarioActivo` |
 | Una variante aparece una sola vez en el carrito | `UQ_CarritoItem_Carrito_Variante` |
+| Repetir la misma petición de checkout no crea otro | `UQ_Checkout_Carrito_ClaveIdempotencia` |
+| Un solo checkout pendiente por carrito (no se reserva dos veces) | Índice único filtrado `UQ_Checkout_CarritoPendiente` |
+| Un cliente solo puede enviar a sus propias direcciones | FK compuesta `FK_Checkout_DireccionDelUsuario` |
+| Solo se reserva lo que está en el checkout | FK compuesta `FK_ReservaInventario_CheckoutDetalle` |
+| Un checkout produce como máximo un pedido (doble clic, reintentos simultáneos) | `UQ_Pedido_IDCheckout` |
+| Nunca se cobra dos veces un checkout | Índice único filtrado `UQ_Pago_CheckoutAprobado` |
+| El pago aprobado pertenece al pedido de su mismo checkout | FK compuesta `FK_Pago_PedidoDelCheckout` |
+| Montos del pedido cuadran, incluido el desglose de IVA | `CK_Pedido_Totales`, `CK_Pedido_Impuestos`, `CK_PedidoDetalle_TotalLinea` |
+| No se devuelve más de lo vendido por línea | `CK_PedidoDetalle_CantidadDevuelta` |
+| Una línea devuelta pertenece al pedido de la devolución | FK compuestas `FK_DevolucionDetalle_Devolucion` y `FK_DevolucionDetalle_PedidoDetalle` |
+| El uso de cupón corresponde al cupón registrado en el pedido | FK compuesta `FK_CuponUso_PedidoCupon` |
+| Transiciones de estado válidas e historial completo | Trigger `TR_Pedido_Estado` |
+| Kardex, historiales y bitácora no se pueden alterar | Triggers `TR_*_Inmutable` |
+| Los parámetros son convertibles a su tipo y la bitácora guarda JSON válido | `CK_Parametro_ValorSegunTipo`, `CK_Bitacora_ValoresJSON` |

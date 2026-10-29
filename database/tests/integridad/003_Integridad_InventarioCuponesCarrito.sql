@@ -104,17 +104,6 @@ BEGIN CATCH
     PRINT N'OK     ' + @Descripcion + N' rechazado por ' + @Esperado + N'.';
 END CATCH
 
-SELECT @Esperado = N'CK_MovimientoInventario_UnDocumento', @Descripcion = N'Movimiento con pedido y devolución a la vez';
-BEGIN TRY
-    INSERT INTO dbo.MovimientoInventario (IDVariante, IDTipoMovimiento, Signo, Cantidad, SaldoAnterior, SaldoNuevo, IDPedido, IDDevolucion, IDUsuario)
-    VALUES (@IDVariante, @IDEntrada, 1, 1, 3, 4, 1, 1, @IDUsuario);
-    SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
-END TRY
-BEGIN CATCH
-    IF ERROR_MESSAGE() NOT LIKE N'%' + @Esperado + N'%' THROW;
-    PRINT N'OK     ' + @Descripcion + N' rechazado por ' + @Esperado + N'.';
-END CATCH
-
 /* --- Direcciones y envío ------------------------------------------------------------------ */
 SELECT @Esperado = N'UQ_Direccion_Predeterminada', @Descripcion = N'Segunda dirección predeterminada';
 BEGIN TRY

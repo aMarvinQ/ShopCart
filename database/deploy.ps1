@@ -27,7 +27,8 @@
 
 .PARAMETER Probar
     Ejecuta tests/api conectado como shopcart_api (permisos) y tests/integridad conectado
-    como shopcart_migrator (restricciones; cada prueba revierte sus datos).
+    como shopcart_migrator (restricciones; cada prueba revierte sus datos), tests/calculos
+    (funciones y vistas) y tests/procedimientos (SPs ejecutados como un miembro de RolApi).
 
 .EXAMPLE
     .\deploy.ps1 -Bootstrap
@@ -310,10 +311,12 @@ if ($Bootstrap) {
 if ($Probar) {
     # tests/api: permisos, conectado como la API · tests/integridad: restricciones, como el migrador
     # tests/calculos: resultados de funciones y vistas con datos controlados, como el migrador
+    # tests/procedimientos: el migrador prepara los datos y ejecuta cada SP haciéndose pasar por la API
     $suites = @(
         @{ Carpeta = 'tests\api';        Usuario = $LoginApi;      Clave = 'SHOPCART_API_PASSWORD' },
         @{ Carpeta = 'tests\integridad'; Usuario = $LoginMigrador; Clave = 'SHOPCART_MIGRATOR_PASSWORD' },
-        @{ Carpeta = 'tests\calculos';   Usuario = $LoginMigrador; Clave = 'SHOPCART_MIGRATOR_PASSWORD' }
+        @{ Carpeta = 'tests\calculos';   Usuario = $LoginMigrador; Clave = 'SHOPCART_MIGRATOR_PASSWORD' },
+        @{ Carpeta = 'tests\procedimientos'; Usuario = $LoginMigrador; Clave = 'SHOPCART_MIGRATOR_PASSWORD' }
     )
     foreach ($suite in $suites) {
         $contrasena = Get-ValorRequerido -Configuracion $configuracion -Clave $suite.Clave

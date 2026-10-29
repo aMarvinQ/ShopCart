@@ -86,6 +86,47 @@ Para reconstruir la base desde cero en desarrollo: `.\deploy.ps1 -Bootstrap -Rec
 - El esquema `Despliegue` está separado del de la aplicación y `RolApi` no tiene acceso a él.
 - `sqlcmd` se ejecuta con `QUOTED_IDENTIFIER ON` (`-I`), requerido por los índices filtrados, y lee los scripts como UTF-8.
 
+### Integridad de datos en la base
+
+Las reglas críticas las garantiza la base de datos, no solo la API: aunque un SP tuviera un error, el dato inválido no se guarda. La lista completa de reglas y su mecanismo está en [docs/ER.md](docs/ER.md).
+
+- **Restricciones declarativas**: `CHECK`, `UNIQUE` (incluidos índices únicos filtrados, p. ej. un solo pago aprobado por checkout) y llaves foráneas **compuestas** que impiden cruzar datos (un cliente no puede usar la dirección de otro, una línea devuelta pertenece al pedido de su devolución, un valor "Rojo" no puede guardarse como Talla).
+- **Montos** en `DECIMAL(12,2)` (nunca `FLOAT`); los totales de checkout, pedido y líneas se validan con `CHECK` (`Total = Subtotal − Descuento + CostoEnvio`, `Total = BaseImponible + IVA`). Los precios incluyen IVA (12 %).
+- **Fechas** en UTC (`DATETIME2(3)`).
+- **Inventario**: la existencia física solo cambia junto con un movimiento del kardex; cada movimiento cuadra (`SaldoNuevo = SaldoAnterior + Cantidad`) y nunca deja existencia negativa. Existencia disponible = física − reservas activas no vencidas, así una reserva vencida deja de contar en el mismo instante en que vence.
+- **Idempotencia**: un checkout produce como máximo un pedido (`UQ_Pedido_IDCheckout`) y nunca se cobra dos veces (`UQ_Pago_CheckoutAprobado`), aun con doble clic o peticiones simultáneas.
+- **Snapshot**: checkout y pedido copian precios, dirección, método de envío y cupón; editar el catálogo después no altera pedidos existentes.
+- **Auditoría inmutable**: kardex, historial de precios, historial de estados y bitácora no admiten `UPDATE` ni `DELETE` (triggers `TR_*_Inmutable`). Los registros de negocio no se borran: se desactivan.
+- **Pagos (PCI DSS)**: solo se guardan marca, últimos 4 dígitos, código de autorización y referencia; nunca el número completo, el CVV ni el vencimiento.
+
+### Ciclo de vida del pedido
+
+```mermaid
+stateDiagram-v2
+    [*] --> PAGADO : pago aprobado
+    PAGADO --> EN_PREPARACION : Operador
+    PAGADO --> CANCELADO : Cliente u Operador
+    EN_PREPARACION --> ENVIADO : Operador (despacho)
+    EN_PREPARACION --> CANCELADO : Operador
+    ENVIADO --> ENTREGADO : Operador
+    ENTREGADO --> DEVUELTO_PARCIAL : devolución parcial
+    ENTREGADO --> DEVUELTO : devolución total
+    DEVUELTO_PARCIAL --> DEVUELTO : devolución de lo restante
+    CANCELADO --> [*]
+    DEVUELTO --> [*]
+```
+
+- Un pedido se crea solo con un pago aprobado y puede cancelarse mientras no haya sido despachado.
+- Las transiciones permitidas están en la tabla `TransicionEstadoPedido`. El trigger `TR_Pedido_Estado` rechaza cualquier otra y registra cada cambio en `PedidoHistorialEstado` con usuario, fecha y hora, estado anterior y nuevo; ningún proceso puede cambiar un estado sin dejar rastro. La API valida las mismas reglas antes de llegar a la base.
+- Cancelar o devolver reintegra la existencia con movimientos del kardex. Cancelar un pedido pagado revierte el uso del cupón; una devolución no.
+
+### Pruebas de la base de datos
+
+`.\deploy.ps1 -Probar` ejecuta dos suites:
+
+- `tests/api`: conectado **como la API**, verifica que solo puede ejecutar SPs y que leer o escribir una tabla se rechaza.
+- `tests/integridad`: intenta guardar datos inválidos (totales que no cuadran, doble pedido del mismo checkout, transición de estado no permitida, modificar el kardex...) y verifica que los rechace **la restricción o el trigger esperado**, identificado por su nombre. Todo ocurre en transacciones que se revierten: no deja datos.
+
 ---
 
 ## Credenciales de prueba

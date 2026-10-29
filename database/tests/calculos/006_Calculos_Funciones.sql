@@ -10,6 +10,12 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 GO
 
+-- Permite ejecutar el script varias veces en la misma conexión (p. ej. en SSMS).
+DROP TABLE IF EXISTS #Fallas;
+DROP PROCEDURE IF EXISTS #Verificar;
+DROP PROCEDURE IF EXISTS #CrearPedidoConCupon;
+GO
+
 CREATE TABLE #Fallas (Descripcion NVARCHAR(300) NOT NULL);
 GO
 

@@ -26,7 +26,8 @@
     Junto con -Bootstrap: elimina la base de datos ShopCart antes de crearla. Solo desarrollo.
 
 .PARAMETER Probar
-    Ejecuta los scripts de tests/ conectado como shopcart_api.
+    Ejecuta tests/api conectado como shopcart_api (permisos) y tests/integridad conectado
+    como shopcart_migrator (restricciones; cada prueba revierte sus datos).
 
 .EXAMPLE
     .\deploy.ps1 -Bootstrap
@@ -307,12 +308,19 @@ if ($Bootstrap) {
 }
 
 if ($Probar) {
-    $contrasenaApi = Get-ValorRequerido -Configuracion $configuracion -Clave 'SHOPCART_API_PASSWORD'
-    Write-Host "Pruebas (conectado como $LoginApi)"
-    foreach ($archivo in @(Get-ScriptsDeCarpeta -Carpeta 'tests')) {
-        Write-Host "  > $($archivo.Name)"
-        Invoke-ScriptSql -Ruta $archivo.FullName -Servidor $servidor -BaseDatos $NombreBaseDatos `
-                         -Usuario $LoginApi -Contrasena $contrasenaApi
+    # tests/api: permisos, conectado como la API · tests/integridad: restricciones, como el migrador
+    $suites = @(
+        @{ Carpeta = 'tests\api';        Usuario = $LoginApi;      Clave = 'SHOPCART_API_PASSWORD' },
+        @{ Carpeta = 'tests\integridad'; Usuario = $LoginMigrador; Clave = 'SHOPCART_MIGRATOR_PASSWORD' }
+    )
+    foreach ($suite in $suites) {
+        $contrasena = Get-ValorRequerido -Configuracion $configuracion -Clave $suite.Clave
+        Write-Host "Pruebas $($suite.Carpeta) (conectado como $($suite.Usuario))"
+        foreach ($archivo in @(Get-ScriptsDeCarpeta -Carpeta $suite.Carpeta)) {
+            Write-Host "  > $($archivo.Name)"
+            Invoke-ScriptSql -Ruta $archivo.FullName -Servidor $servidor -BaseDatos $NombreBaseDatos `
+                             -Usuario $suite.Usuario -Contrasena $contrasena
+        }
     }
     Write-Host 'Pruebas completadas.'
     return

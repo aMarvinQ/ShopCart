@@ -19,11 +19,14 @@ ShopCart/
     migrations/        Estructura: tablas, índices, tipos tabla (se aplican una sola vez)
     programmability/   Funciones, vistas, stored procedures, triggers y permisos (CREATE OR ALTER)
     seed/              Datos semilla
-    tests/             Pruebas SQL
-    herramientas/      Utilidades de desarrollo
+    tests/api/         Pruebas de permisos (se ejecutan como la API)
+    tests/integridad/  Pruebas de restricciones (como el migrador; revierten sus datos)
+    herramientas/      Utilidades de desarrollo (no forman parte del despliegue)
     deploy.ps1         Despliegue reproducible de la base de datos
   docs/                Diagrama entidad-relación y diagramas de apoyo
 ```
+
+Modelo de datos: [docs/ER.md](docs/ER.md).
 
 ---
 
@@ -48,7 +51,7 @@ Copy-Item .env.example .env
 
 .\deploy.ps1 -Bootstrap   # una vez, con una cuenta sysadmin: BD, logins, usuarios y permisos
 .\deploy.ps1              # aplica migraciones, objetos programables y semillas
-.\deploy.ps1 -Probar      # ejecuta las pruebas SQL con el login de la API
+.\deploy.ps1 -Probar      # pruebas de permisos (como la API) y de integridad (como el migrador)
 ```
 
 Para reconstruir la base desde cero en desarrollo: `.\deploy.ps1 -Bootstrap -Recrear` y luego `.\deploy.ps1`.
@@ -79,6 +82,7 @@ Para reconstruir la base desde cero en desarrollo: `.\deploy.ps1 -Bootstrap -Rec
 - Scripts numerados con formato `000_Descripcion.sql`; el número es único en todo el proyecto.
 - `deploy.ps1` registra cada script aplicado en `Despliegue.VersionEsquema` con su checksum SHA-256, usando stored procedures con parámetros.
 - `migrations/` y `seed/` son **inmutables** una vez aplicados: un cambio se hace con un script nuevo. `programmability/` se vuelve a aplicar cuando cambia su contenido.
+- Los cambios a la base se hacen **solo** con `deploy.ps1`. Volver a ejecutarlo es seguro: lo ya aplicado se omite y, si un script aplicado fue modificado, el despliegue se detiene en lugar de dejar el esquema distinto al del repositorio. Por eso las migraciones no usan `IF NOT EXISTS`: si un objeto ya existe sin estar registrado, es preferible fallar (y revertir la transacción) a ocultar la diferencia.
 - El esquema `Despliegue` está separado del de la aplicación y `RolApi` no tiene acceso a él.
 - `sqlcmd` se ejecuta con `QUOTED_IDENTIFIER ON` (`-I`), requerido por los índices filtrados, y lee los scripts como UTF-8.
 

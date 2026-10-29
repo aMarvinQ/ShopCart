@@ -309,9 +309,11 @@ if ($Bootstrap) {
 
 if ($Probar) {
     # tests/api: permisos, conectado como la API · tests/integridad: restricciones, como el migrador
+    # tests/calculos: resultados de funciones y vistas con datos controlados, como el migrador
     $suites = @(
         @{ Carpeta = 'tests\api';        Usuario = $LoginApi;      Clave = 'SHOPCART_API_PASSWORD' },
-        @{ Carpeta = 'tests\integridad'; Usuario = $LoginMigrador; Clave = 'SHOPCART_MIGRATOR_PASSWORD' }
+        @{ Carpeta = 'tests\integridad'; Usuario = $LoginMigrador; Clave = 'SHOPCART_MIGRATOR_PASSWORD' },
+        @{ Carpeta = 'tests\calculos';   Usuario = $LoginMigrador; Clave = 'SHOPCART_MIGRATOR_PASSWORD' }
     )
     foreach ($suite in $suites) {
         $contrasena = Get-ValorRequerido -Configuracion $configuracion -Clave $suite.Clave

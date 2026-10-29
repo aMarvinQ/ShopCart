@@ -14,6 +14,12 @@ SET NOCOUNT ON;
 SET XACT_ABORT OFF;  -- una violación de restricción debe terminar solo la sentencia, no la transacción
 GO
 
+-- Permite ejecutar el script varias veces en la misma conexión (p. ej. en SSMS).
+DROP TABLE IF EXISTS #Base;
+DROP PROCEDURE IF EXISTS #CrearBasePrueba;
+DROP PROCEDURE IF EXISTS #CrearPedidoPrueba;
+GO
+
 CREATE TABLE #Base
 (
     IDUsuario      INT,

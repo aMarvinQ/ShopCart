@@ -44,16 +44,18 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50018 | `VALOR_INVALIDO` | Una variante usa un valor que no existe, que es de otro atributo (p. ej. "Rojo" como talla) o que está desactivado. |
 | 50019 | `COMBINACION_INCOMPLETA` | Las variantes del producto no usan todas los mismos atributos, hay más de una y alguna no tiene atributos, o hay atributos para una variante que no viene en la lista. |
 | 50020 | `IMAGEN_INVALIDA` | Ruta fuera de `/uploads/` o con `..`, texto alternativo vacío, imagen de un valor que ninguna variante del producto usa, imágenes por valor de dos atributos distintos, o más de una principal en un grupo. |
+| 50021 | `RANGO_PRECIO_INVALIDO` | Búsqueda con un precio negativo o con el mínimo mayor que el máximo. |
+| 50022 | `ORDENAMIENTO_INVALIDO` | Búsqueda ordenada por algo distinto de `RECIENTES`, `NOMBRE` o `PRECIO`, o con una dirección distinta de `ASC`/`DESC`. |
 
 ## No encontrado (404)
 
 | Número | Código | Cuándo |
 |---|---|---|
 | 50101 | `USUARIO_NO_ENCONTRADO` | El usuario no existe o está desactivado. |
-| 50102 | `CATEGORIA_NO_ENCONTRADA` | La categoría no existe. |
+| 50102 | `CATEGORIA_NO_ENCONTRADA` | La categoría no existe (en la tienda: o está inactiva). |
 | 50103 | `ATRIBUTO_NO_ENCONTRADO` | El atributo no existe, o está desactivado y se intenta usar en algo nuevo (asignarlo a una categoría, agregarle valores). |
 | 50104 | `VALOR_NO_ENCONTRADO` | El valor de atributo no existe. |
-| 50105 | `PRODUCTO_NO_ENCONTRADO` | El producto no existe. |
+| 50105 | `PRODUCTO_NO_ENCONTRADO` | El producto no existe (en la tienda: o no está visible, porque él o su categoría están inactivos o no tiene variantes activas). |
 | 50106 | `VARIANTE_NO_ENCONTRADA` | La variante no existe. |
 | 50107 | `IMAGEN_NO_ENCONTRADA` | La imagen no existe. |
 

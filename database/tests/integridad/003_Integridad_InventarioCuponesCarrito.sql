@@ -45,9 +45,11 @@ VALUES (@IDVariante, @IDEntrada, 1, 3, 0, 3, @IDUsuario);
 
 DECLARE @IDDepartamento TINYINT = 200;
 INSERT INTO dbo.Departamento (IDDepartamento, Nombre) VALUES (@IDDepartamento, N'Departamento de prueba');
+DECLARE @IDMunicipio SMALLINT = 20001;
+INSERT INTO dbo.Municipio (IDMunicipio, IDDepartamento, Nombre) VALUES (@IDMunicipio, @IDDepartamento, N'Municipio de prueba');
 
-INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, Municipio, IDDepartamento, EsPredeterminada)
-VALUES (@IDUsuario, N'Casa', N'Prueba Integridad', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento, 1);
+INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, IDMunicipio, EsPredeterminada)
+VALUES (@IDUsuario, N'Casa', N'Prueba Integridad', '5555-1234', N'1a calle 1-23 zona 1', @IDMunicipio, 1);
 
 INSERT INTO dbo.Cupon (Codigo, Descripcion, TipoDescuento, Valor, FechaInicio, FechaFin, LimiteUsosTotal)
 VALUES ('PRUEBA10', N'Cupón de prueba', 'PORCENTAJE', 10, @Ahora, DATEADD(DAY, 30, @Ahora), 5);
@@ -107,8 +109,8 @@ END CATCH
 /* --- Direcciones y envío ------------------------------------------------------------------ */
 SELECT @Esperado = N'UQ_Direccion_Predeterminada', @Descripcion = N'Segunda dirección predeterminada';
 BEGIN TRY
-    INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, Municipio, IDDepartamento, EsPredeterminada)
-    VALUES (@IDUsuario, N'Oficina', N'Prueba Integridad', '5555-1234', N'2a avenida 3-45 zona 4', N'Guatemala', @IDDepartamento, 1);
+    INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, IDMunicipio, EsPredeterminada)
+    VALUES (@IDUsuario, N'Oficina', N'Prueba Integridad', '5555-1234', N'2a avenida 3-45 zona 4', @IDMunicipio, 1);
     SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptada.';
 END TRY
 BEGIN CATCH
@@ -128,8 +130,29 @@ END CATCH
 
 SELECT @Esperado = N'CK_Direccion_CodigoPostalFormato', @Descripcion = N'Código postal con letras';
 BEGIN TRY
-    INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, Municipio, IDDepartamento, CodigoPostal)
-    VALUES (@IDUsuario, N'Postal', N'Prueba Integridad', '5555-1234', N'4a calle 7-89 zona 3', N'Guatemala', @IDDepartamento, '0101A');
+    INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, IDMunicipio, CodigoPostal)
+    VALUES (@IDUsuario, N'Postal', N'Prueba Integridad', '5555-1234', N'4a calle 7-89 zona 3', @IDMunicipio, '0101A');
+    SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
+END TRY
+BEGIN CATCH
+    IF ERROR_MESSAGE() NOT LIKE N'%' + @Esperado + N'%' THROW;
+    PRINT N'OK     ' + @Descripcion + N' rechazado por ' + @Esperado + N'.';
+END CATCH
+
+SELECT @Esperado = N'FK_Direccion_Municipio', @Descripcion = N'Dirección con un municipio inexistente';
+BEGIN TRY
+    INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, IDMunicipio)
+    VALUES (@IDUsuario, N'Otra', N'Prueba Integridad', '5555-1234', N'6a calle 1-10 zona 2', 32000);
+    SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptada.';
+END TRY
+BEGIN CATCH
+    IF ERROR_MESSAGE() NOT LIKE N'%' + @Esperado + N'%' THROW;
+    PRINT N'OK     ' + @Descripcion + N' rechazada por ' + @Esperado + N'.';
+END CATCH
+
+SELECT @Esperado = N'UQ_Municipio_Departamento_Nombre', @Descripcion = N'Municipio repetido en el mismo departamento';
+BEGIN TRY
+    INSERT INTO dbo.Municipio (IDMunicipio, IDDepartamento, Nombre) VALUES (20002, @IDDepartamento, N'Municipio de prueba');
     SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
 END TRY
 BEGIN CATCH

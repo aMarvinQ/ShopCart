@@ -26,14 +26,14 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 |---|---|---|
 | 50001 | `CORREO_INVALIDO` | Correo vacío, sin formato `x@y.z`, con espacios o de más de 254 caracteres. |
 | 50002 | `HASH_INVALIDO` | La contraseña no llegó como hash Argon2id (la base nunca recibe contraseñas en claro). |
-| 50003 | `NOMBRE_INVALIDO` | Nombre vacío o más largo que el máximo: nombre y apellido de usuario (100), categoría (100), producto (200), atributo y valor de atributo (50). |
-| 50004 | `TELEFONO_INVALIDO` | Teléfono con caracteres distintos de dígitos, espacios, `+` y `-`, o de más de 20. |
+| 50003 | `NOMBRE_INVALIDO` | Nombre vacío o más largo que el máximo: nombre y apellido de usuario (100), categoría (100), producto (200), atributo y valor de atributo (50), destinatario de una dirección (150), método de envío (100). |
+| 50004 | `TELEFONO_INVALIDO` | Teléfono con caracteres distintos de dígitos, espacios, `+` y `-`, o de más de 20 (en una dirección de envío, además, de menos de 8). |
 | 50005 | `ROL_INVALIDO` | Un usuario interno solo puede ser `OPERADOR` o `ADMIN`. |
 | 50006 | `PARAMETRO_REQUERIDO` | Falta un parámetro obligatorio o tiene un tamaño inválido (p. ej. un hash de token que no mide 32 bytes). |
 | 50007 | `PAGINACION_INVALIDA` | Página menor que 1 o tamaño de página fuera de 1–100. |
 | 50008 | `BUSQUEDA_INVALIDA` | Texto de búsqueda de más de 100 caracteres. |
 | 50009 | `SLUG_INVALIDO` | Slug vacío, con caracteres distintos de minúsculas sin tilde, dígitos y guiones, con guion al inicio, al final o doble, o más largo que el máximo (categoría: 120, producto: 220). |
-| 50010 | `DESCRIPCION_INVALIDA` | Descripción más larga que el máximo (categoría: 500, producto: 4000), o la de un cupón vacía o de más de 300. |
+| 50010 | `DESCRIPCION_INVALIDA` | Descripción más larga que el máximo (categoría: 500, producto: 4000), o la de un cupón vacía o de más de 300, o la de un método de envío de más de 300. |
 | 50011 | `COLOR_INVALIDO` | Color que no tiene el formato `#RRGGBB`. |
 | 50012 | `ORDEN_INVALIDO` | Orden fuera de 0–255. |
 | 50013 | `VARIANTES_REQUERIDAS` | Un producto nuevo sin variantes. |
@@ -57,6 +57,9 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50031 | `MONTO_MINIMO_INVALIDO` | Monto mínimo de compra vacío o negativo. |
 | 50032 | `LIMITE_USOS_INVALIDO` | Límite de usos (total o por cliente) cero o negativo, o límite por cliente mayor que el total. |
 | 50033 | `SITUACION_INVALIDA` | Filtro de cupones distinto de `VIGENTE`, `PROGRAMADO`, `VENCIDO`, `AGOTADO` o `INACTIVO`. |
+| 50034 | `DIRECCION_INVALIDA` | Alias vacío o de más de 50, línea 1 vacía o alguna línea de más de 200, código postal que no son 5 dígitos o referencias de más de 300. |
+| 50035 | `COSTO_INVALIDO` | Costo de envío vacío o negativo (0 se permite). |
+| 50036 | `DIAS_ESTIMADOS_INVALIDOS` | Días estimados de entrega fuera de 0–255 o mínimo mayor que el máximo. |
 
 ## No encontrado (404)
 
@@ -72,6 +75,10 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50108 | `CARRITO_NO_ENCONTRADO` | El cliente o invitado no tiene un carrito activo. |
 | 50109 | `ITEM_NO_ENCONTRADO` | Se cambia la cantidad de una variante que no está en el carrito. |
 | 50110 | `CUPON_NO_ENCONTRADO` | El cupón no existe (administración). |
+| 50111 | `MUNICIPIO_NO_ENCONTRADO` | El municipio no existe. |
+| 50112 | `DEPARTAMENTO_NO_ENCONTRADO` | El departamento no existe. |
+| 50113 | `DIRECCION_NO_ENCONTRADA` | La dirección no existe, está eliminada o es de otro cliente (responden igual para no revelar direcciones ajenas). |
+| 50114 | `METODO_ENVIO_NO_ENCONTRADO` | El método de envío no existe. |
 
 ## Permiso (403)
 
@@ -107,7 +114,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51101 | `CORREO_REGISTRADO` | Ya existe una cuenta con ese correo (sin distinguir mayúsculas). |
 | 51102 | `USUARIO_SISTEMA_PROTEGIDO` | Intento de modificar el usuario de sistema. |
 | 51103 | `AUTODESACTIVACION_NO_PERMITIDA` | Un administrador intentó desactivarse a sí mismo. |
-| 51201 | `NOMBRE_REGISTRADO` | Ya existe una categoría o atributo con ese nombre, o el atributo ya tiene ese valor (sin distinguir mayúsculas ni tildes). |
+| 51201 | `NOMBRE_REGISTRADO` | Ya existe una categoría, atributo o método de envío con ese nombre, o el atributo ya tiene ese valor (sin distinguir mayúsculas ni tildes). |
 | 51202 | `SLUG_REGISTRADO` | Ya existe una categoría o un producto con ese slug. |
 | 51203 | `EDICION_CONCURRENTE` | Otro usuario guardó cambios después de que se cargó el formulario (`VersionFila` distinta). |
 | 51204 | `ATRIBUTO_EN_USO` | Se intenta quitar de una categoría un atributo que usa alguna de sus variantes. |
@@ -132,6 +139,8 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51410 | `CODIGO_REGISTRADO` | Ya existe un cupón con ese código (sin distinguir mayúsculas). |
 | 51411 | `CUPON_CON_USOS` | Se intenta cambiar el código, tipo, valor o categoría de un cupón que ya se usó: para otra promoción se crea otro cupón. |
 | 51412 | `LIMITE_MENOR_QUE_USOS` | El límite total de usos quedaría por debajo de los usos que el cupón ya tiene. |
+| 51501 | `LIMITE_DIRECCIONES` | El cliente ya tiene 5 direcciones activas. |
+| 51502 | `ULTIMO_METODO_ENVIO` | Se intenta desactivar el único método de envío activo: la tienda no podría vender. |
 | 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
 | 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
 

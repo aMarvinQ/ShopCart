@@ -62,6 +62,7 @@ BEGIN
     DECLARE @IDVariante2 INT = SCOPE_IDENTITY();
 
     INSERT INTO dbo.Departamento (IDDepartamento, Nombre) VALUES (200, N'Departamento de prueba');
+    INSERT INTO dbo.Municipio (IDMunicipio, IDDepartamento, Nombre) VALUES (20001, 200, N'Municipio de prueba');
     INSERT INTO dbo.MetodoEnvio (Nombre, Costo, DiasEstimadosMin, DiasEstimadosMax) VALUES (N'Envío de prueba', 25.00, 1, 3);
     DECLARE @IDMetodoEnvio INT = SCOPE_IDENTITY();
 
@@ -176,8 +177,8 @@ INSERT INTO dbo.ReservaInventario (IDCheckout, IDVariante, Cantidad, FechaExpira
 INSERT INTO dbo.Pago (IDCheckout, IDPedido, Estado, Marca, Ultimos4, CodigoAutorizacion, Monto, ReferenciaExterna)
 VALUES (@IDCheckout, @IDPedido, 'APROBADO', 'VISA', '4242', 'AUT001', 125.00, 'REF-PRUEBA-1');
 
-INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, Municipio, IDDepartamento)
-VALUES (@IDOtroUsuario, N'Casa', N'Otro Cliente', '5555-9876', N'5a avenida 2-10 zona 9', N'Guatemala', @IDDepartamento);
+INSERT INTO dbo.Direccion (IDUsuario, Alias, NombreDestinatario, Telefono, Linea1, IDMunicipio)
+VALUES (@IDOtroUsuario, N'Casa', N'Otro Cliente', '5555-9876', N'5a avenida 2-10 zona 9', 20001);
 DECLARE @IDDireccionAjena INT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.Devolucion (IDPedido, Motivo, MontoReembolso, IDUsuario) VALUES (@IDPedido, N'Talla incorrecta', 100.00, @IDUsuario);

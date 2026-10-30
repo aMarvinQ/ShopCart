@@ -1,6 +1,6 @@
 /*
     043_Funciones_Cupones.sql
-    Reglas de cupones (RF-05) en cinco funciones:
+    Reglas de cupones (RF-05) en seis funciones:
     - FU_Cupones_Validar: reglas del cupón y del cliente (vigencia, usos, solo registrados).
       Se revalida al aplicar el cupón, al iniciar el checkout y al pagar.
     - FU_Cupones_CalculoDescuento: reglas que dependen del carrito (monto mínimo, categoría)
@@ -8,6 +8,8 @@
     - FU_Cupones_ProrrateoDescuento: reparte el descuento por línea, cuadrado al centavo.
     - FU_Cupones_ValidarDatos: datos que captura el administrador al crear o editar.
     - FU_Cupones_Situacion: vigente, programado, vencido, agotado o inactivo.
+    - FU_Cupones_Error: número y mensaje del error de cada CodigoError, para que el carrito y el
+      checkout rechacen un cupón con el mismo texto.
 
     Devuelven un CodigoError estable (NULL = válido) en lugar de lanzar errores: el SP decide
     el número de error y la API lo convierte en el mensaje para el cliente.
@@ -266,4 +268,40 @@ RETURN
             ELSE 'VIGENTE'
         END AS Situacion
     FROM dbo.Cupon AS c;
+GO
+
+/*
+    Una fila con el número y el mensaje de @CodigoError (de FU_Cupones_Validar o de
+    FU_Cupones_CalculoDescuento). El de monto mínimo indica cuánto falta (@Subtotal del
+    carrito) y el de productos elegibles, la categoría del cupón.
+*/
+CREATE OR ALTER FUNCTION dbo.FU_Cupones_Error (@CodigoError VARCHAR(40), @IDCupon INT, @Subtotal DECIMAL(12, 2))
+RETURNS TABLE
+AS
+RETURN
+    SELECT
+        e.NumeroError,
+        CASE
+            WHEN e.Codigo = 'CUPON_MONTO_MINIMO' AND c.IDCupon IS NOT NULL
+                THEN CONCAT(N'CUPON_MONTO_MINIMO: el cupón requiere una compra mínima de Q', c.MontoMinimo,
+                            N'; faltan Q', c.MontoMinimo - @Subtotal, N'.')
+            WHEN e.Codigo = 'CUPON_SIN_PRODUCTOS_ELEGIBLES' AND cat.IDCategoria IS NOT NULL
+                THEN CONCAT(N'CUPON_SIN_PRODUCTOS_ELEGIBLES: el cupón aplica solo a productos de ', cat.Nombre,
+                            N' y el carrito no tiene ninguno.')
+            ELSE e.MensajeError
+        END AS MensajeError
+    FROM (VALUES
+        (51401, 'CUPON_INVALIDO',                N'CUPON_INVALIDO: el cupón no existe o no está disponible.'),
+        (51402, 'CUPON_NO_VIGENTE',              N'CUPON_NO_VIGENTE: el cupón todavía no está vigente.'),
+        (51403, 'CUPON_VENCIDO',                 N'CUPON_VENCIDO: el cupón ya venció.'),
+        (51404, 'CUPON_AGOTADO',                 N'CUPON_AGOTADO: el cupón alcanzó su límite de usos.'),
+        (51405, 'CUPON_SOLO_REGISTRADOS',        N'CUPON_SOLO_REGISTRADOS: el cupón es solo para clientes registrados; inicie sesión para usarlo.'),
+        (51406, 'CUPON_LIMITE_CLIENTE',          N'CUPON_LIMITE_CLIENTE: ya usó este cupón el máximo de veces permitido.'),
+        (51407, 'CUPON_MONTO_MINIMO',            N'CUPON_MONTO_MINIMO: el carrito no alcanza la compra mínima del cupón.'),
+        (51408, 'CUPON_SIN_PRODUCTOS_ELEGIBLES', N'CUPON_SIN_PRODUCTOS_ELEGIBLES: el carrito no tiene productos de la categoría del cupón.'),
+        (51409, 'CARRITO_VACIO',                 N'CARRITO_VACIO: el carrito no tiene productos.')
+    ) AS e (NumeroError, Codigo, MensajeError)
+    LEFT JOIN dbo.Cupon AS c ON c.IDCupon = @IDCupon
+    LEFT JOIN dbo.Categoria AS cat ON cat.IDCategoria = c.IDCategoria
+    WHERE e.Codigo = @CodigoError;
 GO

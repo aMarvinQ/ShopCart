@@ -544,7 +544,7 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @Ahora DATETIME2(3) = SYSUTCDATETIME(), @Token BINARY(32), @IDCarrito INT, @IDCupon INT,
-            @ErrorCupon VARCHAR(40), @NumeroError INT, @MensajeError NVARCHAR(400);
+            @ErrorCupon VARCHAR(40), @Subtotal DECIMAL(12, 2), @NumeroError INT, @MensajeError NVARCHAR(400);
 
     IF (@IDUsuario IS NULL AND @TokenInvitadoHash IS NULL) OR (@IDUsuario IS NOT NULL AND @TokenInvitadoHash IS NOT NULL)
        OR DATALENGTH(@TokenInvitadoHash) <> 32
@@ -574,35 +574,14 @@ BEGIN
 
         SELECT @IDCupon = c.IDCupon FROM dbo.Cupon AS c WHERE c.Codigo = @Codigo;
 
-        SELECT @ErrorCupon = v.CodigoError FROM dbo.FU_Cupones_Validar(@IDCupon, @IDUsuario, NULL, @Ahora) AS v;
-        IF @ErrorCupon IS NULL
-            SELECT @ErrorCupon = d.CodigoError,
-                   @MensajeError = CASE d.CodigoError
-                       WHEN 'CUPON_MONTO_MINIMO' THEN CONCAT(N'CUPON_MONTO_MINIMO: el cupón requiere una compra mínima de Q', c.MontoMinimo,
-                                                             N'; faltan Q', c.MontoMinimo - d.Subtotal, N'.')
-                       WHEN 'CUPON_SIN_PRODUCTOS_ELEGIBLES' THEN CONCAT(N'CUPON_SIN_PRODUCTOS_ELEGIBLES: el cupón aplica solo a productos de ',
-                                                                        cat.Nombre, N' y el carrito no tiene ninguno.')
-                   END
-            FROM dbo.FU_Cupones_CalculoDescuento(@IDCupon, @IDCarrito) AS d
-            JOIN dbo.Cupon AS c ON c.IDCupon = d.IDCupon
-            LEFT JOIN dbo.Categoria AS cat ON cat.IDCategoria = c.IDCategoria;
+        SELECT @ErrorCupon = COALESCE(v.CodigoError, d.CodigoError), @Subtotal = d.Subtotal
+        FROM dbo.FU_Cupones_Validar(@IDCupon, @IDUsuario, NULL, @Ahora) AS v
+        OUTER APPLY dbo.FU_Cupones_CalculoDescuento(@IDCupon, @IDCarrito) AS d;
 
         IF @ErrorCupon IS NOT NULL
         BEGIN
-            SELECT @NumeroError = e.NumeroError, @MensajeError = ISNULL(@MensajeError, e.MensajeError)
-            FROM (VALUES
-                (51401, 'CUPON_INVALIDO',          N'CUPON_INVALIDO: el cupón no existe o no está disponible.'),
-                (51402, 'CUPON_NO_VIGENTE',        N'CUPON_NO_VIGENTE: el cupón todavía no está vigente.'),
-                (51403, 'CUPON_VENCIDO',           N'CUPON_VENCIDO: el cupón ya venció.'),
-                (51404, 'CUPON_AGOTADO',           N'CUPON_AGOTADO: el cupón alcanzó su límite de usos.'),
-                (51405, 'CUPON_SOLO_REGISTRADOS',  N'CUPON_SOLO_REGISTRADOS: el cupón es solo para clientes registrados; inicie sesión para usarlo.'),
-                (51406, 'CUPON_LIMITE_CLIENTE',    N'CUPON_LIMITE_CLIENTE: ya usó este cupón el máximo de veces permitido.'),
-                (51409, 'CARRITO_VACIO',           N'CARRITO_VACIO: agregue productos antes de aplicar un cupón.')
-            ) AS e (NumeroError, Codigo, MensajeError)
-            WHERE e.Codigo = @ErrorCupon;
-
-            SET @NumeroError = ISNULL(@NumeroError, CASE @ErrorCupon WHEN 'CUPON_MONTO_MINIMO' THEN 51407
-                                                                     WHEN 'CUPON_SIN_PRODUCTOS_ELEGIBLES' THEN 51408 END);
+            SELECT @NumeroError = e.NumeroError, @MensajeError = e.MensajeError
+            FROM dbo.FU_Cupones_Error(@ErrorCupon, @IDCupon, @Subtotal) AS e;
             THROW @NumeroError, @MensajeError, 1;
         END;
 

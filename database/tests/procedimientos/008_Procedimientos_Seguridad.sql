@@ -15,14 +15,13 @@ SET XACT_ABORT OFF;
 GO
 
 -- Permite ejecutar el script varias veces en la misma conexión (p. ej. en SSMS).
-DROP TABLE IF EXISTS #Fallas, #Contexto, #Base, #Usuario, #Credenciales, #Sesion, #Rotacion, #Conteo, #Perfil, #Detalle, #Estado;
+DROP TABLE IF EXISTS #Contexto, #Base, #Usuario, #Credenciales, #Sesion, #Rotacion, #Conteo, #Perfil, #Detalle, #Estado;
 DROP PROCEDURE IF EXISTS #Verificar;
 DROP PROCEDURE IF EXISTS #Preparar;
 DROP PROCEDURE IF EXISTS #IniciarSesion;
 DROP PROCEDURE IF EXISTS #Rotar;
 GO
 
-CREATE TABLE #Fallas (Descripcion NVARCHAR(300) NOT NULL);
 CREATE TABLE #Contexto (UsuarioApi SYSNAME NOT NULL);
 CREATE TABLE #Base (IDAdmin INT NOT NULL, IDOperador INT NOT NULL, IDCliente INT NOT NULL, IDSistema INT NOT NULL);
 
@@ -47,7 +46,11 @@ CREATE TABLE #Estado (IDUsuario INT, Correo NVARCHAR(254), Nombre NVARCHAR(100),
                       UltimoAcceso DATETIME2(3), FechaCreacion DATETIME2(3), EstadoCambiado BIT, SesionesRevocadas INT);
 GO
 
-/* Compara como texto; muestra esperado y obtenido cuando no coinciden. */
+/*
+    Compara como texto; muestra esperado y obtenido cuando no coinciden. Las fallas se cuentan
+    en SESSION_CONTEXT y no en una tabla temporal: muchas verificaciones ocurren dentro de la
+    transacción del caso, y su ROLLBACK borraría también el registro de la falla.
+*/
 CREATE PROCEDURE #Verificar
     @Descripcion NVARCHAR(300),
     @Esperado    NVARCHAR(400),
@@ -59,7 +62,8 @@ BEGIN
         PRINT N'OK     ' + @Descripcion + N': ' + ISNULL(@Obtenido, N'(NULL)');
     ELSE
     BEGIN
-        INSERT INTO #Fallas (Descripcion) VALUES (@Descripcion);
+        DECLARE @Fallas INT = ISNULL(CAST(SESSION_CONTEXT(N'PruebasFallidas') AS INT), 0) + 1;
+        EXEC sys.sp_set_session_context @key = N'PruebasFallidas', @value = @Fallas;
         PRINT N'FALLA  ' + @Descripcion + N': esperado ' + ISNULL(@Esperado, N'(NULL)') + N', obtenido ' + ISNULL(@Obtenido, N'(NULL)');
     END;
 END;
@@ -145,6 +149,8 @@ BEGIN
     SET @Resultado = (SELECT Resultado FROM #Rotacion);
 END;
 GO
+
+EXEC sys.sp_set_session_context @key = N'PruebasFallidas', @value = 0;
 
 INSERT INTO #Contexto (UsuarioApi)
 SELECT TOP (1) USER_NAME(rm.member_principal_id)
@@ -783,6 +789,7 @@ END;
 IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
 EXEC sys.sp_set_session_context @key = N'IDUsuario', @value = NULL;
 
-IF EXISTS (SELECT 1 FROM #Fallas)
+IF CAST(SESSION_CONTEXT(N'PruebasFallidas') AS INT) > 0
     THROW 50000, N'Pruebas de procedimientos de seguridad fallidas.', 1;
+EXEC sys.sp_set_session_context @key = N'PruebasFallidas', @value = NULL;
 GO

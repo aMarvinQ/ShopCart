@@ -29,6 +29,8 @@ GO
       pagar (otras líneas o cantidades, otro cupón, o el carrito ya no está activo, p. ej. se
       fusionó). Pagarlo compraría algo distinto de lo que el cliente tiene en el carrito.
     - PENDIENTE: se puede pagar.
+    CarritoModificado se informa aparte (también para uno vencido): el pago acepta un checkout
+    que venció hace segundos si todo sigue disponible, pero nunca uno con el carrito cambiado.
     Los precios no se comparan: el checkout los congeló y son los que el cliente vio al pagar.
 */
 CREATE OR ALTER FUNCTION dbo.FU_Checkout_Estado (@IDCheckout BIGINT, @Ahora DATETIME2(3))
@@ -40,18 +42,23 @@ RETURN
         CASE
             WHEN ch.Estado <> 'PENDIENTE'    THEN ch.Estado
             WHEN ch.FechaExpiracion <= @Ahora THEN 'EXPIRADO'
-            WHEN c.Estado <> 'ACTIVO'
-              OR ISNULL(c.IDCupon, 0) <> ISNULL(ch.IDCupon, 0)
-              OR EXISTS (
-                     SELECT 1
-                     FROM (SELECT d.IDVariante, d.Cantidad FROM dbo.CheckoutDetalle AS d WHERE d.IDCheckout = ch.IDCheckout) AS d
-                     FULL JOIN (SELECT i.IDVariante, i.Cantidad FROM dbo.CarritoItem AS i WHERE i.IDCarrito = ch.IDCarrito) AS i
-                          ON i.IDVariante = d.IDVariante
-                     WHERE d.IDVariante IS NULL OR i.IDVariante IS NULL OR d.Cantidad <> i.Cantidad
-                 )                         THEN 'CARRITO_MODIFICADO'
+            WHEN m.CarritoModificado = 1     THEN 'CARRITO_MODIFICADO'
             ELSE 'PENDIENTE'
-        END AS EstadoEfectivo
+        END AS EstadoEfectivo,
+        m.CarritoModificado
     FROM dbo.Checkout AS ch
     JOIN dbo.Carrito AS c ON c.IDCarrito = ch.IDCarrito
+    CROSS APPLY (
+        SELECT CAST(CASE
+                   WHEN c.Estado <> 'ACTIVO'
+                     OR ISNULL(c.IDCupon, 0) <> ISNULL(ch.IDCupon, 0)
+                     OR EXISTS (
+                            SELECT 1
+                            FROM (SELECT d.IDVariante, d.Cantidad FROM dbo.CheckoutDetalle AS d WHERE d.IDCheckout = ch.IDCheckout) AS d
+                            FULL JOIN (SELECT i.IDVariante, i.Cantidad FROM dbo.CarritoItem AS i WHERE i.IDCarrito = ch.IDCarrito) AS i
+                                 ON i.IDVariante = d.IDVariante
+                            WHERE d.IDVariante IS NULL OR i.IDVariante IS NULL OR d.Cantidad <> i.Cantidad
+                        ) THEN 1 ELSE 0 END AS BIT) AS CarritoModificado
+    ) AS m
     WHERE ch.IDCheckout = @IDCheckout;
 GO

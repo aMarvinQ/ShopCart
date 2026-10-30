@@ -47,7 +47,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50021 | `RANGO_PRECIO_INVALIDO` | Búsqueda con un precio negativo o con el mínimo mayor que el máximo. |
 | 50022 | `ORDENAMIENTO_INVALIDO` | Búsqueda ordenada por algo distinto de `RECIENTES`, `NOMBRE` o `PRECIO`, o con una dirección distinta de `ASC`/`DESC`. |
 | 50023 | `TIPO_MOVIMIENTO_INVALIDO` | El tipo de movimiento no existe o no se puede registrar a mano (ventas, cancelaciones, devoluciones e inventario inicial los generan sus procesos). |
-| 50024 | `MOTIVO_INVALIDO` | Falta el motivo en un tipo que lo exige (ajustes) o tiene más de 300 caracteres. |
+| 50024 | `MOTIVO_INVALIDO` | Falta el motivo en un tipo que lo exige (ajustes) o tiene más de 300 caracteres. En pedidos: cancelación de un operador sin motivo, o motivo o comentario de más de 500. |
 | 50025 | `CANTIDAD_INVALIDA` | Cantidad cero o negativa en un movimiento de inventario o en el carrito. |
 | 50026 | `RANGO_FECHAS_INVALIDO` | La fecha inicial no es anterior a la final, falta una de las dos (vigencia de un cupón) o se crea un cupón que ya venció. |
 | 50027 | `CANTIDAD_EXCEDE_LIMITE` | La cantidad de una variante en el carrito supera `MAXIMO_UNIDADES_POR_LINEA` (al agregar, o al iniciar el checkout si el límite bajó). El mensaje indica el máximo y cuántas ya hay. |
@@ -60,7 +60,8 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50034 | `DIRECCION_INVALIDA` | Alias vacío o de más de 50, línea 1 vacía o alguna línea de más de 200, código postal que no son 5 dígitos o referencias de más de 300. |
 | 50035 | `COSTO_INVALIDO` | Costo de envío vacío o negativo (0 se permite). |
 | 50036 | `DIAS_ESTIMADOS_INVALIDOS` | Días estimados de entrega fuera de 0–255 o mínimo mayor que el máximo. |
-| 50037 | `DATOS_PAGO_INVALIDOS` | Pago rechazado sin marca válida (`VISA`, `MASTERCARD`, `AMEX`), sin 4 dígitos finales, sin motivo (máximo 40) o sin referencia (máximo 64). |
+| 50037 | `DATOS_PAGO_INVALIDOS` | Pago sin marca válida (`VISA`, `MASTERCARD`, `AMEX`), sin 4 dígitos finales o sin referencia (máximo 64); un rechazo, además, sin motivo (máximo 40), y uno aprobado sin código de autorización (máximo 20). |
+| 50038 | `ESTADO_PEDIDO_INVALIDO` | Estado de pedido inexistente, o un cambio de estado hacia `CANCELADO` o las devoluciones (tienen su propio proceso). |
 
 ## No encontrado (404)
 
@@ -81,6 +82,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50113 | `DIRECCION_NO_ENCONTRADA` | La dirección no existe, está eliminada o es de otro cliente (responden igual para no revelar direcciones ajenas). |
 | 50114 | `METODO_ENVIO_NO_ENCONTRADO` | El método de envío no existe (en el checkout: o está inactivo). |
 | 50115 | `CHECKOUT_NO_ENCONTRADO` | El checkout no existe o es de otro cliente o invitado (responden igual). |
+| 50116 | `PEDIDO_NO_ENCONTRADO` | El pedido no existe, es de otro cliente o el token de seguimiento no corresponde a ninguno (responden igual). |
 
 ## Permiso (403)
 
@@ -111,7 +113,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 
 | Número | Código | Cuándo |
 |---|---|---|
-| 51010 | `TRANSICION_NO_PERMITIDA` | Cambio de estado de pedido que no está en `TransicionEstadoPedido` (trigger). |
+| 51010 | `TRANSICION_NO_PERMITIDA` | Cambio de estado de pedido que no está en `TransicionEstadoPedido` (el SP lo valida con un mensaje claro y el trigger lo garantiza). Incluye cancelar un pedido que ya no se puede cancelar, o que el cliente cancele uno que ya está en preparación. |
 | 51011 | `ESTADO_INICIAL_INVALIDO` | Pedido creado en un estado que no es el inicial (trigger). |
 | 51101 | `CORREO_REGISTRADO` | Ya existe una cuenta con ese correo (sin distinguir mayúsculas). |
 | 51102 | `USUARIO_SISTEMA_PROTEGIDO` | Intento de modificar el usuario de sistema. |
@@ -132,7 +134,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51401 | `CUPON_INVALIDO` | Al aplicar un cupón: el código no existe o el cupón está desactivado (ambos responden igual para no revelar qué códigos existen). |
 | 51402 | `CUPON_NO_VIGENTE` | El cupón todavía no inicia. |
 | 51403 | `CUPON_VENCIDO` | El cupón ya venció. |
-| 51404 | `CUPON_AGOTADO` | El cupón alcanzó su límite total de usos. |
+| 51404 | `CUPON_AGOTADO` | El cupón alcanzó su límite total de usos (también al pagar: de dos pagos simultáneos por el último uso, el segundo). |
 | 51405 | `CUPON_SOLO_REGISTRADOS` | Un invitado intenta usar un cupón solo para clientes registrados. |
 | 51406 | `CUPON_LIMITE_CLIENTE` | El cliente ya usó el cupón las veces que permite (se cuenta por correo, sin pedidos cancelados). |
 | 51407 | `CUPON_MONTO_MINIMO` | El subtotal no alcanza el monto mínimo; el mensaje indica cuánto falta. |
@@ -143,6 +145,9 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51412 | `LIMITE_MENOR_QUE_USOS` | El límite total de usos quedaría por debajo de los usos que el cupón ya tiene. |
 | 51501 | `LIMITE_DIRECCIONES` | El cliente ya tiene 5 direcciones activas. |
 | 51502 | `ULTIMO_METODO_ENVIO` | Se intenta desactivar el único método de envío activo: la tienda no podría vender. |
+| 51601 | `CHECKOUT_EXPIRADO` | Se paga un checkout vencido y ya no hay existencia para todas sus líneas; la API anula el cobro. |
+| 51602 | `CHECKOUT_YA_PAGADO` | Segundo cobro de un checkout ya pagado (otra referencia de pago); la API anula ese cobro. Repetir la misma referencia no es error: devuelve el pedido. |
+| 51603 | `CHECKOUT_NO_PAGABLE` | Se paga un checkout cancelado o cuyo carrito cambió; la API anula el cobro y el cliente inicia el pago de nuevo. |
 | 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
 | 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
 

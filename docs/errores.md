@@ -26,18 +26,25 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 |---|---|---|
 | 50001 | `CORREO_INVALIDO` | Correo vacío, sin formato `x@y.z`, con espacios o de más de 254 caracteres. |
 | 50002 | `HASH_INVALIDO` | La contraseña no llegó como hash Argon2id (la base nunca recibe contraseñas en claro). |
-| 50003 | `NOMBRE_INVALIDO` | Nombre o apellido vacío o de más de 100 caracteres. |
+| 50003 | `NOMBRE_INVALIDO` | Nombre vacío o más largo que el máximo: nombre y apellido de usuario (100), categoría (100), atributo y valor de atributo (50). |
 | 50004 | `TELEFONO_INVALIDO` | Teléfono con caracteres distintos de dígitos, espacios, `+` y `-`, o de más de 20. |
 | 50005 | `ROL_INVALIDO` | Un usuario interno solo puede ser `OPERADOR` o `ADMIN`. |
 | 50006 | `PARAMETRO_REQUERIDO` | Falta un parámetro obligatorio o tiene un tamaño inválido (p. ej. un hash de token que no mide 32 bytes). |
 | 50007 | `PAGINACION_INVALIDA` | Página menor que 1 o tamaño de página fuera de 1–100. |
 | 50008 | `BUSQUEDA_INVALIDA` | Texto de búsqueda de más de 100 caracteres. |
+| 50009 | `SLUG_INVALIDO` | Slug vacío, con caracteres distintos de minúsculas sin tilde, dígitos y guiones, con guion al inicio, al final o doble, o más largo que el máximo (categoría: 120). |
+| 50010 | `DESCRIPCION_INVALIDA` | Descripción más larga que el máximo (categoría: 500). |
+| 50011 | `COLOR_INVALIDO` | Color que no tiene el formato `#RRGGBB`. |
+| 50012 | `ORDEN_INVALIDO` | Orden fuera de 0–255. |
 
 ## No encontrado (404)
 
 | Número | Código | Cuándo |
 |---|---|---|
 | 50101 | `USUARIO_NO_ENCONTRADO` | El usuario no existe o está desactivado. |
+| 50102 | `CATEGORIA_NO_ENCONTRADA` | La categoría no existe. |
+| 50103 | `ATRIBUTO_NO_ENCONTRADO` | El atributo no existe, o está desactivado y se intenta usar en algo nuevo (asignarlo a una categoría, agregarle valores). |
+| 50104 | `VALOR_NO_ENCONTRADO` | El valor de atributo no existe. |
 
 ## Permiso (403)
 
@@ -73,6 +80,10 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51101 | `CORREO_REGISTRADO` | Ya existe una cuenta con ese correo (sin distinguir mayúsculas). |
 | 51102 | `USUARIO_SISTEMA_PROTEGIDO` | Intento de modificar el usuario de sistema. |
 | 51103 | `AUTODESACTIVACION_NO_PERMITIDA` | Un administrador intentó desactivarse a sí mismo. |
+| 51201 | `NOMBRE_REGISTRADO` | Ya existe una categoría o atributo con ese nombre, o el atributo ya tiene ese valor (sin distinguir mayúsculas ni tildes). |
+| 51202 | `SLUG_REGISTRADO` | Ya existe una categoría con ese slug. |
+| 51203 | `EDICION_CONCURRENTE` | Otro usuario guardó cambios después de que se cargó el formulario (`VersionFila` distinta). |
+| 51204 | `ATRIBUTO_EN_USO` | Se intenta quitar de una categoría un atributo que usa alguna de sus variantes. |
 | 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
 | 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
 

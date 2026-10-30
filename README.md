@@ -130,6 +130,7 @@ Son piezas internas que usan los stored procedures; la API no puede leerlas dire
 |---|---|
 | `FU_Inventario_Disponibilidad` | Disponible = existencia física − reservas activas no vencidas. Una reserva vencida deja de contar en el mismo instante en que vence, sin depender del job de limpieza. |
 | `FU_Catalogo_OrdenVariantes` | Orden lógico de las variantes según el orden de atributos de la categoría y la variante de selección inicial (la primera disponible), de la que sale el único precio del listado. |
+| `FU_Catalogo_ValidarDatos` | Reglas de nombre, slug, descripción y color de categorías, productos, atributos y valores, con su error estable. |
 | `FU_Carrito_Lineas` | Líneas del carrito con el precio vigente: única fuente del importe de cada línea. |
 | `FU_Cupones_Validar` / `FU_Cupones_CalculoDescuento` | Reglas del cupón (vigencia, usos totales y por cliente, solo registrados, monto mínimo, categoría) con un código de error estable para cada caso, y el monto del descuento. |
 | `FU_Cupones_ProrrateoDescuento` | Reparte el descuento entre las líneas con el método del mayor residuo: la suma cuadra al centavo y ninguna línea recibe más que su importe. |
@@ -150,6 +151,16 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Errores con código estable**: `THROW` con un número por rango (validación, no encontrado, permiso, autenticación, conflicto) y un código como `CORREO_REGISTRADO`. La API traduce el rango a HTTP sin interpretar textos. Catálogo completo: [docs/errores.md](docs/errores.md).
 - **Parámetros más largos que la columna**: los textos se declaran con un carácter más que la columna; un valor demasiado largo se rechaza en lugar de guardarse recortado en silencio.
 - **Búsquedas**: filtros opcionales con SQL estático y `OPTION (RECOMPILE)`; los comodines de `LIKE` que escribe el usuario (`%`, `_`, `[`) se buscan como texto.
+- **Un solo conjunto de resultados por SP**: las listas hijas (los atributos de una categoría, los valores de un atributo) van en una columna JSON. La API lee una sola respuesta con la estructura ya anidada.
+- **Edición concurrente**: los formularios de edición envían la `VersionFila` (`ROWVERSION`) que cargaron; si otro usuario guardó cambios después, el SP responde `EDICION_CONCURRENTE` en lugar de sobrescribirlos.
+- **Bitácora sin ruido**: guardar los mismos valores, o repetir el estado actual, no es un error ni genera registro.
+
+### Catálogo
+
+- **Nada se elimina**: categorías, atributos y valores se desactivan. Un atributo o valor desactivado ya no se ofrece para variantes nuevas, pero lo conservan las que ya lo usan.
+- **Desactivar una categoría** oculta sus productos en la tienda sin cambiar el estado de cada uno; al reactivarla vuelven tal como estaban.
+- **Atributos por categoría**: no se puede quitar de una categoría un atributo que usa alguna de sus variantes. Quien cambia los atributos de una categoría y quien crea variantes en ella bloquean primero la categoría (orden `Categoria → Producto → Variante`), así la validación no compite con una variante que se está creando.
+- **Slug**: lo genera la API a partir del nombre (sin tildes, `ñ` → `n`) y el administrador puede editarlo; la base valida el formato y que no se repita.
 
 ### Autenticación y sesiones
 
@@ -173,9 +184,9 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - `tests/api`: conectado **como la API**, verifica que solo puede ejecutar SPs, que leer o escribir una tabla se rechaza y que puede enviar tipos tabla a un SP.
 - `tests/integridad`: intenta guardar datos inválidos (totales que no cuadran, doble pedido del mismo checkout, transición de estado no permitida, modificar el kardex...) y verifica que los rechace **la restricción o el trigger esperado**, identificado por su nombre.
 - `tests/calculos`: verifica los resultados de funciones y vistas con datos y fechas controlados (disponibilidad con reservas vencidas, cada error de cupón, prorrateo, IVA, conciliación del kardex, ventas netas). Incluye pruebas de propiedad: 2 500 descuentos prorrateados y 20 000 totales desglosados, sin un solo centavo de diferencia.
-- `tests/procedimientos`: el migrador prepara los datos y ejecuta cada SP **haciéndose pasar por la API**, así cada prueba demuestra que el SP funciona y que la API tiene permiso para usarlo. Cubre cada código de error y los casos de sesión con el tiempo simulado: rotación, dos pestañas renovando a la vez, reúso de un token robado, vencimiento por inactividad y por el máximo de 30 días, cierre de sesión y desactivación del usuario.
+- `tests/procedimientos`: el migrador prepara los datos y ejecuta cada SP **haciéndose pasar por la API**, así cada prueba demuestra que el SP funciona y que la API tiene permiso para usarlo. Cubre cada código de error y los casos de sesión con el tiempo simulado: rotación, dos pestañas renovando a la vez, reúso de un token robado, vencimiento por inactividad y por el máximo de 30 días, cierre de sesión y desactivación del usuario. En el catálogo: edición concurrente, atributos en uso, validación de slug y color, y bitácora.
 
-Todas ocurren en transacciones que se revierten: no dejan datos. En `tests/procedimientos` cada caso usa su propia transacción, porque un error dentro de un SP (`XACT_ABORT ON`) condena la transacción que lo envuelve.
+Todas ocurren en transacciones que se revierten: no dejan datos. En `tests/procedimientos` cada caso usa su propia transacción, porque un error dentro de un SP (`XACT_ABORT ON`) condena la transacción que lo envuelve. Por eso las fallas se cuentan en `SESSION_CONTEXT`, que no se revierte con la transacción del caso.
 
 ---
 

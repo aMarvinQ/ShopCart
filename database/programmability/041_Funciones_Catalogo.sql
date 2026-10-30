@@ -3,6 +3,7 @@
     FU_Catalogo_OrdenVariantes: orden lógico de las variantes de cada producto y variante de
     selección inicial (D13). De la selección inicial salen el precio único del listado y el
     filtro/orden por precio (D18).
+    FU_Catalogo_ValidarDatos: reglas de los textos del catálogo para los SPs de administración.
 */
 :on error exit
 SET NOCOUNT ON;
@@ -80,4 +81,51 @@ RETURN
         PosicionInicial,
         CAST(CASE WHEN PosicionInicial = 1 AND Activo = 1 THEN 1 ELSE 0 END AS BIT) AS EsSeleccionInicial
     FROM Posiciones;
+GO
+
+/*
+    FU_Catalogo_ValidarDatos: reglas de los textos del catálogo (categorías, productos,
+    atributos y sus valores) con su error estable. Mismo patrón que FU_Usuarios_ValidarDatos:
+    un parámetro NULL no se valida, el SP envía '' para los obligatorios y declara los textos
+    con un carácter más que la columna para detectar valores demasiado largos (la descripción
+    del producto ocupa NVARCHAR(4000), el máximo con tamaño: ahí el SP usa NVARCHAR(MAX)).
+    - Slug: minúsculas sin tildes, dígitos y guiones simples (mismo formato que el CHECK de la
+      tabla). Lo genera la API a partir del nombre; aquí solo se valida.
+    - CodigoHex: color #RRGGBB en mayúsculas (el SP las normaliza).
+*/
+CREATE OR ALTER FUNCTION dbo.FU_Catalogo_ValidarDatos
+(
+    @Nombre            NVARCHAR(201),
+    @MaximoNombre      INT,
+    @Slug              VARCHAR(221),
+    @MaximoSlug        INT,
+    @Descripcion       NVARCHAR(MAX),
+    @MaximoDescripcion INT,
+    @CodigoHex         VARCHAR(8)
+)
+RETURNS TABLE
+AS
+RETURN
+    SELECT TOP (1) v.NumeroError, v.MensajeError
+    FROM (VALUES
+        (1, 50003, CONCAT(N'NOMBRE_INVALIDO: el nombre es obligatorio (máximo ', @MaximoNombre, N' caracteres).'),
+            CASE WHEN @Nombre IS NOT NULL AND (LEN(@Nombre) = 0 OR LEN(@Nombre) > @MaximoNombre)
+                 THEN 1 ELSE 0 END),
+        (2, 50009, CONCAT(N'SLUG_INVALIDO: solo minúsculas sin tildes, dígitos y guiones simples (máximo ', @MaximoSlug, N' caracteres).'),
+            CASE WHEN @Slug IS NOT NULL
+                       AND (LEN(@Slug) = 0 OR LEN(@Slug) > @MaximoSlug
+                            OR @Slug COLLATE Latin1_General_100_BIN2 LIKE '%[^-a-z0-9]%'
+                            OR @Slug LIKE '-%' OR @Slug LIKE '%-' OR @Slug LIKE '%--%')
+                 THEN 1 ELSE 0 END),
+        (3, 50010, CONCAT(N'DESCRIPCION_INVALIDA: la descripción admite como máximo ', @MaximoDescripcion, N' caracteres.'),
+            CASE WHEN @Descripcion IS NOT NULL AND LEN(@Descripcion) > @MaximoDescripcion
+                 THEN 1 ELSE 0 END),
+        (4, 50011, N'COLOR_INVALIDO: el color debe tener el formato #RRGGBB.',
+            CASE WHEN @CodigoHex IS NOT NULL
+                       AND (LEN(@CodigoHex) <> 7
+                            OR @CodigoHex COLLATE Latin1_General_100_BIN2 NOT LIKE '#[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]')
+                 THEN 1 ELSE 0 END)
+    ) AS v (Prioridad, NumeroError, MensajeError, Falla)
+    WHERE v.Falla = 1
+    ORDER BY v.Prioridad;
 GO

@@ -178,6 +178,13 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Desactivar un usuario** revoca todas sus sesiones en la misma transacción; el access token ya emitido deja de servir al vencer (máximo 15 minutos). Cambiar la contraseña cierra las demás sesiones.
 - **Orden de bloqueo**: todos los SPs del módulo bloquean primero `Usuario` y después `RefreshToken`, así una desactivación simultánea a un inicio de sesión o una rotación no puede dejar una sesión viva ni producir interbloqueos.
 
+### Inventario
+
+- **Un solo camino para mover existencia**: cada cambio inserta su movimiento en el kardex (saldo anterior → nuevo, usuario, fecha, motivo y documento de origen) y actualiza la existencia en la misma transacción, con la variante bloqueada. Así la existencia siempre es la suma del kardex, y `SP_Inventario_Conciliar` lo demuestra: devuelve vacío cuando todo cuadra.
+- **Movimientos manuales**: operadores y administradores registran entradas por compra y ajustes (de entrada o salida) con varias variantes a la vez; los ajustes exigen motivo. Ventas, cancelaciones y devoluciones las registran sus propios procesos.
+- **Las unidades reservadas no se tocan**: una salida solo puede tomar lo disponible (existencia menos reservas vigentes), así quien está pagando no se queda sin la unidad que apartó. Verificado con dos sesiones simultáneas: la segunda espera el bloqueo de la primera y se rechaza con `STOCK_INSUFICIENTE`.
+- **Una venta fuera del sistema** se registra como ajuste de salida con su motivo, no desactivando la variante.
+
 ### Reglas de los reportes
 
 - **Venta** = pedidos cuyo estado cuenta como venta (desde `PAGADO`; excluye `CANCELADO`).
@@ -192,7 +199,7 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - `tests/api`: conectado **como la API**, verifica que solo puede ejecutar SPs, que leer o escribir una tabla se rechaza y que puede enviar tipos tabla a un SP.
 - `tests/integridad`: intenta guardar datos inválidos (totales que no cuadran, doble pedido del mismo checkout, transición de estado no permitida, modificar el kardex...) y verifica que los rechace **la restricción o el trigger esperado**, identificado por su nombre.
 - `tests/calculos`: verifica los resultados de funciones y vistas con datos y fechas controlados (disponibilidad con reservas vencidas, cada error de cupón, prorrateo, IVA, conciliación del kardex, ventas netas). Incluye pruebas de propiedad: 2 500 descuentos prorrateados y 20 000 totales desglosados, sin un solo centavo de diferencia.
-- `tests/procedimientos`: el migrador prepara los datos y ejecuta cada SP **haciéndose pasar por la API**, así cada prueba demuestra que el SP funciona y que la API tiene permiso para usarlo. Cubre cada código de error y los casos de sesión con el tiempo simulado: rotación, dos pestañas renovando a la vez, reúso de un token robado, vencimiento por inactividad y por el máximo de 30 días, cierre de sesión y desactivación del usuario. En el catálogo: edición concurrente, atributos en uso, validación de slug y color, alta de productos con kardex inicial, cada regla de variantes e imágenes, agotada frente a desactivada, bitácora, y en la tienda la visibilidad, el precio mostrado y cada filtro.
+- `tests/procedimientos`: el migrador prepara los datos y ejecuta cada SP **haciéndose pasar por la API**, así cada prueba demuestra que el SP funciona y que la API tiene permiso para usarlo. Cubre cada código de error y los casos de sesión con el tiempo simulado: rotación, dos pestañas renovando a la vez, reúso de un token robado, vencimiento por inactividad y por el máximo de 30 días, cierre de sesión y desactivación del usuario. En el catálogo: edición concurrente, atributos en uso, validación de slug y color, alta de productos con kardex inicial, cada regla de variantes e imágenes, agotada frente a desactivada, bitácora, y en la tienda la visibilidad, el precio mostrado y cada filtro. En inventario: entradas y ajustes, motivo obligatorio, reservas vigentes frente a vencidas, kardex y conciliación.
 
 Todas ocurren en transacciones que se revierten: no dejan datos. En `tests/procedimientos` cada caso usa su propia transacción, porque un error dentro de un SP (`XACT_ABORT ON`) condena la transacción que lo envuelve. Por eso las fallas se cuentan en `SESSION_CONTEXT`, que no se revierte con la transacción del caso.
 

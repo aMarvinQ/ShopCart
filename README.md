@@ -185,6 +185,15 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Las unidades reservadas no se tocan**: una salida solo puede tomar lo disponible (existencia menos reservas vigentes), así quien está pagando no se queda sin la unidad que apartó. Verificado con dos sesiones simultáneas: la segunda espera el bloqueo de la primera y se rechaza con `STOCK_INSUFICIENTE`.
 - **Una venta fuera del sistema** se registra como ajuste de salida con su motivo, no desactivando la variante.
 
+### Carrito
+
+- **De un cliente o de un invitado**: el invitado se identifica con un token aleatorio en una cookie `httpOnly`; la base solo guarda su SHA-256. Cada cliente tiene un solo carrito activo.
+- **Sin precios guardados**: el carrito muestra siempre el precio vigente; el precio se congela al iniciar el checkout.
+- **Tope por línea**: cada variante admite como máximo el menor entre el límite configurable `MAXIMO_UNIDADES_POR_LINEA` y lo disponible. Al agregar más, el error indica cuántas se pueden llevar. El carrito no reserva: la garantía de existencia llega en el checkout.
+- **Productos que dejan de venderse no desaparecen**: si una variante, su producto o su categoría se desactivan, o la existencia baja, la línea se marca (`NO_DISPONIBLE`, `AGOTADO`, `CANTIDAD_EXCEDIDA`) y no se puede pasar al checkout hasta corregirla.
+- **Fusión al iniciar sesión**: si el cliente no tiene carrito, el del invitado pasa a ser suyo; si tiene, se agregan las líneas del invitado y las variantes repetidas suman sus cantidades, topadas al límite y a lo disponible. Iniciar sesión nunca falla por el carrito.
+- **Peticiones simultáneas**: cada operación bloquea primero el carrito, así dos pestañas que agregan a la vez se ejecutan en orden y, si aún no hay carrito, se crea uno solo. Verificado con dos sesiones simultáneas.
+
 ### Reglas de los reportes
 
 - **Venta** = pedidos cuyo estado cuenta como venta (desde `PAGADO`; excluye `CANCELADO`).
@@ -199,7 +208,7 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - `tests/api`: conectado **como la API**, verifica que solo puede ejecutar SPs, que leer o escribir una tabla se rechaza y que puede enviar tipos tabla a un SP.
 - `tests/integridad`: intenta guardar datos inválidos (totales que no cuadran, doble pedido del mismo checkout, transición de estado no permitida, modificar el kardex...) y verifica que los rechace **la restricción o el trigger esperado**, identificado por su nombre.
 - `tests/calculos`: verifica los resultados de funciones y vistas con datos y fechas controlados (disponibilidad con reservas vencidas, cada error de cupón, prorrateo, IVA, conciliación del kardex, ventas netas). Incluye pruebas de propiedad: 2 500 descuentos prorrateados y 20 000 totales desglosados, sin un solo centavo de diferencia.
-- `tests/procedimientos`: el migrador prepara los datos y ejecuta cada SP **haciéndose pasar por la API**, así cada prueba demuestra que el SP funciona y que la API tiene permiso para usarlo. Cubre cada código de error y los casos de sesión con el tiempo simulado: rotación, dos pestañas renovando a la vez, reúso de un token robado, vencimiento por inactividad y por el máximo de 30 días, cierre de sesión y desactivación del usuario. En el catálogo: edición concurrente, atributos en uso, validación de slug y color, alta de productos con kardex inicial, cada regla de variantes e imágenes, agotada frente a desactivada, bitácora, y en la tienda la visibilidad, el precio mostrado y cada filtro. En inventario: entradas y ajustes, motivo obligatorio, reservas vigentes frente a vencidas, kardex y conciliación.
+- `tests/procedimientos`: el migrador prepara los datos y ejecuta cada SP **haciéndose pasar por la API**, así cada prueba demuestra que el SP funciona y que la API tiene permiso para usarlo. Cubre cada código de error y los casos de sesión con el tiempo simulado: rotación, dos pestañas renovando a la vez, reúso de un token robado, vencimiento por inactividad y por el máximo de 30 días, cierre de sesión y desactivación del usuario. En el catálogo: edición concurrente, atributos en uso, validación de slug y color, alta de productos con kardex inicial, cada regla de variantes e imágenes, agotada frente a desactivada, bitácora, y en la tienda la visibilidad, el precio mostrado y cada filtro. En inventario: entradas y ajustes, motivo obligatorio, reservas vigentes frente a vencidas, kardex y conciliación. En el carrito: cliente e invitado, tope por límite y por disponible, estado de cada línea cuando el catálogo cambia, y la fusión al iniciar sesión.
 
 Todas ocurren en transacciones que se revierten: no dejan datos. En `tests/procedimientos` cada caso usa su propia transacción, porque un error dentro de un SP (`XACT_ABORT ON`) condena la transacción que lo envuelve. Por eso las fallas se cuentan en `SESSION_CONTEXT`, que no se revierte con la transacción del caso.
 

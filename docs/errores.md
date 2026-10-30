@@ -48,8 +48,9 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50022 | `ORDENAMIENTO_INVALIDO` | Búsqueda ordenada por algo distinto de `RECIENTES`, `NOMBRE` o `PRECIO`, o con una dirección distinta de `ASC`/`DESC`. |
 | 50023 | `TIPO_MOVIMIENTO_INVALIDO` | El tipo de movimiento no existe o no se puede registrar a mano (ventas, cancelaciones, devoluciones e inventario inicial los generan sus procesos). |
 | 50024 | `MOTIVO_INVALIDO` | Falta el motivo en un tipo que lo exige (ajustes) o tiene más de 300 caracteres. |
-| 50025 | `CANTIDAD_INVALIDA` | Cantidad cero o negativa en un movimiento de inventario. |
+| 50025 | `CANTIDAD_INVALIDA` | Cantidad cero o negativa en un movimiento de inventario o en el carrito. |
 | 50026 | `RANGO_FECHAS_INVALIDO` | La fecha inicial no es anterior a la final. |
+| 50027 | `CANTIDAD_EXCEDE_LIMITE` | La cantidad de una variante en el carrito supera `MAXIMO_UNIDADES_POR_LINEA`. El mensaje indica el máximo y cuántas ya hay. |
 
 ## No encontrado (404)
 
@@ -62,6 +63,8 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50105 | `PRODUCTO_NO_ENCONTRADO` | El producto no existe (en la tienda: o no está visible, porque él o su categoría están inactivos o no tiene variantes activas). |
 | 50106 | `VARIANTE_NO_ENCONTRADA` | La variante no existe. |
 | 50107 | `IMAGEN_NO_ENCONTRADA` | La imagen no existe. |
+| 50108 | `CARRITO_NO_ENCONTRADO` | El cliente o invitado no tiene un carrito activo. |
+| 50109 | `ITEM_NO_ENCONTRADO` | Se cambia la cantidad de una variante que no está en el carrito. |
 
 ## Permiso (403)
 
@@ -107,7 +110,9 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51208 | `PRODUCTO_SIN_IMAGEN` | Activar un producto sin imágenes, o eliminar la última imagen de un producto activo. |
 | 51209 | `PRODUCTO_SIN_VARIANTES` | Activar un producto sin variantes activas, o desactivar la última variante activa de un producto activo. |
 | 51210 | `IMAGEN_REGISTRADA` | Una ruta de imagen está repetida en la lista o ya existe. |
-| 51301 | `STOCK_INSUFICIENTE` | Se intenta retirar más unidades de las disponibles: las reservadas por un checkout en curso no se pueden tomar. |
+| 51301 | `STOCK_INSUFICIENTE` | Se intenta retirar más unidades de las disponibles: las reservadas por un checkout en curso no se pueden tomar. En el carrito: la cantidad supera lo disponible (cuando es menor que el límite por línea); el mensaje indica cuántas hay. |
+| 51302 | `VARIANTE_NO_DISPONIBLE` | Se agrega al carrito, o se cambia la cantidad de, una variante que no está a la venta (ella, su producto o su categoría están desactivados). Solo se puede quitar. |
+| 51303 | `CARRITO_CERRADO` | El token de invitado pertenece a un carrito ya pagado o fusionado: la API debe emitir un token nuevo. |
 | 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
 | 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
 

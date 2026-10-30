@@ -1,11 +1,13 @@
 /*
     043_Funciones_Cupones.sql
-    Reglas de cupones (RF-05) en tres funciones:
+    Reglas de cupones (RF-05) en cinco funciones:
     - FU_Cupones_Validar: reglas del cupón y del cliente (vigencia, usos, solo registrados).
       Se revalida al aplicar el cupón, al iniciar el checkout y al pagar.
     - FU_Cupones_CalculoDescuento: reglas que dependen del carrito (monto mínimo, categoría)
       y el monto del descuento.
     - FU_Cupones_ProrrateoDescuento: reparte el descuento por línea, cuadrado al centavo.
+    - FU_Cupones_ValidarDatos: datos que captura el administrador al crear o editar.
+    - FU_Cupones_Situacion: vigente, programado, vencido, agotado o inactivo.
 
     Devuelven un CodigoError estable (NULL = válido) en lugar de lanzar errores: el SP decide
     el número de error y la API lo convierte en el mensaje para el cliente.
@@ -201,4 +203,67 @@ RETURN
         Elegible,
         CAST((CuotaEntera + CASE WHEN OrdenResiduo <= CentavosSobrantes THEN 1 ELSE 0 END) / 100 AS DECIMAL(12, 2)) AS DescuentoLinea
     FROM Repartidos;
+GO
+
+/*
+    Recibe los datos ya normalizados por el SP (código en mayúsculas, textos sin espacios en
+    los extremos). NULL cuenta como dato faltante. Devuelve el primer error en orden de
+    prioridad, o ninguna fila si los datos son válidos.
+    Un límite por cliente mayor que el límite total no tiene sentido y se rechaza.
+*/
+CREATE OR ALTER FUNCTION dbo.FU_Cupones_ValidarDatos
+(
+    @Codigo               VARCHAR(31),
+    @Descripcion          NVARCHAR(301),
+    @TipoDescuento        VARCHAR(13),
+    @Valor                DECIMAL(12, 2),
+    @MontoMinimo          DECIMAL(12, 2),
+    @FechaInicio          DATETIME2(3),
+    @FechaFin             DATETIME2(3),
+    @LimiteUsosTotal      INT,
+    @LimiteUsosPorCliente INT
+)
+RETURNS TABLE
+AS
+RETURN
+    SELECT TOP (1) e.NumeroError, e.MensajeError
+    FROM (VALUES
+        (1, CASE WHEN ISNULL(LEN(@Codigo), 0) NOT BETWEEN 3 AND 30
+                   OR @Codigo COLLATE Latin1_General_100_BIN2 LIKE '%[^-A-Z0-9_]%' THEN 50028 END,
+            N'CODIGO_CUPON_INVALIDO: el código lleva de 3 a 30 caracteres: letras sin tilde, dígitos, guion o guion bajo.'),
+        (2, CASE WHEN ISNULL(LEN(@Descripcion), 0) NOT BETWEEN 1 AND 300 THEN 50010 END,
+            N'DESCRIPCION_INVALIDA: la descripción del cupón es obligatoria y admite como máximo 300 caracteres.'),
+        (3, CASE WHEN ISNULL(@TipoDescuento, '') NOT IN ('PORCENTAJE', 'MONTO_FIJO') THEN 50029 END,
+            N'TIPO_DESCUENTO_INVALIDO: el tipo de descuento es PORCENTAJE o MONTO_FIJO.'),
+        (4, CASE WHEN @Valor IS NULL OR @Valor <= 0 OR (@TipoDescuento = 'PORCENTAJE' AND @Valor > 100) THEN 50030 END,
+            N'VALOR_DESCUENTO_INVALIDO: el valor debe ser mayor que cero y, si es porcentaje, como máximo 100.'),
+        (5, CASE WHEN @MontoMinimo IS NULL OR @MontoMinimo < 0 THEN 50031 END,
+            N'MONTO_MINIMO_INVALIDO: el monto mínimo no puede ser negativo.'),
+        (6, CASE WHEN @FechaInicio IS NULL OR @FechaFin IS NULL OR @FechaFin <= @FechaInicio THEN 50026 END,
+            N'RANGO_FECHAS_INVALIDO: se requieren las fechas de inicio y fin, y el inicio debe ser anterior al fin.'),
+        (7, CASE WHEN @LimiteUsosTotal <= 0 OR @LimiteUsosPorCliente <= 0 OR @LimiteUsosPorCliente > @LimiteUsosTotal THEN 50032 END,
+            N'LIMITE_USOS_INVALIDO: los límites de uso deben ser mayores que cero y el límite por cliente no puede superar al total.')
+    ) AS e (Prioridad, NumeroError, MensajeError)
+    WHERE e.NumeroError IS NOT NULL
+    ORDER BY e.Prioridad;
+GO
+
+/*
+    Situación de cada cupón en @Ahora, en este orden de prioridad: INACTIVO, PROGRAMADO (aún
+    no inicia), VENCIDO, AGOTADO (alcanzó su límite total) o VIGENTE.
+*/
+CREATE OR ALTER FUNCTION dbo.FU_Cupones_Situacion (@Ahora DATETIME2(3))
+RETURNS TABLE
+AS
+RETURN
+    SELECT
+        c.IDCupon,
+        CASE
+            WHEN c.Activo = 0                        THEN 'INACTIVO'
+            WHEN @Ahora < c.FechaInicio              THEN 'PROGRAMADO'
+            WHEN @Ahora >= c.FechaFin                THEN 'VENCIDO'
+            WHEN c.UsosActuales >= c.LimiteUsosTotal THEN 'AGOTADO'
+            ELSE 'VIGENTE'
+        END AS Situacion
+    FROM dbo.Cupon AS c;
 GO

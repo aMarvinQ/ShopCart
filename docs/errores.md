@@ -33,7 +33,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50007 | `PAGINACION_INVALIDA` | Página menor que 1 o tamaño de página fuera de 1–100. |
 | 50008 | `BUSQUEDA_INVALIDA` | Texto de búsqueda de más de 100 caracteres. |
 | 50009 | `SLUG_INVALIDO` | Slug vacío, con caracteres distintos de minúsculas sin tilde, dígitos y guiones, con guion al inicio, al final o doble, o más largo que el máximo (categoría: 120, producto: 220). |
-| 50010 | `DESCRIPCION_INVALIDA` | Descripción más larga que el máximo (categoría: 500, producto: 4000). |
+| 50010 | `DESCRIPCION_INVALIDA` | Descripción más larga que el máximo (categoría: 500, producto: 4000), o la de un cupón vacía o de más de 300. |
 | 50011 | `COLOR_INVALIDO` | Color que no tiene el formato `#RRGGBB`. |
 | 50012 | `ORDEN_INVALIDO` | Orden fuera de 0–255. |
 | 50013 | `VARIANTES_REQUERIDAS` | Un producto nuevo sin variantes. |
@@ -49,15 +49,21 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50023 | `TIPO_MOVIMIENTO_INVALIDO` | El tipo de movimiento no existe o no se puede registrar a mano (ventas, cancelaciones, devoluciones e inventario inicial los generan sus procesos). |
 | 50024 | `MOTIVO_INVALIDO` | Falta el motivo en un tipo que lo exige (ajustes) o tiene más de 300 caracteres. |
 | 50025 | `CANTIDAD_INVALIDA` | Cantidad cero o negativa en un movimiento de inventario o en el carrito. |
-| 50026 | `RANGO_FECHAS_INVALIDO` | La fecha inicial no es anterior a la final. |
+| 50026 | `RANGO_FECHAS_INVALIDO` | La fecha inicial no es anterior a la final, falta una de las dos (vigencia de un cupón) o se crea un cupón que ya venció. |
 | 50027 | `CANTIDAD_EXCEDE_LIMITE` | La cantidad de una variante en el carrito supera `MAXIMO_UNIDADES_POR_LINEA`. El mensaje indica el máximo y cuántas ya hay. |
+| 50028 | `CODIGO_CUPON_INVALIDO` | Código de cupón fuera de 3–30 caracteres o con algo distinto de letras sin tilde, dígitos, guion y guion bajo (se guarda en mayúsculas). |
+| 50029 | `TIPO_DESCUENTO_INVALIDO` | Tipo de descuento distinto de `PORCENTAJE` o `MONTO_FIJO`. |
+| 50030 | `VALOR_DESCUENTO_INVALIDO` | Valor del descuento vacío, cero o negativo, o porcentaje mayor que 100. |
+| 50031 | `MONTO_MINIMO_INVALIDO` | Monto mínimo de compra vacío o negativo. |
+| 50032 | `LIMITE_USOS_INVALIDO` | Límite de usos (total o por cliente) cero o negativo, o límite por cliente mayor que el total. |
+| 50033 | `SITUACION_INVALIDA` | Filtro de cupones distinto de `VIGENTE`, `PROGRAMADO`, `VENCIDO`, `AGOTADO` o `INACTIVO`. |
 
 ## No encontrado (404)
 
 | Número | Código | Cuándo |
 |---|---|---|
 | 50101 | `USUARIO_NO_ENCONTRADO` | El usuario no existe o está desactivado. |
-| 50102 | `CATEGORIA_NO_ENCONTRADA` | La categoría no existe (en la tienda: o está inactiva). |
+| 50102 | `CATEGORIA_NO_ENCONTRADA` | La categoría no existe (en la tienda y al asignarla a un cupón: o está inactiva). |
 | 50103 | `ATRIBUTO_NO_ENCONTRADO` | El atributo no existe, o está desactivado y se intenta usar en algo nuevo (asignarlo a una categoría, agregarle valores). |
 | 50104 | `VALOR_NO_ENCONTRADO` | El valor de atributo no existe. |
 | 50105 | `PRODUCTO_NO_ENCONTRADO` | El producto no existe (en la tienda: o no está visible, porque él o su categoría están inactivos o no tiene variantes activas). |
@@ -65,6 +71,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50107 | `IMAGEN_NO_ENCONTRADA` | La imagen no existe. |
 | 50108 | `CARRITO_NO_ENCONTRADO` | El cliente o invitado no tiene un carrito activo. |
 | 50109 | `ITEM_NO_ENCONTRADO` | Se cambia la cantidad de una variante que no está en el carrito. |
+| 50110 | `CUPON_NO_ENCONTRADO` | El cupón no existe (administración). |
 
 ## Permiso (403)
 
@@ -113,6 +120,18 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51301 | `STOCK_INSUFICIENTE` | Se intenta retirar más unidades de las disponibles: las reservadas por un checkout en curso no se pueden tomar. En el carrito: la cantidad supera lo disponible (cuando es menor que el límite por línea); el mensaje indica cuántas hay. |
 | 51302 | `VARIANTE_NO_DISPONIBLE` | Se agrega al carrito, o se cambia la cantidad de, una variante que no está a la venta (ella, su producto o su categoría están desactivados). Solo se puede quitar. |
 | 51303 | `CARRITO_CERRADO` | El token de invitado pertenece a un carrito ya pagado o fusionado: la API debe emitir un token nuevo. |
+| 51401 | `CUPON_INVALIDO` | Al aplicar un cupón: el código no existe o el cupón está desactivado (ambos responden igual para no revelar qué códigos existen). |
+| 51402 | `CUPON_NO_VIGENTE` | El cupón todavía no inicia. |
+| 51403 | `CUPON_VENCIDO` | El cupón ya venció. |
+| 51404 | `CUPON_AGOTADO` | El cupón alcanzó su límite total de usos. |
+| 51405 | `CUPON_SOLO_REGISTRADOS` | Un invitado intenta usar un cupón solo para clientes registrados. |
+| 51406 | `CUPON_LIMITE_CLIENTE` | El cliente ya usó el cupón las veces que permite (se cuenta por correo, sin pedidos cancelados). |
+| 51407 | `CUPON_MONTO_MINIMO` | El subtotal no alcanza el monto mínimo; el mensaje indica cuánto falta. |
+| 51408 | `CUPON_SIN_PRODUCTOS_ELEGIBLES` | El cupón es de una categoría y el carrito no tiene productos de ella. |
+| 51409 | `CARRITO_VACIO` | Se aplica un cupón a un carrito sin productos. |
+| 51410 | `CODIGO_REGISTRADO` | Ya existe un cupón con ese código (sin distinguir mayúsculas). |
+| 51411 | `CUPON_CON_USOS` | Se intenta cambiar el código, tipo, valor o categoría de un cupón que ya se usó: para otra promoción se crea otro cupón. |
+| 51412 | `LIMITE_MENOR_QUE_USOS` | El límite total de usos quedaría por debajo de los usos que el cupón ya tiene. |
 | 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
 | 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
 

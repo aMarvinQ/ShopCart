@@ -21,8 +21,8 @@ CREATE TABLE #Contexto (UsuarioApi SYSNAME NOT NULL);
 CREATE TABLE #Base (IDOperador INT, IDCliente INT, IDCliente2 INT, IDInactivo INT, IDA INT, IDB INT, IDC INT, IDD INT, IDE INT);
 
 -- Resultado de los SPs del carrito (todos devuelven la misma forma).
-CREATE TABLE #Carrito (IDCarrito INT, MaximoPorLinea INT, CantidadArticulos INT, Subtotal DECIMAL(12, 2), PuedeComprar BIT,
-                       Items NVARCHAR(MAX));
+CREATE TABLE #Carrito (IDCarrito INT, MaximoPorLinea INT, CantidadArticulos INT, Subtotal DECIMAL(12, 2), Descuento DECIMAL(12, 2),
+                       Total DECIMAL(12, 2), PuedeComprar BIT, Cupon NVARCHAR(MAX), Items NVARCHAR(MAX));
 GO
 
 /*

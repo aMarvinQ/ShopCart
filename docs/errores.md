@@ -26,16 +26,24 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 |---|---|---|
 | 50001 | `CORREO_INVALIDO` | Correo vacío, sin formato `x@y.z`, con espacios o de más de 254 caracteres. |
 | 50002 | `HASH_INVALIDO` | La contraseña no llegó como hash Argon2id (la base nunca recibe contraseñas en claro). |
-| 50003 | `NOMBRE_INVALIDO` | Nombre vacío o más largo que el máximo: nombre y apellido de usuario (100), categoría (100), atributo y valor de atributo (50). |
+| 50003 | `NOMBRE_INVALIDO` | Nombre vacío o más largo que el máximo: nombre y apellido de usuario (100), categoría (100), producto (200), atributo y valor de atributo (50). |
 | 50004 | `TELEFONO_INVALIDO` | Teléfono con caracteres distintos de dígitos, espacios, `+` y `-`, o de más de 20. |
 | 50005 | `ROL_INVALIDO` | Un usuario interno solo puede ser `OPERADOR` o `ADMIN`. |
 | 50006 | `PARAMETRO_REQUERIDO` | Falta un parámetro obligatorio o tiene un tamaño inválido (p. ej. un hash de token que no mide 32 bytes). |
 | 50007 | `PAGINACION_INVALIDA` | Página menor que 1 o tamaño de página fuera de 1–100. |
 | 50008 | `BUSQUEDA_INVALIDA` | Texto de búsqueda de más de 100 caracteres. |
-| 50009 | `SLUG_INVALIDO` | Slug vacío, con caracteres distintos de minúsculas sin tilde, dígitos y guiones, con guion al inicio, al final o doble, o más largo que el máximo (categoría: 120). |
-| 50010 | `DESCRIPCION_INVALIDA` | Descripción más larga que el máximo (categoría: 500). |
+| 50009 | `SLUG_INVALIDO` | Slug vacío, con caracteres distintos de minúsculas sin tilde, dígitos y guiones, con guion al inicio, al final o doble, o más largo que el máximo (categoría: 120, producto: 220). |
+| 50010 | `DESCRIPCION_INVALIDA` | Descripción más larga que el máximo (categoría: 500, producto: 4000). |
 | 50011 | `COLOR_INVALIDO` | Color que no tiene el formato `#RRGGBB`. |
 | 50012 | `ORDEN_INVALIDO` | Orden fuera de 0–255. |
+| 50013 | `VARIANTES_REQUERIDAS` | Un producto nuevo sin variantes. |
+| 50014 | `SKU_INVALIDO` | SKU con caracteres distintos de mayúsculas, dígitos y guiones, o fuera de 3–50 caracteres. |
+| 50015 | `PRECIO_INVALIDO` | Precio vacío, cero o negativo. |
+| 50016 | `EXISTENCIA_INVALIDA` | Existencia inicial negativa. |
+| 50017 | `ATRIBUTO_NO_PERMITIDO` | Una variante usa un atributo que la categoría del producto no tiene asignado, o que está desactivado. |
+| 50018 | `VALOR_INVALIDO` | Una variante usa un valor que no existe, que es de otro atributo (p. ej. "Rojo" como talla) o que está desactivado. |
+| 50019 | `COMBINACION_INCOMPLETA` | Las variantes del producto no usan todas los mismos atributos, hay más de una y alguna no tiene atributos, o hay atributos para una variante que no viene en la lista. |
+| 50020 | `IMAGEN_INVALIDA` | Ruta fuera de `/uploads/` o con `..`, texto alternativo vacío, imagen de un valor que ninguna variante del producto usa, imágenes por valor de dos atributos distintos, o más de una principal en un grupo. |
 
 ## No encontrado (404)
 
@@ -45,6 +53,9 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50102 | `CATEGORIA_NO_ENCONTRADA` | La categoría no existe. |
 | 50103 | `ATRIBUTO_NO_ENCONTRADO` | El atributo no existe, o está desactivado y se intenta usar en algo nuevo (asignarlo a una categoría, agregarle valores). |
 | 50104 | `VALOR_NO_ENCONTRADO` | El valor de atributo no existe. |
+| 50105 | `PRODUCTO_NO_ENCONTRADO` | El producto no existe. |
+| 50106 | `VARIANTE_NO_ENCONTRADA` | La variante no existe. |
+| 50107 | `IMAGEN_NO_ENCONTRADA` | La imagen no existe. |
 
 ## Permiso (403)
 
@@ -81,9 +92,15 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51102 | `USUARIO_SISTEMA_PROTEGIDO` | Intento de modificar el usuario de sistema. |
 | 51103 | `AUTODESACTIVACION_NO_PERMITIDA` | Un administrador intentó desactivarse a sí mismo. |
 | 51201 | `NOMBRE_REGISTRADO` | Ya existe una categoría o atributo con ese nombre, o el atributo ya tiene ese valor (sin distinguir mayúsculas ni tildes). |
-| 51202 | `SLUG_REGISTRADO` | Ya existe una categoría con ese slug. |
+| 51202 | `SLUG_REGISTRADO` | Ya existe una categoría o un producto con ese slug. |
 | 51203 | `EDICION_CONCURRENTE` | Otro usuario guardó cambios después de que se cargó el formulario (`VersionFila` distinta). |
 | 51204 | `ATRIBUTO_EN_USO` | Se intenta quitar de una categoría un atributo que usa alguna de sus variantes. |
+| 51205 | `SKU_REGISTRADO` | Un SKU está repetido en la lista o ya lo usa otra variante (sin distinguir mayúsculas). |
+| 51206 | `COMBINACION_REPETIDA` | Dos variantes del producto tienen la misma combinación de valores, aunque una esté desactivada (se reactiva en lugar de crearla de nuevo). |
+| 51207 | `CATEGORIA_INCOMPATIBLE` | Se cambia un producto a una categoría que no tiene los atributos que usan sus variantes. |
+| 51208 | `PRODUCTO_SIN_IMAGEN` | Activar un producto sin imágenes, o eliminar la última imagen de un producto activo. |
+| 51209 | `PRODUCTO_SIN_VARIANTES` | Activar un producto sin variantes activas, o desactivar la última variante activa de un producto activo. |
+| 51210 | `IMAGEN_REGISTRADA` | Una ruta de imagen está repetida en la lista o ya existe. |
 | 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
 | 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
 
@@ -91,4 +108,4 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 
 | Número | Código | Cuándo |
 |---|---|---|
-| 59001 | `CONFIGURACION_INCOMPLETA` | Falta un dato que carga la semilla (rol, parámetro de sesión). Indica un despliegue incompleto, no un error del usuario. |
+| 59001 | `CONFIGURACION_INCOMPLETA` | Falta un dato que carga la semilla (rol, parámetro de sesión, tipo de movimiento). Indica un despliegue incompleto, no un error del usuario. |

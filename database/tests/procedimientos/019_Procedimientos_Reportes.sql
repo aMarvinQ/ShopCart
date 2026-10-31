@@ -477,7 +477,7 @@ INSERT INTO @Errores (Descripcion, Esperado, Sql, Preparacion) VALUES
         N'DELETE FROM dbo.Parametro WHERE Clave = ''HORAS_CARRITO_ABANDONADO'';'),
     (N'Resumen: EXISTENCIA_MINIMA fuera de rango → CONFIGURACION_INCOMPLETA', 59001,
         N'EXEC dbo.SP_Reportes_Resumen @Admin, ''2001-03-01'', ''2001-03-31'';',
-        N'UPDATE dbo.Parametro SET Valor = N''1000'' WHERE Clave = ''EXISTENCIA_MINIMA'';'),
+        N'UPDATE dbo.Parametro SET Valor = N''1000'', ValorMinimo = NULL, ValorMaximo = NULL WHERE Clave = ''EXISTENCIA_MINIMA'';'),
     (N'Por periodo: agrupación por año → AGRUPACION_INVALIDA', 50039,
         N'INSERT INTO #Periodos EXEC dbo.SP_Reportes_VentasPorPeriodo @Admin, ''ANIO'', ''2001-03-01'', ''2001-03-31'';', NULL),
     (N'Por periodo: 367 días por día → RANGO_FECHAS_EXCEDIDO', 50040,

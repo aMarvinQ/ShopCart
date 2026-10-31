@@ -375,7 +375,7 @@ INSERT INTO @Errores (Descripcion, Esperado, Sql, Preparacion) VALUES
         N'DELETE FROM dbo.Parametro WHERE Clave = ''MAXIMO_UNIDADES_POR_LINEA'';'),
     (N'Obtener: MAXIMO_UNIDADES_POR_LINEA fuera de 1–999 → CONFIGURACION_INCOMPLETA', 59001,
         N'EXEC dbo.SP_Carrito_Obtener @IDUsuario = @Cliente;',
-        N'UPDATE dbo.Parametro SET Valor = N''1000'' WHERE Clave = ''MAXIMO_UNIDADES_POR_LINEA'';'),
+        N'UPDATE dbo.Parametro SET Valor = N''1000'', ValorMinimo = NULL, ValorMaximo = NULL WHERE Clave = ''MAXIMO_UNIDADES_POR_LINEA'';'),
     (N'Actualizar: sin carrito → CARRITO_NO_ENCONTRADO', 50108,
         N'EXEC dbo.SP_Carrito_ActualizarCantidad @IDUsuario = @Cliente, @IDVariante = @A, @Cantidad = 1;', NULL),
     (N'Actualizar: variante que no está en el carrito → ITEM_NO_ENCONTRADO', 50109,

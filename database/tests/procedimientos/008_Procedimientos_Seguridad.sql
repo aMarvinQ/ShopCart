@@ -290,8 +290,9 @@ SET @Texto = (SELECT CONCAT(s.CodigoRol, N'|', DATEDIFF(DAY, t.FechaCreacion, s.
 EXEC #Verificar N'Iniciar sesión: token de 7 días, sesión de 30, guardado vigente y UltimoAcceso actualizado',
      N'CLIENTE|7|30|guardado|acceso', @Texto;
 
--- Si la inactividad supera el máximo, el token no puede vencer después de la sesión.
-UPDATE dbo.Parametro SET Valor = N'40' WHERE Clave = 'SESION_DIAS_INACTIVIDAD';
+-- Si la inactividad supera el máximo, el token no puede vencer después de la sesión. Sin
+-- rango: simula una configuración que el SP de edición no permitiría.
+UPDATE dbo.Parametro SET Valor = N'40', ValorMinimo = NULL, ValorMaximo = NULL WHERE Clave = 'SESION_DIAS_INACTIVIDAD';
 DELETE FROM #Sesion;
 EXEC #IniciarSesion @IDCliente, @TokenB;
 SET @Texto = (SELECT CASE WHEN FechaExpiracion = FechaExpiracionSesion THEN N'sí' ELSE N'no' END FROM #Sesion);

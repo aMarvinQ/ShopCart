@@ -29,7 +29,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50003 | `NOMBRE_INVALIDO` | Nombre vacío o más largo que el máximo: nombre y apellido de usuario (100), categoría (100), producto (200), atributo y valor de atributo (50), destinatario de una dirección (150), método de envío (100). |
 | 50004 | `TELEFONO_INVALIDO` | Teléfono con caracteres distintos de dígitos, espacios, `+` y `-`, o de más de 20 (en una dirección de envío, además, de menos de 8). |
 | 50005 | `ROL_INVALIDO` | Un usuario interno solo puede ser `OPERADOR` o `ADMIN`. |
-| 50006 | `PARAMETRO_REQUERIDO` | Falta un parámetro obligatorio o tiene un tamaño inválido (p. ej. un hash de token que no mide 32 bytes). |
+| 50006 | `PARAMETRO_REQUERIDO` | Falta un parámetro obligatorio o tiene un tamaño inválido (p. ej. un hash de token que no mide 32 bytes). En la bitácora: se filtra por ID sin indicar la entidad. |
 | 50007 | `PAGINACION_INVALIDA` | Página menor que 1 o tamaño de página fuera de 1–100. |
 | 50008 | `BUSQUEDA_INVALIDA` | Texto de búsqueda de más de 100 caracteres. |
 | 50009 | `SLUG_INVALIDO` | Slug vacío, con caracteres distintos de minúsculas sin tilde, dígitos y guiones, con guion al inicio, al final o doble, o más largo que el máximo (categoría: 120, producto: 220). |
@@ -64,6 +64,9 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50038 | `ESTADO_PEDIDO_INVALIDO` | Estado de pedido inexistente, o un cambio de estado hacia `CANCELADO` o las devoluciones (tienen su propio proceso). |
 | 50039 | `AGRUPACION_INVALIDA` | Ventas por periodo con una agrupación distinta de `DIA`, `SEMANA` o `MES`. |
 | 50040 | `RANGO_FECHAS_EXCEDIDO` | Ventas por día de más de 366 días, o por semana o mes de 10 años o más. |
+| 50041 | `VALOR_PARAMETRO_INVALIDO` | Valor de un parámetro que no es del tipo declarado (entero, o decimal con hasta 6 decimales, solo dígitos, punto y signo menos), que está fuera de su rango, o un texto vacío o de más de 200 caracteres. El mensaje indica el rango. |
+| 50042 | `MODULO_INVALIDO` | Bitácora filtrada por un módulo distinto de `CATALOGO`, `INVENTARIO`, `CUPONES`, `PEDIDOS`, `USUARIOS`, `ENVIOS` o `CONFIGURACION`. |
+| 50043 | `ACCION_INVALIDA` | Bitácora filtrada por una acción distinta de `CREAR`, `MODIFICAR`, `ACTIVAR`, `DESACTIVAR` o `CAMBIAR_ESTADO`. |
 
 ## No encontrado (404)
 
@@ -86,6 +89,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50115 | `CHECKOUT_NO_ENCONTRADO` | El checkout no existe o es de otro cliente o invitado (responden igual). |
 | 50116 | `PEDIDO_NO_ENCONTRADO` | El pedido no existe, es de otro cliente o el token de seguimiento no corresponde a ninguno (responden igual). |
 | 50117 | `LINEA_PEDIDO_NO_ENCONTRADA` | Una línea a devolver no pertenece al pedido. |
+| 50118 | `PARAMETRO_NO_ENCONTRADO` | La clave del parámetro no existe (el administrador solo edita parámetros existentes). |
 
 ## Permiso (403)
 
@@ -154,6 +158,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51701 | `PEDIDO_NO_DEVOLVIBLE` | Se intenta devolver un pedido que no está `ENTREGADO` ni `DEVUELTO_PARCIAL` (no entregado aún, o ya devuelto por completo). |
 | 51702 | `PLAZO_DEVOLUCION_VENCIDO` | Pasaron más de `DIAS_DEVOLUCION` días desde la entrega. |
 | 51703 | `CANTIDAD_DEVOLUCION_EXCEDIDA` | Se devuelven más unidades de las vendidas menos las ya devueltas; el mensaje indica el máximo por SKU. |
+| 51801 | `PARAMETROS_INCOHERENTES` | El cambio dejaría `SESION_DIAS_MAXIMO` menor que `SESION_DIAS_INACTIVIDAD`; el mensaje indica ambos valores. |
 | 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
 | 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
 
@@ -161,4 +166,4 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 
 | Número | Código | Cuándo |
 |---|---|---|
-| 59001 | `CONFIGURACION_INCOMPLETA` | Falta un dato que carga la semilla (rol, parámetro, tipo de movimiento) o un parámetro está fuera de su rango. Indica un despliegue incompleto, no un error del usuario. |
+| 59001 | `CONFIGURACION_INCOMPLETA` | Falta un dato que carga la semilla (rol, parámetro, tipo de movimiento), un parámetro está fuera de su rango o se edita un parámetro numérico sin rango definido. Indica un despliegue incompleto, no un error del usuario. |

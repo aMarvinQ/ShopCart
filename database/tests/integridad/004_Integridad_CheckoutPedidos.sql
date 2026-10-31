@@ -433,6 +433,50 @@ BEGIN CATCH
     PRINT N'OK     ' + @Descripcion + N' rechazado por ' + @Esperado + N'.';
 END CATCH
 
+SELECT @Esperado = N'CK_Parametro_ValorEnRango', @Descripcion = N'Parámetro con valor fuera de su rango';
+BEGIN TRY
+    INSERT INTO dbo.Parametro (IDParametro, Clave, Valor, TipoDato, Descripcion, ValorMinimo, ValorMaximo)
+    VALUES (200, 'PRUEBA_RANGO', N'121', 'ENTERO', N'Parámetro de prueba', 1, 120);
+    SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
+END TRY
+BEGIN CATCH
+    IF ERROR_MESSAGE() NOT LIKE N'%' + @Esperado + N'%' THROW;
+    PRINT N'OK     ' + @Descripcion + N' rechazado por ' + @Esperado + N'.';
+END CATCH
+
+SELECT @Esperado = N'CK_Parametro_RangoValido', @Descripcion = N'Parámetro con mínimo mayor que el máximo';
+BEGIN TRY
+    INSERT INTO dbo.Parametro (IDParametro, Clave, Valor, TipoDato, Descripcion, ValorMinimo, ValorMaximo)
+    VALUES (200, 'PRUEBA_RANGO', N'5', 'ENTERO', N'Parámetro de prueba', 10, 1);
+    SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
+END TRY
+BEGIN CATCH
+    IF ERROR_MESSAGE() NOT LIKE N'%' + @Esperado + N'%' THROW;
+    PRINT N'OK     ' + @Descripcion + N' rechazado por ' + @Esperado + N'.';
+END CATCH
+
+SELECT @Esperado = N'CK_Parametro_RangoValido', @Descripcion = N'Parámetro con un solo límite';
+BEGIN TRY
+    INSERT INTO dbo.Parametro (IDParametro, Clave, Valor, TipoDato, Descripcion, ValorMinimo, ValorMaximo)
+    VALUES (200, 'PRUEBA_RANGO', N'5', 'ENTERO', N'Parámetro de prueba', 1, NULL);
+    SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
+END TRY
+BEGIN CATCH
+    IF ERROR_MESSAGE() NOT LIKE N'%' + @Esperado + N'%' THROW;
+    PRINT N'OK     ' + @Descripcion + N' rechazado por ' + @Esperado + N'.';
+END CATCH
+
+SELECT @Esperado = N'CK_Parametro_RangoValido', @Descripcion = N'Parámetro de texto con rango';
+BEGIN TRY
+    INSERT INTO dbo.Parametro (IDParametro, Clave, Valor, TipoDato, Descripcion, ValorMinimo, ValorMaximo)
+    VALUES (200, 'PRUEBA_RANGO', N'abc', 'TEXTO', N'Parámetro de prueba', 1, 10);
+    SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
+END TRY
+BEGIN CATCH
+    IF ERROR_MESSAGE() NOT LIKE N'%' + @Esperado + N'%' THROW;
+    PRINT N'OK     ' + @Descripcion + N' rechazado por ' + @Esperado + N'.';
+END CATCH
+
 SELECT @Esperado = N'CK_Bitacora_ValoresJSON', @Descripcion = N'Bitácora con valor que no es JSON';
 BEGIN TRY
     INSERT INTO dbo.Bitacora (IDUsuario, Modulo, Entidad, IDEntidad, Accion, ValorNuevo)

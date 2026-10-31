@@ -34,8 +34,9 @@ GO
 /*
     Un pedido con sus datos copiados (contacto, dirección, envío, cupón y montos), el estado
     actual y, en JSON: Lineas (con lo devuelto), Historial (cada cambio de estado con su
-    comentario; con @ConUsuarios = 1 también quién lo hizo) y Pagos (aprobado, rechazos y
-    reembolso; solo marca y últimos 4).
+    comentario; con @ConUsuarios = 1 también quién lo hizo), Pagos (aprobado, rechazos y
+    reembolso; solo marca y últimos 4) y Devoluciones (cada una con su motivo, el monto
+    reembolsado y sus líneas; con @ConUsuarios = 1 también quién la registró).
     - PuedeCancelar: el estado actual permite pasar a CANCELADO (operador).
     - PuedeCancelarCliente: además la transición la puede hacer el cliente y el pedido es de un
       cliente registrado (el invitado pide la cancelación a la tienda).
@@ -74,7 +75,20 @@ RETURN
                 FROM dbo.Pago AS pg
                 WHERE pg.IDCheckout = p.IDCheckout
                 ORDER BY pg.IDPago
-                FOR JSON PATH, INCLUDE_NULL_VALUES), N'[]') AS Pagos
+                FOR JSON PATH, INCLUDE_NULL_VALUES), N'[]') AS Pagos,
+        ISNULL((SELECT dv.IDDevolucion, dv.Fecha, dv.Motivo, dv.MontoReembolso,
+                       CASE WHEN @ConUsuarios = 1 THEN CONCAT(ud.Nombre, N' ', ud.Apellido) END AS Usuario,
+                       JSON_QUERY(ISNULL((SELECT pd.SKU, pd.NombreProducto, dd.Cantidad, dd.MontoReembolso, dd.Reingresa
+                                          FROM dbo.DevolucionDetalle AS dd
+                                          JOIN dbo.PedidoDetalle AS pd ON pd.IDPedidoDetalle = dd.IDPedidoDetalle
+                                          WHERE dd.IDDevolucion = dv.IDDevolucion
+                                          ORDER BY dd.IDPedidoDetalle
+                                          FOR JSON PATH), N'[]')) AS Lineas
+                FROM dbo.Devolucion AS dv
+                JOIN dbo.Usuario AS ud ON ud.IDUsuario = dv.IDUsuario
+                WHERE dv.IDPedido = p.IDPedido
+                ORDER BY dv.IDDevolucion
+                FOR JSON PATH), N'[]') AS Devoluciones
     FROM dbo.Pedido AS p
     JOIN dbo.EstadoPedido AS e ON e.IDEstadoPedido = p.IDEstadoPedido
     JOIN dbo.Departamento AS d ON d.IDDepartamento = p.IDDepartamento
@@ -96,6 +110,6 @@ RETURN
         d.IDPedido, d.NumeroPedido, d.FechaPedido, d.CodigoEstado, d.Estado, d.CorreoContacto, d.NombreContacto, d.TelefonoContacto,
         d.EnvioNombre, d.EnvioTelefono, d.EnvioLinea1, d.EnvioLinea2, d.EnvioMunicipio, d.Departamento, d.EnvioCodigoPostal,
         d.EnvioReferencias, d.NombreMetodoEnvio, d.CodigoCupon, d.Subtotal, d.Descuento, d.CostoEnvio, d.Total, d.BaseImponible,
-        d.IVA, d.PuedeCancelarCliente AS PuedeCancelar, d.Lineas, d.Historial, d.Pagos
+        d.IVA, d.PuedeCancelarCliente AS PuedeCancelar, d.Lineas, d.Historial, d.Pagos, d.Devoluciones
     FROM dbo.FU_Pedidos_Detalle(@IDPedido, 0) AS d;
 GO

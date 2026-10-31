@@ -47,8 +47,8 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50021 | `RANGO_PRECIO_INVALIDO` | Búsqueda con un precio negativo o con el mínimo mayor que el máximo. |
 | 50022 | `ORDENAMIENTO_INVALIDO` | Búsqueda ordenada por algo distinto de `RECIENTES`, `NOMBRE` o `PRECIO`, o con una dirección distinta de `ASC`/`DESC`. |
 | 50023 | `TIPO_MOVIMIENTO_INVALIDO` | El tipo de movimiento no existe o no se puede registrar a mano (ventas, cancelaciones, devoluciones e inventario inicial los generan sus procesos). |
-| 50024 | `MOTIVO_INVALIDO` | Falta el motivo en un tipo que lo exige (ajustes) o tiene más de 300 caracteres. En pedidos: cancelación de un operador sin motivo, o motivo o comentario de más de 500. |
-| 50025 | `CANTIDAD_INVALIDA` | Cantidad cero o negativa en un movimiento de inventario o en el carrito. |
+| 50024 | `MOTIVO_INVALIDO` | Falta el motivo en un tipo que lo exige (ajustes) o tiene más de 300 caracteres. En pedidos: cancelación de un operador o devolución sin motivo, o motivo o comentario de más de 500. |
+| 50025 | `CANTIDAD_INVALIDA` | Cantidad cero o negativa en un movimiento de inventario, en el carrito o en una devolución. |
 | 50026 | `RANGO_FECHAS_INVALIDO` | La fecha inicial no es anterior a la final, falta una de las dos (vigencia de un cupón) o se crea un cupón que ya venció. |
 | 50027 | `CANTIDAD_EXCEDE_LIMITE` | La cantidad de una variante en el carrito supera `MAXIMO_UNIDADES_POR_LINEA` (al agregar, o al iniciar el checkout si el límite bajó). El mensaje indica el máximo y cuántas ya hay. |
 | 50028 | `CODIGO_CUPON_INVALIDO` | Código de cupón fuera de 3–30 caracteres o con algo distinto de letras sin tilde, dígitos, guion y guion bajo (se guarda en mayúsculas). |
@@ -83,6 +83,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50114 | `METODO_ENVIO_NO_ENCONTRADO` | El método de envío no existe (en el checkout: o está inactivo). |
 | 50115 | `CHECKOUT_NO_ENCONTRADO` | El checkout no existe o es de otro cliente o invitado (responden igual). |
 | 50116 | `PEDIDO_NO_ENCONTRADO` | El pedido no existe, es de otro cliente o el token de seguimiento no corresponde a ninguno (responden igual). |
+| 50117 | `LINEA_PEDIDO_NO_ENCONTRADA` | Una línea a devolver no pertenece al pedido. |
 
 ## Permiso (403)
 
@@ -148,6 +149,9 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 51601 | `CHECKOUT_EXPIRADO` | Se paga un checkout vencido y ya no hay existencia para todas sus líneas; la API anula el cobro. |
 | 51602 | `CHECKOUT_YA_PAGADO` | Segundo cobro de un checkout ya pagado (otra referencia de pago); la API anula ese cobro. Repetir la misma referencia no es error: devuelve el pedido. |
 | 51603 | `CHECKOUT_NO_PAGABLE` | Se paga un checkout cancelado o cuyo carrito cambió; la API anula el cobro y el cliente inicia el pago de nuevo. |
+| 51701 | `PEDIDO_NO_DEVOLVIBLE` | Se intenta devolver un pedido que no está `ENTREGADO` ni `DEVUELTO_PARCIAL` (no entregado aún, o ya devuelto por completo). |
+| 51702 | `PLAZO_DEVOLUCION_VENCIDO` | Pasaron más de `DIAS_DEVOLUCION` días desde la entrega. |
+| 51703 | `CANTIDAD_DEVOLUCION_EXCEDIDA` | Se devuelven más unidades de las vendidas menos las ya devueltas; el mensaje indica el máximo por SKU. |
 | 51900 | `REGISTRO_INMUTABLE` | Intento de modificar o eliminar kardex, historial de precios, historial de estados o bitácora (trigger). |
 | 51901 | `ACTOR_REQUERIDO` | Cambio de estado de pedido sin usuario en `SESSION_CONTEXT` (trigger). |
 

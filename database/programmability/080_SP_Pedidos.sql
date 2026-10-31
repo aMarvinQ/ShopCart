@@ -38,7 +38,7 @@ BEGIN
     SELECT d.IDPedido, d.NumeroPedido, d.FechaPedido, d.CodigoEstado, d.Estado, d.IDUsuario, d.CorreoContacto, d.NombreContacto,
            d.TelefonoContacto, d.EnvioNombre, d.EnvioTelefono, d.EnvioLinea1, d.EnvioLinea2, d.EnvioMunicipio, d.IDDepartamento,
            d.Departamento, d.EnvioCodigoPostal, d.EnvioReferencias, d.NombreMetodoEnvio, d.CodigoCupon, d.Subtotal, d.Descuento,
-           d.CostoEnvio, d.Total, d.BaseImponible, d.IVA, d.PuedeCancelar, d.Lineas, d.Historial, d.Pagos
+           d.CostoEnvio, d.Total, d.BaseImponible, d.IVA, d.PuedeCancelar, d.Lineas, d.Historial, d.Pagos, d.Devoluciones
     FROM dbo.FU_Pedidos_Detalle(@IDPedido, 1) AS d;
 END;
 GO

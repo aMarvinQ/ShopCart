@@ -40,14 +40,15 @@ CREATE TABLE #PedidoCliente (IDPedido INT, NumeroPedido VARCHAR(15), FechaPedido
                              Departamento NVARCHAR(50), EnvioCodigoPostal VARCHAR(5), EnvioReferencias NVARCHAR(300), NombreMetodoEnvio NVARCHAR(100),
                              CodigoCupon VARCHAR(30), Subtotal DECIMAL(12, 2), Descuento DECIMAL(12, 2), CostoEnvio DECIMAL(12, 2),
                              Total DECIMAL(12, 2), BaseImponible DECIMAL(12, 2), IVA DECIMAL(12, 2), PuedeCancelar BIT,
-                             Lineas NVARCHAR(MAX), Historial NVARCHAR(MAX), Pagos NVARCHAR(MAX));
+                             Lineas NVARCHAR(MAX), Historial NVARCHAR(MAX), Pagos NVARCHAR(MAX), Devoluciones NVARCHAR(MAX));
 CREATE TABLE #PedidoPanel (IDPedido INT, NumeroPedido VARCHAR(15), FechaPedido DATETIME2(3), CodigoEstado VARCHAR(20), Estado NVARCHAR(50),
                            IDUsuario INT, CorreoContacto NVARCHAR(254), NombreContacto NVARCHAR(200), TelefonoContacto VARCHAR(20),
                            EnvioNombre NVARCHAR(150), EnvioTelefono VARCHAR(20), EnvioLinea1 NVARCHAR(200), EnvioLinea2 NVARCHAR(200),
                            EnvioMunicipio NVARCHAR(100), IDDepartamento TINYINT, Departamento NVARCHAR(50), EnvioCodigoPostal VARCHAR(5),
                            EnvioReferencias NVARCHAR(300), NombreMetodoEnvio NVARCHAR(100), CodigoCupon VARCHAR(30), Subtotal DECIMAL(12, 2),
                            Descuento DECIMAL(12, 2), CostoEnvio DECIMAL(12, 2), Total DECIMAL(12, 2), BaseImponible DECIMAL(12, 2),
-                           IVA DECIMAL(12, 2), PuedeCancelar BIT, Lineas NVARCHAR(MAX), Historial NVARCHAR(MAX), Pagos NVARCHAR(MAX));
+                           IVA DECIMAL(12, 2), PuedeCancelar BIT, Lineas NVARCHAR(MAX), Historial NVARCHAR(MAX), Pagos NVARCHAR(MAX),
+                           Devoluciones NVARCHAR(MAX));
 CREATE TABLE #ListaPanel (IDPedido INT, NumeroPedido VARCHAR(15), FechaPedido DATETIME2(3), CodigoEstado VARCHAR(20), Estado NVARCHAR(50),
                           NombreContacto NVARCHAR(200), CorreoContacto NVARCHAR(254), EsInvitado BIT, Total DECIMAL(12, 2), Articulos INT);
 CREATE TABLE #ListaCliente (IDPedido INT, NumeroPedido VARCHAR(15), FechaPedido DATETIME2(3), CodigoEstado VARCHAR(20), Estado NVARCHAR(50),

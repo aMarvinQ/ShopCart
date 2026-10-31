@@ -262,6 +262,12 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Edición segura**: control de edición concurrente; el valor se normaliza (`"0.150"` → `0.15`) y no se aceptan formatos ambiguos (vacío, notación científica, más de 6 decimales); la vigencia de una sesión no puede quedar menor que su inactividad; guardar el mismo valor no genera registro. Cada cambio queda en la bitácora (módulo `CONFIGURACION`).
 - **Efecto inmediato**: las funciones leen el parámetro en cada consulta, sin caché ni reinicio. Un IVA nuevo aplica a los pedidos siguientes; los anteriores conservan el suyo.
 
+### Datos semilla
+
+- **`100_Seed_Catalogos.sql`**: datos fijos de los que depende el código, con IDs fijos: roles, estados del pedido y sus transiciones, tipos de movimiento de inventario, los 9 parámetros con su rango y el usuario de sistema.
+- **Departamentos y municipios**: los 22 departamentos y 340 municipios con su código INE (`IDMunicipio` = código `DDMM`, p. ej. 0108 Mixco = 108), tomados del catálogo oficial publicado por CONRED en su servicio geográfico. Los nombres se conservan como en la fuente.
+- **Verificación**: `tests/integridad/021_Integridad_Semillas.sql` comprueba que la semilla esté completa (estados, transiciones, cada parámetro dentro de su rango y legible por su función, municipios por departamento, usuario de sistema).
+
 ### Pruebas de la base de datos
 
 `.\deploy.ps1 -Probar` ejecuta cuatro suites:

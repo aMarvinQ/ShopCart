@@ -49,7 +49,7 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50023 | `TIPO_MOVIMIENTO_INVALIDO` | El tipo de movimiento no existe o no se puede registrar a mano (ventas, cancelaciones, devoluciones e inventario inicial los generan sus procesos). |
 | 50024 | `MOTIVO_INVALIDO` | Falta el motivo en un tipo que lo exige (ajustes) o tiene más de 300 caracteres. En pedidos: cancelación de un operador o devolución sin motivo, o motivo o comentario de más de 500. |
 | 50025 | `CANTIDAD_INVALIDA` | Cantidad cero o negativa en un movimiento de inventario, en el carrito o en una devolución. |
-| 50026 | `RANGO_FECHAS_INVALIDO` | La fecha inicial no es anterior a la final, falta una de las dos (vigencia de un cupón) o se crea un cupón que ya venció. |
+| 50026 | `RANGO_FECHAS_INVALIDO` | La fecha inicial no es anterior a la final, falta una de las dos (vigencia de un cupón) o se crea un cupón que ya venció. En reportes: falta una fecha, la inicial es posterior a la final o alguna está fuera de 2000–2099. |
 | 50027 | `CANTIDAD_EXCEDE_LIMITE` | La cantidad de una variante en el carrito supera `MAXIMO_UNIDADES_POR_LINEA` (al agregar, o al iniciar el checkout si el límite bajó). El mensaje indica el máximo y cuántas ya hay. |
 | 50028 | `CODIGO_CUPON_INVALIDO` | Código de cupón fuera de 3–30 caracteres o con algo distinto de letras sin tilde, dígitos, guion y guion bajo (se guarda en mayúsculas). |
 | 50029 | `TIPO_DESCUENTO_INVALIDO` | Tipo de descuento distinto de `PORCENTAJE` o `MONTO_FIJO`. |
@@ -62,6 +62,8 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 | 50036 | `DIAS_ESTIMADOS_INVALIDOS` | Días estimados de entrega fuera de 0–255 o mínimo mayor que el máximo. |
 | 50037 | `DATOS_PAGO_INVALIDOS` | Pago sin marca válida (`VISA`, `MASTERCARD`, `AMEX`), sin 4 dígitos finales o sin referencia (máximo 64); un rechazo, además, sin motivo (máximo 40), y uno aprobado sin código de autorización (máximo 20). |
 | 50038 | `ESTADO_PEDIDO_INVALIDO` | Estado de pedido inexistente, o un cambio de estado hacia `CANCELADO` o las devoluciones (tienen su propio proceso). |
+| 50039 | `AGRUPACION_INVALIDA` | Ventas por periodo con una agrupación distinta de `DIA`, `SEMANA` o `MES`. |
+| 50040 | `RANGO_FECHAS_EXCEDIDO` | Ventas por día de más de 366 días, o por semana o mes de 10 años o más. |
 
 ## No encontrado (404)
 
@@ -159,4 +161,4 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 
 | Número | Código | Cuándo |
 |---|---|---|
-| 59001 | `CONFIGURACION_INCOMPLETA` | Falta un dato que carga la semilla (rol, parámetro de sesión, tipo de movimiento). Indica un despliegue incompleto, no un error del usuario. |
+| 59001 | `CONFIGURACION_INCOMPLETA` | Falta un dato que carga la semilla (rol, parámetro, tipo de movimiento) o un parámetro está fuera de su rango. Indica un despliegue incompleto, no un error del usuario. |

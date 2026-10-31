@@ -130,6 +130,8 @@ GO
     Existencias por variante para el panel: física, reservada y disponible. Filtros opcionales
     (NULL = sin filtro): búsqueda por producto o SKU (comodines escapados), categoría y solo
     agotadas (disponible = 0). Incluye variantes y productos inactivos, con su estado.
+    @SoloExistenciaBaja: solo variantes en venta (variante y producto activos) con
+    disponibilidad igual o menor que EXISTENCIA_MINIMA (el mismo criterio del dashboard).
 */
 CREATE OR ALTER PROCEDURE dbo.SP_Inventario_ListarExistencias
     @IDUsuarioAccion INT,
@@ -138,12 +140,13 @@ CREATE OR ALTER PROCEDURE dbo.SP_Inventario_ListarExistencias
     @SoloAgotadas    BIT = 0,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @SoloExistenciaBaja BIT = 0
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @Ahora DATETIME2(3) = SYSUTCDATETIME(), @Patron NVARCHAR(410);
+    DECLARE @Ahora DATETIME2(3) = SYSUTCDATETIME(), @Patron NVARCHAR(410), @ExistenciaMinima INT;
 
     IF NOT EXISTS (SELECT 1 FROM dbo.FU_Seguridad_Actor(@IDUsuarioAccion) AS a WHERE a.CodigoRol IN ('OPERADOR', 'ADMIN'))
         THROW 50201, N'PERMISO_DENEGADO: solo un operador o administrador activo puede consultar el inventario.', 1;
@@ -158,6 +161,13 @@ BEGIN
     SET @Patron = N'%' + REPLACE(REPLACE(REPLACE(REPLACE(@Busqueda,
                       N'\', N'\\'), N'%', N'\%'), N'_', N'\_'), N'[', N'\[') + N'%';
 
+    IF @SoloExistenciaBaja = 1
+    BEGIN
+        SET @ExistenciaMinima = (SELECT c.ExistenciaMinima FROM dbo.FU_Reportes_Configuracion() AS c);
+        IF @ExistenciaMinima IS NULL
+            THROW 59001, N'CONFIGURACION_INCOMPLETA: falta EXISTENCIA_MINIMA (0–999).', 1;
+    END;
+
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.Variante AS v
     JOIN dbo.Producto AS p ON p.IDProducto = v.IDProducto
@@ -165,6 +175,7 @@ BEGIN
     WHERE (@IDCategoria IS NULL OR p.IDCategoria = @IDCategoria)
       AND (@Patron IS NULL OR p.Nombre LIKE @Patron ESCAPE N'\' OR v.SKU LIKE @Patron ESCAPE N'\')
       AND (@SoloAgotadas = 0 OR d.Disponible = 0)
+      AND (@ExistenciaMinima IS NULL OR (v.Activo = 1 AND p.Activo = 1 AND d.Disponible <= @ExistenciaMinima))
     OPTION (RECOMPILE);
 
     SELECT v.IDVariante, v.SKU, p.IDProducto, p.Nombre AS Producto,
@@ -181,6 +192,7 @@ BEGIN
     WHERE (@IDCategoria IS NULL OR p.IDCategoria = @IDCategoria)
       AND (@Patron IS NULL OR p.Nombre LIKE @Patron ESCAPE N'\' OR v.SKU LIKE @Patron ESCAPE N'\')
       AND (@SoloAgotadas = 0 OR d.Disponible = 0)
+      AND (@ExistenciaMinima IS NULL OR (v.Activo = 1 AND p.Activo = 1 AND d.Disponible <= @ExistenciaMinima))
     ORDER BY p.Nombre, v.SKU
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY

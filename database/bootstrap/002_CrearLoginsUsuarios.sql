@@ -5,6 +5,9 @@
     Las contraseñas llegan como variables de sqlcmd desde variables de entorno que
     define deploy.ps1 a partir de database/.env; nunca se escriben en el repositorio.
 
+    Los logins son del servidor y sirven para cualquier base de ShopCart (la principal y la de
+    pruebas de la API); los usuarios y el rol se crean en la base de SHOPCART_BASE_DATOS.
+
     Principio de mínimo privilegio:
     - shopcart_migrator: db_owner solo de ShopCart. Crea y modifica objetos. No es sysadmin.
     - shopcart_api (RolApi): solo EXECUTE sobre el esquema dbo. No puede leer ni escribir
@@ -18,7 +21,7 @@ GO
 IF SUSER_ID(N'shopcart_migrator') IS NULL
     CREATE LOGIN shopcart_migrator
         WITH PASSWORD = N'$(SHOPCART_MIGRATOR_PASSWORD)',
-             DEFAULT_DATABASE = ShopCart,
+             DEFAULT_DATABASE = [$(SHOPCART_BASE_DATOS)],
              CHECK_POLICY = ON,
              CHECK_EXPIRATION = OFF;
 ELSE
@@ -30,7 +33,7 @@ GO
 IF SUSER_ID(N'shopcart_api') IS NULL
     CREATE LOGIN shopcart_api
         WITH PASSWORD = N'$(SHOPCART_API_PASSWORD)',
-             DEFAULT_DATABASE = ShopCart,
+             DEFAULT_DATABASE = [$(SHOPCART_BASE_DATOS)],
              CHECK_POLICY = ON,
              CHECK_EXPIRATION = OFF;
 ELSE
@@ -39,7 +42,7 @@ ELSE
 ALTER LOGIN shopcart_api ENABLE;
 GO
 
-USE ShopCart;
+USE [$(SHOPCART_BASE_DATOS)];
 GO
 
 -- Migrador: dueño de la base de datos (no del servidor)

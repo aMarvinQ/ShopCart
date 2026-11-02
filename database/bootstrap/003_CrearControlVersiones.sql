@@ -8,7 +8,7 @@
 */
 :on error exit
 SET NOCOUNT ON;
-USE ShopCart;
+USE [$(SHOPCART_BASE_DATOS)];
 GO
 
 IF SCHEMA_ID(N'Despliegue') IS NULL

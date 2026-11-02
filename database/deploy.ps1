@@ -19,11 +19,14 @@
     Las contraseñas se leen de database/.env y se entregan a sqlcmd por variables de
     entorno del proceso (nunca por línea de comandos ni en archivos versionados).
 
+.PARAMETER BaseDatos
+    Base de datos destino (por defecto ShopCart). Permite crear una base idéntica para las
+    pruebas de la API, p. ej. ShopCart_Pruebas. Debe ser ShopCart o empezar con ShopCart_.
 .PARAMETER Bootstrap
     Ejecuta solo la fase bootstrap con la cuenta Windows actual.
 
 .PARAMETER Recrear
-    Junto con -Bootstrap: elimina la base de datos ShopCart antes de crearla. Solo desarrollo.
+    Junto con -Bootstrap: elimina la base de datos antes de crearla. Solo desarrollo.
 
 .PARAMETER Probar
     Ejecuta tests/api conectado como shopcart_api (permisos) y tests/integridad conectado
@@ -34,9 +37,13 @@
     .\deploy.ps1 -Bootstrap
     .\deploy.ps1
     .\deploy.ps1 -Probar
+    .\deploy.ps1 -Bootstrap -BaseDatos ShopCart_Pruebas
+    .\deploy.ps1 -BaseDatos ShopCart_Pruebas
 #>
 [CmdletBinding()]
 param(
+    [ValidatePattern('^ShopCart(_[A-Za-z0-9]+)?$')]
+    [string]$BaseDatos = 'ShopCart',
     [switch]$Bootstrap,
     [switch]$Recrear,
     [switch]$Probar
@@ -45,7 +52,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$NombreBaseDatos    = 'ShopCart'
+$NombreBaseDatos    = $BaseDatos
 $ServidorPorDefecto = 'localhost,14330'
 $PatronNombreScript = '^\d{3}_[A-Za-z0-9_]+\.sql$'
 $LoginMigrador      = 'shopcart_migrator'
@@ -278,6 +285,8 @@ if ($configuracion.ContainsKey('SQL_SERVER') -and -not [string]::IsNullOrWhiteSp
     $servidor = $configuracion['SQL_SERVER']
 }
 Write-Host "Servidor: $servidor · Base de datos: $NombreBaseDatos"
+# Nombre de la base para los scripts de bootstrap (variable de sqlcmd); el patrón del parámetro lo valida.
+$env:SHOPCART_BASE_DATOS = $NombreBaseDatos
 
 if ($Bootstrap) {
     $contrasenaMigrador = Get-ValorRequerido -Configuracion $configuracion -Clave 'SHOPCART_MIGRATOR_PASSWORD'

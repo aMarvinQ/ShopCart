@@ -26,6 +26,8 @@ ShopCart/
     herramientas/      Utilidades de desarrollo (no forman parte del despliegue)
     deploy.ps1         Despliegue reproducible de la base de datos
   api/
+    src/               Código de la API: config, db (SPs), errores, middlewares y módulos por capas
+    tests/             Pruebas unitarias y de integración (vitest + supertest, contra ShopCart_Pruebas)
     seed-assets/       Imágenes de los productos de la semilla (versionadas)
     scripts/           Utilidades (genera y verifica las imágenes de la semilla)
   docs/                Diagrama entidad-relación, catálogo de errores y diagramas de apoyo
@@ -60,6 +62,30 @@ Copy-Item .env.example .env
 ```
 
 Para reconstruir la base desde cero en desarrollo: `.\deploy.ps1 -Bootstrap -Recrear` y luego `.\deploy.ps1`.
+
+Base para las pruebas de la API (idéntica, con sus semillas; las pruebas crean datos y nunca usan `ShopCart`):
+
+```powershell
+.\deploy.ps1 -Bootstrap -BaseDatos ShopCart_Pruebas
+.\deploy.ps1 -BaseDatos ShopCart_Pruebas
+```
+
+### 2. API
+
+Requiere Node.js 24.
+
+```powershell
+cd api
+Copy-Item .env.example .env
+# Edita .env: DB_CONTRASENA (la de shopcart_api) y JWT_SECRETO (el comando para generarlo está en el archivo)
+
+npm install
+npm run setup     # copia las imágenes de la semilla a uploads/
+npm run dev       # http://localhost:3000/api/v1/health
+npm test          # pruebas unitarias y de integración (contra ShopCart_Pruebas)
+```
+
+Otros comandos: `npm run build` y `npm start` (producción), `npm run lint`, `npm run typecheck`.
 
 ---
 
@@ -149,6 +175,16 @@ Son piezas internas que usan los stored procedures; la API no puede leerlas dire
 | Tipos `TT_*` | Envían varias filas a un SP en una sola llamada y una sola transacción (p. ej. un producto con todas sus variantes). Son parámetros tipados, no texto: no admiten inyección SQL. |
 
 Todas las funciones son *inline*: el optimizador las integra a la consulta que las usa, así un filtro por variante o producto llega hasta el índice. Las consultas de los reportes se verificaron con volumen (20 000 pedidos): consultar un periodo lee solo las filas de ese periodo gracias a índices cubrientes.
+
+### Arquitectura de la API
+
+- **Express 5 + TypeScript strict**, por capas en cada módulo: rutas → controlador (solo HTTP) → servicio (reglas) → repositorio (único que llama a la base).
+- **Sin SQL en el backend**: `ejecutarProcedimiento()` solo acepta nombres de una lista blanca tipada de stored procedures y parámetros con su tipo SQL. ESLint prohíbe `.query()`/`.batch()` y que algo fuera de `src/db/` importe el driver. La API se conecta como `shopcart_api`, que solo puede ejecutar SPs.
+- **Configuración validada al arrancar** (zod): si falta un valor o es inválido, la API no levanta y dice cuál, sin mostrarlo. Las pruebas se niegan a correr sobre la base `ShopCart`.
+- **Respuestas uniformes**: `{ data, meta? }` y `{ error: { codigo, mensaje, detalles?, requestId } }`. El código es el estable de [docs/errores.md](docs/errores.md); el estado HTTP sale del rango del número de error del SP. Un error no previsto responde 500 sin detalle.
+- **Trazabilidad**: cada petición tiene un `X-Request-Id` que viaja en la respuesta, en el error y en el log. Los logs (pino) ocultan contraseñas, tokens, cookies y datos de tarjeta.
+- **Seguridad base**: helmet, CORS solo para los orígenes configurados, cuerpo JSON de hasta 100 KB, imágenes servidas sin listado de carpetas ni archivos ocultos.
+- **Resiliencia**: la API arranca aunque la base no esté lista (se conecta en la primera petición y `/health` responde 503 mientras tanto); ante un deadlock reintenta una vez solo las operaciones seguras de repetir; al detenerse (Ctrl+C o SIGTERM) termina las peticiones en curso y cierra el pool. En Windows, el modo de desarrollo (`npm run dev`, con recarga automática) termina el proceso sin ese cierre ordenado; con `npm start` sí ocurre.
 
 ### Stored procedures: contrato con la API
 

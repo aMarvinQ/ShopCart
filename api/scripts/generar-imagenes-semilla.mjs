@@ -38,7 +38,8 @@ async function leerSemilla() {
 
     // (N'playera-basica', N'/uploads/productos/playera-basica--negro.jpg', N'Playera básica negro', N'Negro')
     const imagenes = [];
-    const fila = /\(N'([a-z0-9-]+)', N'(\/uploads\/productos\/[a-z0-9-]+\.jpg)', N'((?:[^']|'')+)', (?:N'((?:[^']|'')+)'|NULL)\)/g;
+    const fila =
+        /\(N'([a-z0-9-]+)', N'(\/uploads\/productos\/[a-z0-9-]+\.jpg)', N'((?:[^']|'')+)', (?:N'((?:[^']|'')+)'|NULL)\)/g;
     for (const [, producto, ruta, alternativo, color] of sql.matchAll(fila)) {
         imagenes.push({
             producto,
@@ -101,12 +102,16 @@ async function escribirLista(imagenes) {
     const lista = path.join(carpeta, 'LISTA.md');
     const fuentes = new Map();
     if (existsSync(lista)) {
-        for (const [, archivo, fuente] of (await readFile(lista, 'utf8')).matchAll(/^\| `([^`]+)` \|[^|]*\|[^|]*\| *(.*?) *\|$/gm)) {
+        for (const [, archivo, fuente] of (await readFile(lista, 'utf8')).matchAll(
+            /^\| `([^`]+)` \|[^|]*\|[^|]*\| *(.*?) *\|$/gm,
+        )) {
             fuentes.set(archivo, fuente);
         }
     }
-    const filas = imagenes.map((i) =>
-        `| \`${i.archivo}\` | ${i.alternativo.replace(i.color ? ` ${i.color.toLowerCase()}` : '', '')} | ${i.color ?? 'General'} |${fuentes.get(i.archivo) ? ` ${fuentes.get(i.archivo)} ` : ' '}|`);
+    const filas = imagenes.map(
+        (i) =>
+            `| \`${i.archivo}\` | ${i.alternativo.replace(i.color ? ` ${i.color.toLowerCase()}` : '', '')} | ${i.color ?? 'General'} |${fuentes.get(i.archivo) ? ` ${fuentes.get(i.archivo)} ` : ' '}|`,
+    );
     const contenido = `# Imágenes de la semilla de demostración
 
 Generada por \`npm run imagenes:semilla\` a partir de \`database/seed/110_Seed_Demo.sql\`.
@@ -132,7 +137,9 @@ async function generar(imagenes) {
         creadas += 1;
     }
     await escribirLista(imagenes);
-    console.log(`${imagenes.length} imágenes en la semilla: ${creadas} creadas, ${imagenes.length - creadas} ya existían.`);
+    console.log(
+        `${imagenes.length} imágenes en la semilla: ${creadas} creadas, ${imagenes.length - creadas} ya existían.`,
+    );
 }
 
 async function verificar(imagenes) {

@@ -10,17 +10,31 @@ La API decide el estado HTTP según el **rango del número** y devuelve el códi
 
 | Rango | Significado | HTTP |
 |---|---|---|
-| 50001–50099 | Validación de datos | 400 / 422 |
+| 50001–50099 | Validación de datos | 422 |
 | 50100–50199 | No encontrado | 404 |
 | 50200–50299 | Permiso o propiedad | 403 |
 | 50300–50399 | Autenticación | 401 |
 | 51000–51999 | Conflicto de negocio | 409 |
 | 59000–59999 | Configuración incompleta de la base (error del servidor, no del usuario) | 500 |
-| 2627 / 2601 | Violación de `UNIQUE` no prevista por el SP | 409 |
-| 547 | Violación de `CHECK` o llave foránea no prevista por el SP | 409 / 422 |
-| Otros | Error interno: no se expone el detalle | 500 |
+| 2627 / 2601 | Violación de `UNIQUE` no prevista por el SP (`REGISTRO_DUPLICADO`) | 409 |
+| 547 | Violación de `CHECK` o llave foránea no prevista por el SP (`RESTRICCION_VIOLADA`) | 409 |
+| 1205 | Deadlock, tras un reintento en las operaciones que lo admiten (`SERVICIO_OCUPADO`) | 503 |
+| Otros | Error interno (`ERROR_INTERNO`): no se expone el detalle | 500 |
 
-## Validación (400 / 422)
+## Errores propios de la API
+
+No vienen de un SP: los genera la API antes de llegar a la base o al no poder usarla.
+
+| HTTP | Código | Cuándo |
+|---|---|---|
+| 400 | `SOLICITUD_INVALIDA` | Los datos de la petición no cumplen su esquema; `detalles` indica cada campo y su problema. |
+| 400 | `JSON_INVALIDO` | El cuerpo no es un JSON válido. |
+| 404 | `RUTA_NO_ENCONTRADA` | La ruta o el método no existen. |
+| 413 | `CUERPO_DEMASIADO_GRANDE` | El cuerpo supera 100 KB. |
+| 500 | `CONFIGURACION_INCOMPLETA` | Un SP lanzó un 59xxx; el detalle queda en el log, no en la respuesta. |
+| 503 | `BASE_DATOS_NO_DISPONIBLE` | No hay conexión con la base de datos. |
+
+## Validación (422)
 
 | Número | Código | Cuándo |
 |---|---|---|

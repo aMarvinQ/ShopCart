@@ -337,6 +337,59 @@ describe('concurrencia (plan 6.1 y 6.2)', () => {
     });
 });
 
+describe('el último uso de un cupón (RF-05)', () => {
+    it('dos clientes pagan a la vez con un cupón de un solo uso: uno lo obtiene, al otro se le anula el cobro', async () => {
+        const producto = await crearProducto(app, admin, { existencia: 5, precio: 100 });
+        const codigo = `UNO${String(Date.now()).slice(-8)}`;
+        const dia = 24 * 60 * 60 * 1000;
+        const cupon = datos<{ idCupon: number }>(
+            await request(app)
+                .post('/api/v1/cupones')
+                .set('Authorization', `Bearer ${admin.token}`)
+                .send({
+                    codigo,
+                    descripcion: 'Un solo uso',
+                    tipoDescuento: 'MONTO_FIJO',
+                    valor: 10,
+                    fechaInicio: new Date(Date.now() - dia).toISOString(),
+                    fechaFin: new Date(Date.now() + dia).toISOString(),
+                    limiteUsosTotal: 1,
+                })
+                .expect(201),
+        );
+        // Aplicar no consume usos: los dos llegan al pago con el cupón.
+        const checkouts = await Promise.all(
+            [1, 2].map(async () => {
+                const { sesion, idDireccion } = await clienteConDireccion();
+                const credencial: Credencial = { token: sesion.token };
+                await agregar(app, credencial, producto.idVariante, 1);
+                await comoComprador(request(app).post('/api/v1/carrito/cupon'), credencial)
+                    .send({ codigo })
+                    .expect(200);
+                const checkout = datos<Checkout>(
+                    await iniciarCheckout(app, credencial, { idMetodoEnvio: 1, idDireccion }).expect(201),
+                );
+                return { credencial, idCheckout: checkout.idCheckout };
+            }),
+        );
+        const anulacionesAntes = anulaciones();
+        const pagos = await Promise.all(checkouts.map((c) => pagar(app, c.credencial, c.idCheckout)));
+        expect(pagos.map((p) => p.status).sort()).toEqual([201, 409]);
+        const rechazado = pagos.find((p) => p.status === 409);
+        expect(rechazado && codigoError(rechazado)).toBe('CUPON_AGOTADO');
+        expect(anulaciones()).toBe(anulacionesAntes + 1); // el cobro del perdedor no queda en firme
+
+        const final = datos<{ usosActuales: number; situacion: string }>(
+            await request(app)
+                .get(`/api/v1/cupones/${String(cupon.idCupon)}`)
+                .set('Authorization', `Bearer ${admin.token}`)
+                .expect(200),
+        );
+        expect(final).toMatchObject({ usosActuales: 1, situacion: 'AGOTADO' });
+        expect(await existenciaDe(app, admin, producto)).toBe(4); // solo una venta salió del inventario
+    });
+});
+
 describe('quién puede comprar', () => {
     it('el personal no inicia checkouts (403) y un invitado sin carrito recibe 404', async () => {
         await iniciarCheckout(app, { token: admin.token }, { idMetodoEnvio: 1, idDireccion: 1 }).expect(403);

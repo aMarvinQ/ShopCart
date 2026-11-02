@@ -26,7 +26,8 @@ ShopCart/
     herramientas/      Utilidades de desarrollo (no forman parte del despliegue)
     deploy.ps1         Despliegue reproducible de la base de datos
   api/
-    src/               Código de la API: config, db (SPs), errores, middlewares y módulos por capas
+    src/               Código de la API: config, db (SPs), errores, middlewares, módulos por capas,
+                       pagos (pasarela), exportes (Excel/PDF), caché, avisos y tareas programadas
     tests/             Pruebas unitarias y de integración (vitest + supertest, contra ShopCart_Pruebas)
     seed-assets/       Imágenes de los productos de la semilla (versionadas)
     scripts/           Utilidades (genera y verifica las imágenes de la semilla)
@@ -93,6 +94,129 @@ Otros comandos: `npm run build` y `npm start` (producción), `npm run lint`, `np
 
 ---
 
+## Documentación de la API
+
+Base: `/api/v1`. Respuestas `{ data, meta? }`; errores `{ error: { codigo, mensaje, detalles?, requestId } }` con los códigos de [docs/errores.md](docs/errores.md). Cada endpoint, con sus datos de entrada, respuestas y errores, está en **Swagger** (`/api/v1/docs`: 98 operaciones en 79 rutas); el documento OpenAPI se genera de los mismos esquemas que validan las peticiones.
+
+| Módulo | Endpoints | Quién |
+|---|---|---|
+| Autenticación | `POST /auth/registro`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/cambiar-contrasena` | Público (cambiar contraseña: con sesión) |
+| Perfil y usuarios | `GET/PUT /perfil`; `GET/POST /usuarios`, `PATCH /usuarios/{id}/estado` | Con sesión; usuarios: ADMIN |
+| Direcciones | `GET/POST /direcciones`, `PUT/DELETE /direcciones/{id}`, `POST /direcciones/{id}/predeterminada` | CLIENTE (solo las suyas) |
+| Tienda | `GET /tienda/categorias`, `/tienda/productos` (búsqueda, filtros, orden y paginación), `/tienda/productos/{slug}`, `/tienda/metodos-envio`, `/departamentos`, `/departamentos/{id}/municipios` | Público |
+| Catálogo | Categorías, atributos y valores, productos con variantes, precios con historial e imágenes (29 endpoints) | ADMIN |
+| Inventario | `GET /inventario/existencias`, `/inventario/kardex`, `/inventario/conciliacion`; `POST /inventario/movimientos` | OPERADOR, ADMIN |
+| Carrito | `GET/DELETE /carrito`, `POST /carrito/items`, `PUT/DELETE /carrito/items/{idVariante}`, `POST/DELETE /carrito/cupon` | Cliente (token) o invitado (cookie) |
+| Cupones y envíos | CRUD de `/cupones` y de `/metodos-envio` con activar/desactivar | ADMIN |
+| Checkout y pago | `POST /checkout` (cabecera `Idempotency-Key`), `GET /checkout/{id}`, `POST /checkout/{id}/pago` | Cliente o invitado |
+| Mis pedidos | `GET /mis-pedidos`, `/mis-pedidos/{id}`, `POST /mis-pedidos/{id}/cancelar` | CLIENTE (solo los suyos) |
+| Seguimiento | `GET /seguimiento/{token}` | Público, con el enlace secreto |
+| Pedidos y devoluciones | `GET /pedidos` (filtros por estado, fechas, número, correo o nombre), `GET /pedidos/{id}`, `PATCH /pedidos/{id}/estado`, `POST /pedidos/{id}/cancelar`, `POST /pedidos/{id}/devoluciones`, `GET /devoluciones` | OPERADOR, ADMIN |
+| Reportes | `GET /reportes/resumen`, `/reportes/ventas`, `/reportes/ventas-por-categoria`, `/reportes/top-productos`, `/reportes/carritos-abandonados`, exportaciones Excel/PDF y `/reportes/tiempo-real` (SSE) | ADMIN |
+| Bitácora y parámetros | `GET /bitacora`, `/bitacora/exportar`; `GET /parametros`, `GET/PUT /parametros/{clave}` | ADMIN |
+| Sistema | `GET /health` | Público |
+
+---
+
+## Cumplimiento del enunciado
+
+Cada criterio de aceptación, dónde se garantiza y qué prueba automática lo demuestra. Las pruebas SQL están en `database/tests/` (`.\deploy.ps1 -Probar`) y las de la API en `api/tests/` (`npm test`).
+
+| Requisito | Criterio | Cómo se garantiza | Prueba |
+|---|---|---|---|
+| RF-01 | Contraseñas con hash seguro | Argon2id en la API; `CK_Usuario_Contrasena` solo acepta hashes | `008_Procedimientos_Seguridad.sql`, `auth.test.ts` |
+| RF-01 | JWT corto y refresh con rotación | Access token de 15 min; refresh opaco que se rota en cada uso, con detección de reúso | `008_Procedimientos_Seguridad.sql`, `auth.test.ts` |
+| RF-01 | Cambiar un ID en la URL o el body no expone datos de otro cliente | El usuario sale del token; cada SP filtra por él y un recurso ajeno responde igual que uno inexistente (404) | `direcciones.test.ts`, `carrito.test.ts`, `checkout.test.ts`, `pedidos.test.ts` |
+| RF-01 | Token vencido → 401; sin permiso → 403 | Middleware de autenticación y roles; los SPs vuelven a validar el rol | `auth.test.ts`, `usuarios.test.ts`, `pedidos.test.ts` |
+| RF-01 | Desactivar sin borrar | `Usuario.Activo`; desactivar revoca sus sesiones en la misma transacción | `008_Procedimientos_Seguridad.sql`, `usuarios.test.ts` |
+| RF-02 | SKU único, atributos, precio y existencia por variante | `UQ_Variante_SKU`, FK compuesta de atributos, `CK_Variante_*` | `002_Integridad_SeguridadCatalogo.sql`, `catalogo.test.ts` |
+| RF-02 | Búsqueda, filtros, orden y paginación | `SP_Tienda_*` con SQL estático y `OPTION (RECOMPILE)` | `011_Procedimientos_CatalogoTienda.sql`, `tienda.test.ts` |
+| RF-02 | Productos con ventas no se eliminan | No existe un SP de borrado: se desactivan y dejan de mostrarse | `010_Procedimientos_CatalogoProductos.sql`, `catalogo.test.ts` |
+| RF-02 | Un cambio de precio no altera pedidos ya realizados | El checkout y el pedido copian el precio (`PedidoDetalle.PrecioUnitario`) | `pedidos.test.ts` (se cambia el precio después de comprar) |
+| RF-03 | Cada movimiento en el kardex con usuario, fecha, motivo y cantidad | La existencia solo cambia junto con su movimiento, en la misma transacción; kardex inmutable | `012_Procedimientos_Inventario.sql`, `inventario.test.ts` |
+| RF-03 | Disponible = física − reservadas | `FU_Inventario_Disponibilidad` (reservas activas no vencidas) | `006_Calculos_Funciones.sql` |
+| RF-03 | La existencia coincide con la suma del kardex | `CK_MovimientoInventario_SaldoCuadra`; `SP_Inventario_Conciliar` devuelve vacío si todo cuadra | `021_Integridad_Semillas.sql`, `inventario.test.ts` |
+| RF-03 | Ajuste manual con motivo y sin dejar negativo | Validación del SP + `CK_MovimientoInventario_SaldoNoNegativo` | `012_Procedimientos_Inventario.sql`, `inventario.test.ts` |
+| RF-04 | No agregar más que lo disponible | Tope por línea = menor entre el límite y lo disponible (409 `STOCK_INSUFICIENTE`) | `013_Procedimientos_Carrito.sql`, `carrito.test.ts` |
+| RF-04 | Total sin errores de redondeo | `DECIMAL(12,2)` en la base; los montos se calculan en SQL, nunca en `float` | `006_Calculos_Funciones.sql`, `carrito.test.ts` |
+| RF-05 | Porcentaje o monto fijo, vigencia, mínimo, límites total y por cliente, categoría, uno por pedido | `Cupon` con sus `CHECK`; un solo cupón por carrito | `014_Procedimientos_Cupones.sql`, `cuponesEnvios.test.ts` |
+| RF-05 | Vencido, agotado o bajo el mínimo: mensaje específico | Un código por motivo (`CUPON_VENCIDO`, `CUPON_AGOTADO`, `CUPON_MONTO_MINIMO` con lo que falta…) | `014_Procedimientos_Cupones.sql`, `carrito.test.ts` |
+| RF-05 | Límite total respetado con usos simultáneos | Al pagar, el cupón se bloquea (`UPDLOCK`) y se revalida; `CK_Cupon_UsosDentroDelLimite` | `checkout.test.ts` (dos clientes pagan a la vez por el último uso) |
+| RF-05 | El descuento nunca deja el total bajo cero | El descuento se topa al subtotal elegible; `CK_Pedido_Totales` | `006_Calculos_Funciones.sql` |
+| RF-06 | Dirección de la libreta o nueva | El checkout recibe una dirección del cliente (FK compuesta) o los datos del invitado | `016_Procedimientos_Checkout.sql`, `checkout.test.ts` |
+| RF-06 | Reserva de 15 minutos al iniciar el pago | `ReservaInventario` con vencimiento (`MINUTOS_RESERVA`) | `016_Procedimientos_Checkout.sql`, `checkout.test.ts` |
+| RF-06 | Última unidad: solo uno la obtiene, sin sobreventa | Variantes bloqueadas en orden (`UPDLOCK`) antes de verificar lo disponible; 409 con el SKU y lo disponible | `checkout.test.ts` (dos compradores simultáneos) |
+| RF-06 | Doble clic o reintento: un pedido y un cobro | `Idempotency-Key`, `UQ_Pedido_IDCheckout`, `UQ_Pago_CheckoutAprobado`; pasarela idempotente y anulación del cobro sobrante | `017_Procedimientos_Pedidos.sql`, `checkout.test.ts` (doble clic y dos tarjetas a la vez) |
+| RF-06 | Creación atómica del pedido | Un SP en una transacción con `XACT_ABORT ON`: pedido, detalle, kardex, cupón, reservas, carrito | `017_Procedimientos_Pedidos.sql` |
+| RF-07 | Ciclo de vida documentado | [Diagrama de estados](#ciclo-de-vida-del-pedido) y tabla `TransicionEstadoPedido` | `pedidos.test.ts` |
+| RF-07 | Transición no permitida rechazada en backend y base | La API valida el estado; el SP y el trigger `TR_Pedido_Estado` la rechazan | `004_Integridad_CheckoutPedidos.sql`, `pedidos.test.ts` |
+| RF-07 | Cancelar o devolver reintegra existencia por kardex y se refleja en reportes | Kardex `CANCELACION` y `DEVOLUCION`; los reportes excluyen cancelados y descuentan devoluciones | `017`/`018_Procedimientos_*.sql`, `pedidos.test.ts`, `019_Procedimientos_Reportes.sql` |
+| RF-07 | Una reserva vencida libera existencia sin intervención | Deja de restar disponible al vencer; un proceso de la API la marca liberada cada minuto | `016_Procedimientos_Checkout.sql`, `pedidos.test.ts` |
+| RF-07 | No devolver más de lo vendido por línea | Validación del SP + `CK_PedidoDetalle_CantidadDevuelta` | `018_Procedimientos_Devoluciones.sql`, `pedidos.test.ts` |
+| RF-07 | Cada cambio de estado con usuario, fecha, estado anterior y nuevo | Trigger `TR_Pedido_Estado` → `PedidoHistorialEstado` (inmutable) | `004_Integridad_CheckoutPedidos.sql`, `pedidos.test.ts` |
+| RF-08 | Ventas por día, semana y mes (quetzales y pedidos); por categoría; top 10 | `SP_Reportes_*` sobre una sola definición de venta | `019_Procedimientos_Reportes.sql`, `reportes.test.ts` |
+| RF-08 | Pedidos con filtros por estado, cliente y fechas, paginados en el servidor | `SP_Pedidos_Listar` (cliente: correo o nombre) | `017_Procedimientos_Pedidos.sql`, `pedidos.test.ts` |
+| RF-08 | Solo pedidos que cuentan como venta, sin cancelados y descontando devoluciones | `VW_Reportes_VentasNetas` y `VW_Reportes_LineasVendidas` | `007_Calculos_Vistas.sql`, `reportes.test.ts` (los totales cuadran) |
+| RF-09 | Creación, modificación y desactivación registradas con usuario, fecha, entidad, acción y valores | Cada SP escribe en `Bitacora` en la misma transacción | `020_Procedimientos_BitacoraConfiguracion.sql`, `reportes.test.ts` |
+| RF-09 | Consultable por administradores con filtro por módulo | `SP_Bitacora_Listar` con filtros y paginación | `020_Procedimientos_BitacoraConfiguracion.sql`, `reportes.test.ts` |
+| RF-09 | La bitácora no se puede modificar ni eliminar | Trigger `TR_Bitacora_Inmutable` (ni siquiera el dueño de la base puede alterarla) y la API sin permisos sobre tablas | `004_Integridad_CheckoutPedidos.sql`, `001_PermisosApi.sql` |
+
+| Requisito no funcional | Cómo se cumple |
+|---|---|
+| Rendimiento (< 1 s con la semilla) | Ver [Rendimiento](#rendimiento): todos los listados y reportes por debajo de 0,15 s |
+| Seguridad | Sin credenciales en el repositorio (revisado en todo el historial); CORS por lista de orígenes; helmet; Argon2id; la API solo puede ejecutar SPs; límite de intentos en autenticación y pago |
+| Integridad | Cada operación en una transacción; las reglas críticas también en la base (ver [docs/ER.md](docs/ER.md#reglas-que-garantiza-la-base-de-datos)) |
+| Concurrencia | Bloqueos en orden fijo, índices únicos e idempotencia; probado con peticiones simultáneas reales |
+| Mantenibilidad | TypeScript strict, ESLint y Prettier; capas rutas → controlador → servicio → repositorio; sin lógica de negocio en controladores |
+| Portabilidad | Verificado clonando el repositorio en una carpeta limpia y siguiendo solo este README: despliegue, `-Probar`, `npm ci`, `npm start` y `npm test` |
+
+Extras opcionales implementados: dashboard en tiempo real con Server-Sent Events, exportación a Excel y PDF, caché de reportes con invalidación y límite de intentos en autenticación (y en el pago).
+
+---
+
+## Supuestos y decisiones abiertas
+
+Donde el enunciado no especifica, esta es la postura tomada y su razón:
+
+- **Compra como invitado**: se permite comprar sin cuenta (más ventas). El invitado se identifica con una cookie y sigue su pedido con un enlace secreto; no se busca por número de pedido porque es secuencial y adivinable. Si después se registra con el mismo correo, sus pedidos no se vinculan solos: sin verificar el correo, cualquiera podría registrarse con uno ajeno.
+- **Pago simulado**: una pasarela simulada detrás de una interfaz reemplazable, con validación real de la tarjeta (Luhn, marca, vencimiento, CVV) y tarjetas de prueba que fallan a propósito. Nunca se guardan datos sensibles de la tarjeta.
+- **"Mientras no haya sido despachado"**: el cliente cancela mientras el pedido está `PAGADO`; el operador también en `EN_PREPARACION`, con motivo. Desde `ENVIADO` ya no se cancela: se devuelve.
+- **Devoluciones**: las registra el operador, solo de pedidos entregados y dentro de 30 días (`DIAS_DEVOLUCION`). Se reembolsa lo pagado por cada línea (con su parte del descuento); el envío no se reembolsa y el uso del cupón no se revierte. Cada línea indica si la unidad vuelve al inventario o está dañada.
+- **Cancelación**: devuelve la existencia, revierte el uso del cupón y registra el reembolso del pago.
+- **Reportes**: "pedido completado" = pedido pagado que cuenta como venta (`PAGADO` en adelante, sin `CANCELADO` ni `DEVUELTO`). La devolución se descuenta en la fecha del pedido, así "ventas de octubre" es lo que realmente se vendió en octubre. El envío no es venta. Los días son de Guatemala (UTC−6).
+- **IVA**: los precios incluyen IVA del 12 %; cada pedido guarda su base imponible e IVA (`TASA_IVA` configurable; un cambio aplica a pedidos nuevos).
+- **Cupones**: uno por carrito; el límite por cliente se cuenta por correo (aplica también a invitados); un cupón puede ser "solo clientes registrados". Después del primer uso su código, tipo, valor y categoría quedan fijos.
+- **Carrito**: no reserva existencia (la reserva empieza en el checkout); muestra siempre el precio vigente y el precio se congela al iniciar el checkout. Máximo 10 unidades por línea (`MAXIMO_UNIDADES_POR_LINEA`).
+- **Carrito abandonado**: con productos y sin actividad en 24 horas (`HORAS_CARRITO_ABANDONADO`), calculado al consultar (no es un estado guardado).
+- **Roles**: el personal (operador y administrador) no compra; el operador gestiona pedidos, devoluciones e inventario; el administrador, además, catálogo, precios, cupones, usuarios, parámetros, reportes y bitácora.
+- **Direcciones**: hasta 5 por cliente, con municipios del catálogo oficial (el departamento se deduce del municipio).
+- **Parámetros configurables** sin reiniciar: reserva, carrito abandonado, IVA, sesiones, unidades por línea, plazo de devolución y existencia mínima, cada uno con su rango permitido.
+
+---
+
+## Rendimiento
+
+Medido sobre una base recién desplegada con la semilla de demostración (28 productos, 92 variantes, ~300 pedidos), con la API en modo producción; primera consulta, sin caché. Tres mediciones por endpoint, en segundos.
+
+| Endpoint | Tiempos (s) |
+|---|---|
+| Tienda: listado de productos | 0,037 · 0,035 · 0,035 |
+| Tienda: búsqueda con filtros y orden | 0,051 · 0,029 · 0,035 |
+| Tienda: detalle de producto | 0,049 · 0,012 · 0,026 |
+| Panel: pedidos (con y sin filtros) | 0,020 – 0,043 |
+| Mis pedidos (cliente) | 0,005 – 0,022 |
+| Existencias y kardex | 0,025 – 0,055 |
+| Reporte: resumen de un año | 0,094 (después, del caché: 0,002) |
+| Reporte: ventas por día de un año (366 periodos) | 0,095 |
+| Reporte: por categoría y top 10 | 0,041 – 0,043 |
+| Reporte: carritos abandonados | 0,042 – 0,061 |
+| Bitácora | 0,020 – 0,029 |
+| Exportar reporte de ventas a Excel / PDF | 0,056 – 0,147 |
+
+Con 60 000 carritos (prueba de volumen de la base) el dashboard responde en ~0,4 s y los carritos abandonados en ~0,25 s.
+
+---
+
 ## Decisiones técnicas
 
 ### Seguridad de la base de datos: mínimo privilegio
@@ -150,6 +274,14 @@ stateDiagram-v2
     CANCELADO --> [*]
     DEVUELTO --> [*]
 ```
+
+| Transición | Quién | Efecto |
+|---|---|---|
+| — → `PAGADO` | Comprador (pago aprobado) | En una transacción: pago, pedido y líneas con precios congelados, kardex `SALIDA_VENTA`, reservas consumidas, uso del cupón, carrito convertido |
+| `PAGADO` → `EN_PREPARACION` → `ENVIADO` → `ENTREGADO` | Operador o administrador | Historial con comentario y bitácora; pedir el estado actual no es error (doble clic) |
+| `PAGADO` → `CANCELADO` | Cliente (el suyo) u operador | Kardex `CANCELACION` (vuelve la existencia), uso del cupón revertido, reembolso del pago |
+| `EN_PREPARACION` → `CANCELADO` | Operador, con motivo | Igual que la anterior |
+| `ENTREGADO` → `DEVUELTO_PARCIAL` / `DEVUELTO` | Operador, con motivo, hasta 30 días después de la entrega | Kardex `DEVOLUCION` de lo que reingresa, reembolso proporcional por línea; `DEVUELTO` cuando ya no queda nada por devolver |
 
 - Un pedido se crea solo con un pago aprobado y puede cancelarse mientras no haya sido despachado.
 - Las transiciones permitidas están en la tabla `TransicionEstadoPedido`. El trigger `TR_Pedido_Estado` rechaza cualquier otra y registra cada cambio en `PedidoHistorialEstado` con usuario, fecha y hora, estado anterior y nuevo; ningún proceso puede cambiar un estado sin dejar rastro. La API valida las mismas reglas antes de llegar a la base.
@@ -361,6 +493,31 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 
 Todas ocurren en transacciones que se revierten: no dejan datos. En `tests/procedimientos` cada caso usa su propia transacción, porque un error dentro de un SP (`XACT_ABORT ON`) condena la transacción que lo envuelve. Por eso las fallas se cuentan en `SESSION_CONTEXT`, que no se revierte con la transacción del caso.
 
+### Pruebas de la API
+
+`npm test` (en `api/`) ejecuta pruebas unitarias y de integración con vitest y supertest contra la base `ShopCart_Pruebas`: la app completa, con la base real, sin simular los stored procedures. Se niegan a correr sobre `ShopCart`. Cubren, entre otros:
+
+- **Seguridad**: registro, login, rotación del refresh token y dos pestañas renovando a la vez (el robo por reúso, en las pruebas de la base), token vencido (401), roles (403), aislamiento entre clientes (un recurso ajeno responde 404), límite de intentos y cabeceras de la cookie.
+- **Concurrencia con peticiones simultáneas reales**: la última unidad entre dos compradores, el doble clic al pagar, dos tarjetas distintas a la vez sobre el mismo checkout y el último uso de un cupón entre dos clientes.
+- **Flujos completos**: carrito de invitado y fusión al iniciar sesión, checkout, rechazos de la pasarela, ciclo de vida del pedido, cancelaciones con reembolso, devoluciones parciales y totales con su kardex, precios congelados.
+- **Reportes**: que el resumen, los periodos y las categorías cuadren al centavo, la invalidación del caché, las exportaciones (se abre el Excel generado y se revisan sus valores) y el dashboard por SSE sobre HTTP real, incluido que al desconectarse no quede ningún oyente.
+- **Unitarias**: validación de tarjetas (Luhn, marcas, vencimiento), pasarela idempotente, caché, avisos, tareas programadas, centro SSE (latido, vencimiento del token, cliente lento) y que el Excel nunca escriba fórmulas.
+
+---
+
+## Trade-offs y mejoras posibles
+
+Decisiones conscientes de esta versión y lo que cambiaría al crecer:
+
+- **Una sola instancia de la API**: el límite de intentos, el caché de reportes, los avisos del dashboard y la idempotencia de la pasarela simulada viven en memoria del proceso. Con varias instancias se moverían a Redis (contadores, caché y Pub/Sub). Lo crítico ya no depende de esto: la base impide el doble pedido y la sobreventa aunque haya varias instancias.
+- **Pasarela real**: la interfaz `PasarelaPagos` permite conectar una pasarela real; en ese caso la tarjeta se capturaría en el navegador (tokenización) y el servidor solo recibiría un token, saliendo del alcance de PCI DSS.
+- **Verificación de correo**: permitiría que un invitado que luego se registra reclame sus pedidos anteriores, y recuperar la contraseña.
+- **Caché frente a desactivación**: un administrador desactivado puede leer reportes del caché hasta que venza su token (máximo 15 minutos); los cambios de datos sí lo invalidan al instante.
+- **Expiración de checkouts en la API**: SQL Server Express no tiene SQL Agent; en una edición con Agent el mismo SP se programaría como job de la base.
+- **Imágenes en disco local**: en producción irían a un almacenamiento de objetos (S3, Azure Blob) detrás de un CDN; el almacenamiento ya está aislado en una sola clase.
+- **Cupones avanzados**: cupones asignados a clientes específicos o emitidos por reglas; el modelo actual ya identifica cada uso por cliente.
+- **Observabilidad**: los logs ya son JSON con `X-Request-Id`; el siguiente paso sería enviarlos a un colector y agregar métricas (tiempos por endpoint, cobros anulados, conexiones SSE).
+
 ---
 
 ## Credenciales de prueba
@@ -374,3 +531,5 @@ Cargadas por `110_Seed_Demo.sql`, solo para demostración. La base guarda única
 | Cliente | `cliente@shopcart.test` (tiene pedidos en varios estados) | `Cliente#2026` |
 
 Los otros 24 clientes de demostración (`nombre.apellido@correo.test`) usan la misma contraseña de cliente. Cupones para probar: `BIENVENIDA10` (primera compra), `ROPA15` (ropa desde Q200), `DESCUENTO50` (desde Q500); `NAVIDAD30` está programado, `VERANO20` vencido, `FLASH25` agotado y `BLACKFRIDAY` inactivo.
+
+Tarjetas para pagar (aprobadas y con cada motivo de rechazo): ver [Pago simulado](#pago-simulado).

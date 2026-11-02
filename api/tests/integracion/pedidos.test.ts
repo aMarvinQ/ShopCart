@@ -169,6 +169,34 @@ describe('ciclo de vida del pedido (panel)', () => {
     });
 });
 
+describe('precios congelados (RF-02)', () => {
+    it('un cambio de precio no altera el pedido ya realizado; la tienda muestra el nuevo', async () => {
+        const producto = await crearProducto(app, admin, { existencia: 3, precio: 100 });
+        const { pedido } = await comprar({ cookie: '' }, producto, 2, {
+            idMetodoEnvio: 1,
+            invitado: DIRECCION_INVITADO,
+        });
+
+        const detalle = datos<{ variantes: { idVariante: number; versionFila: string }[] }>(
+            await comoPersonal(request(app).get(`/api/v1/productos/${String(producto.idProducto)}`), admin).expect(200),
+        );
+        const variante = detalle.variantes.find((v) => v.idVariante === producto.idVariante);
+        await comoPersonal(request(app).put(`/api/v1/variantes/${String(producto.idVariante)}/precio`), admin)
+            .send({ precio: 150, versionFila: variante?.versionFila })
+            .expect(200);
+
+        const despues = datos<Pedido & { lineas: { precioUnitario: number }[] }>(
+            await comoPersonal(request(app).get(`/api/v1/pedidos/${String(pedido.idPedido)}`)).expect(200),
+        );
+        expect(despues.lineas[0]?.precioUnitario).toBe(100);
+        expect(despues.total).toBe(pedido.total);
+        const tienda = datos<{ variantes: { idVariante: number; precio: number }[] }>(
+            await request(app).get(`/api/v1/tienda/productos/${producto.slug}`).expect(200),
+        );
+        expect(tienda.variantes.find((v) => v.idVariante === producto.idVariante)?.precio).toBe(150);
+    });
+});
+
 describe('cancelación', () => {
     it('el cliente cancela su pedido PAGADO: vuelve la existencia y se registra el reembolso', async () => {
         const producto = await crearProducto(app, admin, { existencia: 4 });

@@ -24,3 +24,29 @@ export const esquemaTelefono = z
     .max(20)
     .regex(/^[0-9+\- ]+$/, 'solo dígitos, espacios, + y -')
     .openapi({ example: '5555-1234' });
+
+/**
+ * Monto en quetzales con hasta 2 decimales, como número o texto ("149.99"). Se valida como
+ * texto para no depender de la representación binaria de los decimales.
+ */
+export const esquemaMonto = z
+    .union([z.number(), z.string()])
+    .transform((valor) => String(valor).trim())
+    .pipe(z.string().regex(/^\d{1,10}(\.\d{1,2})?$/, 'monto con hasta 10 enteros y 2 decimales'))
+    .transform(Number)
+    .openapi({ type: 'number', example: 149.99 });
+
+/** VersionFila del registro (control de edición concurrente), tal como la devolvió la API en base64. */
+export const esquemaVersion = z
+    .string()
+    .regex(/^[A-Za-z0-9+/]{11}=$/, 'versión inválida: usa la versionFila que devolvió la API')
+    .transform((valor) => Buffer.from(valor, 'base64'))
+    .openapi({ type: 'string', example: 'AAAAAAAAB9E=' });
+
+export const esquemaSlug = z
+    .string()
+    .trim()
+    .min(1)
+    .max(220)
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'solo minúsculas sin tilde, dígitos y guiones simples')
+    .openapi({ example: 'playera-basica' });

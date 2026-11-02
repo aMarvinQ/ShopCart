@@ -29,6 +29,8 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 |---|---|---|
 | 400 | `SOLICITUD_INVALIDA` | Los datos de la petición no cumplen su esquema; `detalles` indica cada campo y su problema. |
 | 400 | `JSON_INVALIDO` | El cuerpo no es un JSON válido. |
+| 400 | `ARCHIVO_INVALIDO` | Un archivo subido no es una imagen JPEG, PNG o WebP según su contenido (aunque su extensión lo diga), o está dañado. |
+| 400 | `ARCHIVOS_INVALIDOS` | La subida no trae de 1 a 10 imágenes en el campo `archivos` de un `multipart/form-data`. |
 | 401 | `NO_AUTENTICADO` | La ruta requiere sesión y no llegó `Authorization: Bearer <token>`. |
 | 401 | `TOKEN_INVALIDO` | El access token está alterado, mal formado o firmado con otra clave. |
 | 401 | `TOKEN_EXPIRADO` | El access token venció: el frontend lo renueva con `POST /auth/refresh`. |
@@ -40,6 +42,7 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 | 429 | `DEMASIADOS_INTENTOS` | Se superó el límite de intentos de login, registro o renovación; ver `Retry-After`. |
 | 404 | `RUTA_NO_ENCONTRADA` | La ruta o el método no existen. |
 | 413 | `CUERPO_DEMASIADO_GRANDE` | El cuerpo supera 100 KB. |
+| 413 | `ARCHIVO_DEMASIADO_GRANDE` | Una imagen subida pesa más de 5 MB. |
 | 500 | `CONFIGURACION_INCOMPLETA` | Un SP lanzó un 59xxx; el detalle queda en el log, no en la respuesta. |
 | 503 | `BASE_DATOS_NO_DISPONIBLE` | No hay conexión con la base de datos. |
 

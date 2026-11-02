@@ -1,6 +1,6 @@
 import sql from 'mssql';
 import { obtenerPool } from './conexion.js';
-import { filaACamel } from './nombres.js';
+import { filaACamel, jsonACamel } from './nombres.js';
 import type { NombreProcedimiento } from './procedimientos.js';
 
 /*
@@ -11,7 +11,6 @@ import type { NombreProcedimiento } from './procedimientos.js';
 
 /** Tipos de SQL Server para declarar los parámetros (los repositorios no importan mssql). */
 export const TipoSql = sql;
-export const TablaSql = sql.Table;
 
 type TipoParametro = sql.ISqlType | (() => sql.ISqlType);
 
@@ -29,6 +28,8 @@ export interface OpcionesProcedimiento {
      * escrituras protegidas por idempotencia en la base).
      */
     reintentable?: boolean;
+    /** Columnas (en camelCase) que el SP devuelve como JSON (FOR JSON): se entregan como objetos. */
+    json?: string[];
 }
 
 export interface ResultadoProcedimiento<T> {
@@ -43,6 +44,35 @@ export function numeroErrorSql(error: unknown): number | undefined {
         return error.number;
     }
     return undefined;
+}
+
+function convertirFila(fila: Record<string, unknown>, json: string[] | undefined): Record<string, unknown> {
+    const convertida = filaACamel(fila);
+    for (const columna of json ?? []) {
+        const valor = convertida[columna];
+        if (typeof valor === 'string') convertida[columna] = jsonACamel(valor);
+    }
+    return convertida;
+}
+
+export interface ColumnaTabla {
+    nombre: string;
+    tipo: TipoParametro;
+    nulo?: boolean;
+}
+
+/**
+ * Parámetro con valor de tabla (TVP) de un tipo de la base (p. ej. dbo.TT_Catalogo_Variante):
+ * varias filas en una sola llamada y una sola transacción. Las columnas van en el orden del tipo.
+ */
+export type ValorCelda = string | number | boolean | Date | Buffer | null;
+
+export function tablaSql(tipo: string, columnas: ColumnaTabla[], filas: ValorCelda[][]): sql.Table {
+    const tabla = new sql.Table(tipo);
+    for (const columna of columnas)
+        tabla.columns.add(columna.nombre, columna.tipo, { nullable: columna.nulo ?? false });
+    for (const fila of filas) tabla.rows.add(...fila);
+    return tabla;
 }
 
 export async function ejecutarProcedimiento<T = Record<string, unknown>>(
@@ -66,7 +96,9 @@ export async function ejecutarProcedimiento<T = Record<string, unknown>>(
             // Los tipos de mssql no lo reflejan, pero un SP sin SELECT no devuelve conjunto de resultados.
             // Las filas llegan con sus columnas en camelCase (ver nombres.ts).
             const filas =
-                resultado.recordsets.length > 0 ? resultado.recordset.map((fila) => filaACamel(fila) as T) : [];
+                resultado.recordsets.length > 0
+                    ? resultado.recordset.map((fila) => convertirFila(fila, opciones.json) as T)
+                    : [];
             return { filas, salidas: resultado.output };
         } catch (error) {
             if (intento < intentos && numeroErrorSql(error) === ERROR_DEADLOCK) continue;

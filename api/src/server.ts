@@ -2,7 +2,9 @@ import { existsSync } from 'node:fs';
 import { crearApp } from './app.js';
 import { cargarConfiguracion, ConfiguracionInvalidaError } from './config/configuracion.js';
 import { cerrarConexion, configurarConexion } from './db/index.js';
+import { programarLimpiezaImagenes } from './jobs/limpiarImagenes.js';
 import { crearLogger } from './logger.js';
+import { AlmacenImagenes } from './storage/almacenImagenes.js';
 
 // Variables de entorno: las del sistema tienen prioridad sobre las de .env.
 if (existsSync('.env')) process.loadEnvFile('.env');
@@ -25,6 +27,9 @@ const app = crearApp({ config, logger });
 const servidor = app.listen(config.PUERTO, () => {
     logger.info(`API escuchando en http://localhost:${config.PUERTO} (base ${config.DB_NOMBRE})`);
 });
+
+// Procesos periódicos (solo en el servidor; las pruebas los ejecutan directamente).
+programarLimpiezaImagenes(new AlmacenImagenes(config.CARPETA_UPLOADS), logger);
 
 // Cierre ordenado: deja de aceptar peticiones, termina las que están en curso y cierra el pool.
 let cerrando = false;

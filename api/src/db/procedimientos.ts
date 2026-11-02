@@ -100,6 +100,7 @@ export const PROCEDIMIENTOS = [
     'SP_Configuracion_ListarParametros',
     'SP_Configuracion_ActualizarParametro',
     'SP_Sistema_Estado',
+    'SP_Catalogo_FiltrarImagenesEnUso',
 ] as const;
 
 export type NombreProcedimiento = (typeof PROCEDIMIENTOS)[number];

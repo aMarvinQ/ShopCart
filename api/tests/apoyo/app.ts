@@ -17,6 +17,7 @@ export { cerrarConexion };
 
 /* Credenciales de la semilla de demostración (presentes en la base de pruebas). */
 export const ADMIN = { correo: 'admin@shopcart.test', contrasena: 'Admin#2026' };
+export const OPERADOR = { correo: 'operador@shopcart.test', contrasena: 'Operador#2026' };
 
 export const correoUnico = (prefijo = 'prueba'): string => `${prefijo}.${randomUUID().slice(0, 8)}@prueba.test`;
 
@@ -52,3 +53,14 @@ export async function registrarCliente(
 export async function iniciarSesion(app: Express, correo: string, contrasena: string): Promise<SesionPrueba> {
     return sesionDe(await request(app).post('/api/v1/auth/login').send({ correo, contrasena }).expect(200));
 }
+
+/** Código de error de una respuesta { error: { codigo } }. */
+export const codigoError = (respuesta: request.Response): string =>
+    (respuesta.body as { error: { codigo: string } }).error.codigo;
+
+/** Datos de una respuesta { data }. */
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- el tipo lo indica cada prueba
+export const datos = <T = Record<string, unknown>>(respuesta: request.Response): T =>
+    (respuesta.body as { data: T }).data;
+
+export const sufijo = (): string => randomUUID().slice(0, 8);

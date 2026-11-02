@@ -52,6 +52,8 @@ export interface DefinicionRuta {
     params?: ZodObject;
     query?: ZodObject;
     cuerpo?: ZodType;
+    /** Formato del cuerpo: JSON (por defecto) o multipart/form-data (subida de archivos). */
+    tipoCuerpo?: 'json' | 'multipart';
     /** Esquema de "data" en la respuesta exitosa. */
     respuesta?: ZodType;
     conMeta?: boolean;
@@ -90,7 +92,17 @@ export function documentar(definicion: DefinicionRuta): void {
         request: {
             ...(definicion.params ? { params: definicion.params } : {}),
             ...(definicion.query ? { query: definicion.query } : {}),
-            ...(definicion.cuerpo ? { body: { content: { 'application/json': { schema: definicion.cuerpo } } } } : {}),
+            ...(definicion.cuerpo
+                ? {
+                      body: {
+                          content: {
+                              [definicion.tipoCuerpo === 'multipart' ? 'multipart/form-data' : 'application/json']: {
+                                  schema: definicion.cuerpo,
+                              },
+                          },
+                      },
+                  }
+                : {}),
         },
         responses: {
             [estado]: { description: estado === 204 ? 'Sin contenido' : 'Éxito', ...exito },

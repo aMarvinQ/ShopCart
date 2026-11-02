@@ -11,9 +11,17 @@ export function aCamel(nombre: string): string {
     return nombre.charAt(0).toLowerCase() + nombre.slice(1);
 }
 
-/** Copia de la fila con las claves en camelCase (sin recorrer objetos anidados). */
+/**
+ * Copia de la fila con las claves en camelCase (sin recorrer objetos anidados). Los binarios
+ * (VersionFila) pasan a base64, igual que los anidados en JSON, que SQL Server ya codifica así.
+ */
 export function filaACamel(fila: Record<string, unknown>): Record<string, unknown> {
-    return Object.fromEntries(Object.entries(fila).map(([clave, valor]) => [aCamel(clave), valor]));
+    return Object.fromEntries(
+        Object.entries(fila).map(([clave, valor]) => [
+            aCamel(clave),
+            Buffer.isBuffer(valor) ? valor.toString('base64') : valor,
+        ]),
+    );
 }
 
 /** JSON anidado de una columna (FOR JSON) con sus claves en camelCase, en todos los niveles. */

@@ -13,9 +13,12 @@ import { crearLimitesIntentos } from './middlewares/limiteIntentos.js';
 import { manejadorErrores, rutaNoEncontrada } from './middlewares/manejadorErrores.js';
 import { registroPeticiones } from './middlewares/registroPeticiones.js';
 import { crearRutasAuth } from './modules/auth/auth.routes.js';
+import { crearRutasCatalogo } from './modules/catalogo/catalogo.routes.js';
 import { crearRutasDirecciones } from './modules/direcciones/direcciones.routes.js';
 import { crearRutasEnvios } from './modules/envios/envios.routes.js';
+import { crearRutasInventario } from './modules/inventario/inventario.routes.js';
 import { rutasSistema } from './modules/sistema/sistema.routes.js';
+import { crearRutasTienda } from './modules/tienda/tienda.routes.js';
 import { crearRutasUsuarios } from './modules/usuarios/usuarios.routes.js';
 import { Tokens } from './seguridad/tokens.js';
 
@@ -69,6 +72,9 @@ export function crearApp({ config, logger }: DependenciasApp): Express {
     api.use(crearRutasUsuarios(dependencias));
     api.use(crearRutasDirecciones(dependencias));
     api.use(crearRutasEnvios());
+    api.use(crearRutasTienda());
+    api.use(crearRutasCatalogo(dependencias));
+    api.use(crearRutasInventario(dependencias));
 
     if (config.DOCS_ACTIVAS) {
         const documento = generarDocumento();

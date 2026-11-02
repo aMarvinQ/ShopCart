@@ -3,7 +3,8 @@
     Se ejecuta conectado como shopcart_migrator (deploy.ps1 -Probar).
     Verifica que los datos semilla de los que depende el código estén completos y sean
     válidos: un despliegue con una semilla incompleta fallaría en tiempo de ejecución
-    (CONFIGURACION_INCOMPLETA), aquí falla antes.
+    (CONFIGURACION_INCOMPLETA), aquí falla antes. También que el historial de demostración
+    (y todo lo que se cree después) sea coherente: kardex, totales, pagos y fechas.
     Solo lectura: no modifica datos.
 */
 :on error exit
@@ -90,6 +91,46 @@ SELECT N'Un único usuario de sistema, sin contraseña y que no actúa como usua
               (SELECT CASE WHEN COUNT(*) = 0 THEN N'sin contraseña' END FROM dbo.Usuario WHERE EsSistema = 1 AND HashContrasena IS NOT NULL), '|',
               (SELECT CASE WHEN COUNT(*) = 0 THEN N'no es actor' END
                FROM dbo.Usuario AS u CROSS APPLY dbo.FU_Seguridad_Actor(u.IDUsuario) AS a WHERE u.EsSistema = 1));
+
+/* --- Historial de demostración (110_Seed_Demo, también lo que se cree después) ------------- */
+-- Kardex: la existencia es la suma de sus movimientos y cada saldo parte del anterior, en orden de fecha.
+INSERT INTO @Pruebas (Descripcion, Esperado, Obtenido)
+SELECT N'Kardex: cada existencia cuadra con sus movimientos y los saldos se encadenan en orden de fecha', N'0|0',
+       CONCAT((SELECT COUNT(*) FROM dbo.Variante AS v
+               WHERE v.ExistenciaFisica <> (SELECT ISNULL(SUM(m.Cantidad), 0) FROM dbo.MovimientoInventario AS m WHERE m.IDVariante = v.IDVariante)), '|',
+              (SELECT COUNT(*)
+               FROM (SELECT SaldoAnterior, LAG(SaldoNuevo, 1, 0) OVER (PARTITION BY IDVariante ORDER BY Fecha, IDMovimientoInventario) AS SaldoPrevio
+                     FROM dbo.MovimientoInventario) AS m
+               WHERE m.SaldoAnterior <> m.SaldoPrevio));
+
+INSERT INTO @Pruebas (Descripcion, Esperado, Obtenido)
+SELECT N'Pedidos: subtotal y descuento cuadran con sus líneas, total = subtotal − descuento + envío = base + IVA, un pago aprobado por el total',
+       N'0|0|0|0',
+       CONCAT((SELECT COUNT(*) FROM dbo.Pedido AS p
+               WHERE p.Subtotal <> (SELECT SUM(d.PrecioUnitario * d.Cantidad) FROM dbo.PedidoDetalle AS d WHERE d.IDPedido = p.IDPedido)), '|',
+              (SELECT COUNT(*) FROM dbo.Pedido AS p
+               WHERE p.Descuento <> (SELECT SUM(d.DescuentoLinea) FROM dbo.PedidoDetalle AS d WHERE d.IDPedido = p.IDPedido)), '|',
+              (SELECT COUNT(*) FROM dbo.Pedido AS p
+               WHERE p.Total <> p.Subtotal - p.Descuento + p.CostoEnvio OR p.BaseImponible + p.IVA <> p.Total), '|',
+              (SELECT COUNT(*) FROM dbo.Pedido AS p
+               WHERE (SELECT COUNT(*) FROM dbo.Pago AS g WHERE g.IDPedido = p.IDPedido AND g.Estado = 'APROBADO' AND g.Monto = p.Total) <> 1));
+
+INSERT INTO @Pruebas (Descripcion, Esperado, Obtenido)
+SELECT N'Historial de estados: en orden de fecha y el último es el estado actual del pedido', N'0|0',
+       CONCAT((SELECT COUNT(*)
+               FROM (SELECT Fecha, LAG(Fecha) OVER (PARTITION BY IDPedido ORDER BY IDPedidoHistorialEstado) AS FechaPrevia
+                     FROM dbo.PedidoHistorialEstado) AS h
+               WHERE h.Fecha < h.FechaPrevia), '|',
+              (SELECT COUNT(*) FROM dbo.Pedido AS p
+               WHERE p.IDEstadoPedido <> (SELECT TOP (1) h.IDEstadoNuevo FROM dbo.PedidoHistorialEstado AS h
+                                          WHERE h.IDPedido = p.IDPedido ORDER BY h.IDPedidoHistorialEstado DESC)));
+
+INSERT INTO @Pruebas (Descripcion, Esperado, Obtenido)
+SELECT N'Ninguna fecha de pedidos, historial, kardex o bitácora está en el futuro', N'0',
+       CONCAT((SELECT COUNT(*) FROM dbo.Pedido WHERE FechaPedido > SYSUTCDATETIME())
+              + (SELECT COUNT(*) FROM dbo.PedidoHistorialEstado WHERE Fecha > SYSUTCDATETIME())
+              + (SELECT COUNT(*) FROM dbo.MovimientoInventario WHERE Fecha > SYSUTCDATETIME())
+              + (SELECT COUNT(*) FROM dbo.Bitacora WHERE Fecha > SYSUTCDATETIME()), '');
 
 /* --- Resultado ------------------------------------------------------------------------------ */
 DECLARE @Fallas INT = (SELECT COUNT(*) FROM @Pruebas WHERE ISNULL(Esperado, N'') COLLATE Latin1_General_100_BIN2 <> ISNULL(Obtenido, N'(NULL)'));

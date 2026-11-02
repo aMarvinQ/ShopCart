@@ -107,7 +107,7 @@ BEGIN
     INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                               EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                               Subtotal, CostoEnvio, Total, Estado, FechaExpiracion, FechaCierre)
-    VALUES (@IDCarrito, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCarrito, @IDUsuario, NEWID(), N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
             N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento, @IDMetodoEnvio,
             100.00, 25.00, 125.00, 'COMPLETADO', DATEADD(MINUTE, 15, SYSUTCDATETIME()), SYSUTCDATETIME());
     SET @IDCheckout = SCOPE_IDENTITY();
@@ -119,7 +119,7 @@ BEGIN
     INSERT INTO dbo.Pedido (IDCheckout, IDUsuario, CorreoContacto, NombreContacto, TelefonoContacto, TokenSeguimientoHash,
                             IDEstadoPedido, EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento,
                             IDMetodoEnvio, NombreMetodoEnvio, Subtotal, CostoEnvio, Total, BaseImponible, IVA)
-    VALUES (@IDCheckout, @IDUsuario, N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCheckout, @IDUsuario, N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
             HASHBYTES('SHA2_256', CONVERT(VARCHAR(36), NEWID())),
             @IDPagado, N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento,
             @IDMetodoEnvio, N'Envío de prueba', 100.00, 25.00, 125.00, 111.61, 13.39);
@@ -166,7 +166,7 @@ DECLARE @Clave UNIQUEIDENTIFIER = NEWID();
 INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                           EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                           Subtotal, CostoEnvio, Total, FechaExpiracion)
-VALUES (@IDCarritoActivo, @IDUsuario, @Clave, N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+VALUES (@IDCarritoActivo, @IDUsuario, @Clave, N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
         N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento, @IDMetodoEnvio,
         100.00, 25.00, 125.00, @Expira);
 DECLARE @IDCheckoutPendiente BIGINT = SCOPE_IDENTITY();
@@ -205,7 +205,7 @@ BEGIN TRY
     INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                               EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                               Subtotal, CostoEnvio, Total, Estado, FechaExpiracion, FechaCierre)
-    VALUES (@IDCarritoActivo, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCarritoActivo, @IDUsuario, NEWID(), N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
             N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento, @IDMetodoEnvio,
             100.00, 25.00, 99.00, 'CANCELADO', @Expira, @Ahora);
     SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
@@ -220,7 +220,7 @@ BEGIN TRY
     INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                               EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                               Subtotal, CostoEnvio, Total, Estado, FechaExpiracion, FechaCierre)
-    VALUES (@IDCarritoActivo, @IDUsuario, @Clave, N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCarritoActivo, @IDUsuario, @Clave, N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
             N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento, @IDMetodoEnvio,
             100.00, 25.00, 125.00, 'CANCELADO', @Expira, @Ahora);
     SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
@@ -235,7 +235,7 @@ BEGIN TRY
     INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                               EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                               Subtotal, CostoEnvio, Total, FechaExpiracion)
-    VALUES (@IDCarritoActivo, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCarritoActivo, @IDUsuario, NEWID(), N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
             N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento, @IDMetodoEnvio,
             100.00, 25.00, 125.00, @Expira);
     SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
@@ -250,7 +250,7 @@ BEGIN TRY
     INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                               IDDireccion, EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                               Subtotal, CostoEnvio, Total, Estado, FechaExpiracion, FechaCierre)
-    VALUES (@IDCarritoActivo, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCarritoActivo, @IDUsuario, NEWID(), N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
             @IDDireccionAjena, N'Otro Cliente', '5555-9876', N'5a avenida 2-10 zona 9', N'Guatemala', @IDDepartamento, @IDMetodoEnvio,
             100.00, 25.00, 125.00, 'CANCELADO', @Expira, @Ahora);
     SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
@@ -265,7 +265,7 @@ BEGIN TRY
     INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                               EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                               Subtotal, Descuento, CostoEnvio, Total, Estado, FechaExpiracion, FechaCierre)
-    VALUES (@IDCarritoActivo, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCarritoActivo, @IDUsuario, NEWID(), N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
             N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento, @IDMetodoEnvio,
             100.00, 10.00, 25.00, 115.00, 'CANCELADO', @Expira, @Ahora);
     SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
@@ -301,7 +301,7 @@ BEGIN TRY
     INSERT INTO dbo.Pedido (IDCheckout, IDUsuario, CorreoContacto, NombreContacto, TelefonoContacto, TokenSeguimientoHash,
                             IDEstadoPedido, EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento,
                             IDMetodoEnvio, NombreMetodoEnvio, Subtotal, CostoEnvio, Total, BaseImponible, IVA)
-    VALUES (@IDCheckout, @IDUsuario, N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCheckout, @IDUsuario, N'cliente.integridad@shopcart.test', N'Cliente Prueba', '5555-1234',
             HASHBYTES('SHA2_256', CONVERT(VARCHAR(36), NEWID())),
             @IDPagado, N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', @IDDepartamento,
             @IDMetodoEnvio, N'Envío de prueba', 100.00, 25.00, 125.00, 111.61, 13.39);
@@ -413,7 +413,7 @@ END CATCH
 SELECT @Esperado = N'FK_CuponUso_PedidoCupon', @Descripcion = N'Uso de un cupón distinto al registrado en el pedido';
 BEGIN TRY
     INSERT INTO dbo.CuponUso (IDCupon, IDPedido, IDUsuario, CorreoCliente, MontoDescontado)
-    VALUES (@IDCupon, @IDPedido, @IDUsuario, N'cliente@shopcart.test', 10.00);
+    VALUES (@IDCupon, @IDPedido, @IDUsuario, N'cliente.integridad@shopcart.test', 10.00);
     SET @Fallas += 1; PRINT N'FALLA  ' + @Descripcion + N' fue aceptado.';
 END TRY
 BEGIN CATCH

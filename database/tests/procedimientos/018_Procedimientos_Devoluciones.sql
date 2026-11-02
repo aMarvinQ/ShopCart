@@ -261,7 +261,7 @@ IF NOT EXISTS (SELECT 1 FROM #Contexto)
 GO
 
 DECLARE @Api SYSNAME = (SELECT UsuarioApi FROM #Contexto);
-DECLARE @IDCliente INT, @IDOperador INT, @IDA INT, @IDPedido1 INT, @IDLineaA INT, @Total INT;
+DECLARE @IDCliente INT, @IDOperador INT, @IDA INT, @IDPedido1 INT, @IDLineaA INT, @Total INT, @Desde DATETIME2(3);
 DECLARE @Texto NVARCHAR(400);
 DECLARE @Lineas dbo.TT_Devoluciones_Linea;
 
@@ -302,10 +302,12 @@ EXEC #Verificar N'Devolver otra: Q33.34 (acumulado); sigue DEVUELTO_PARCIAL sin 
 
 DELETE FROM @Lineas;
 INSERT INTO @Lineas VALUES (@IDLineaA, 1, 0);
+-- El listado se filtra desde hace una hora: las devoluciones de la semilla de demostración son anteriores.
+SET @Desde = DATEADD(HOUR, -1, SYSUTCDATETIME());
 EXECUTE AS USER = @Api;
 INSERT INTO #PedidoPanel EXEC dbo.SP_Devoluciones_Registrar @IDOperador, @IDPedido1, N'Llegó dañada', @Lineas;
 INSERT INTO #PedidoCliente EXEC dbo.SP_Pedidos_ObtenerCliente @IDCliente, @IDPedido1;
-INSERT INTO #Devoluciones EXEC dbo.SP_Devoluciones_Listar @IDOperador, NULL, NULL, 1, 20, @Total OUTPUT;
+INSERT INTO #Devoluciones EXEC dbo.SP_Devoluciones_Listar @IDOperador, @Desde, NULL, 1, 20, @Total OUTPUT;
 REVERT;
 SET @Texto = (SELECT CONCAT(CodigoEstado, N'|', JSON_VALUE(Devoluciones, '$[2].MontoReembolso'), N':', JSON_VALUE(Devoluciones, '$[2].Lineas[0].Reingresa'),
                             N'|', (SELECT SUM(j.MontoReembolso) FROM OPENJSON(Devoluciones) WITH (MontoReembolso DECIMAL(12, 2)) AS j), N'=',

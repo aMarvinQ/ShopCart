@@ -25,6 +25,9 @@ ShopCart/
     tests/procedimientos/  Pruebas de los SPs, ejecutados como la API (revierten sus datos)
     herramientas/      Utilidades de desarrollo (no forman parte del despliegue)
     deploy.ps1         Despliegue reproducible de la base de datos
+  api/
+    seed-assets/       Imágenes de los productos de la semilla (versionadas)
+    scripts/           Utilidades (genera y verifica las imágenes de la semilla)
   docs/                Diagrama entidad-relación, catálogo de errores y diagramas de apoyo
 ```
 
@@ -266,7 +269,11 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 
 - **`100_Seed_Catalogos.sql`**: datos fijos de los que depende el código, con IDs fijos: roles, estados del pedido y sus transiciones, tipos de movimiento de inventario, los 9 parámetros con su rango y el usuario de sistema.
 - **Departamentos y municipios**: los 22 departamentos y 340 municipios con su código INE (`IDMunicipio` = código `DDMM`, p. ej. 0108 Mixco = 108), tomados del catálogo oficial publicado por CONRED en su servicio geográfico. Los nombres se conservan como en la fuente.
-- **Verificación**: `tests/integridad/021_Integridad_Semillas.sql` comprueba que la semilla esté completa (estados, transiciones, cada parámetro dentro de su rango y legible por su función, municipios por departamento, usuario de sistema).
+- **`110_Seed_Demo.sql`**: datos de demostración: 3 usuarios internos y 25 clientes con dirección, 6 categorías, 28 productos (92 variantes, 63 imágenes), 4 métodos de envío, 7 cupones (uno por situación: vigente, programado, vencido, agotado, inactivo…), unos 300 pedidos de los últimos 6 meses (entregados, cancelados por el cliente y por el operador, devoluciones parciales y totales, y algunos pendientes de atender) y carritos abandonados de clientes e invitados.
+- **Creados con los mismos stored procedures que la API**: registro, catálogo, carrito → checkout → pago → estados → devoluciones, inventario y precios; así el historial cumple cada regla (existencias y kardex, cupones, historial de estados, bitácora). Solo el primer administrador se inserta directamente, porque crear un usuario interno exige un administrador (queda en la bitácora a nombre del usuario de sistema).
+- **Historial con fechas reales**: los SPs fechan con la hora actual, así que la semilla ejecuta los eventos en el orden de su fecha simulada, anota la hora real y la simulada de cada uno y al final traslada las fechas a esa línea de tiempo (pedido, pago, historial, kardex, bitácora), con la inmutabilidad desactivada solo dentro de su propia transacción. Es reproducible: las decisiones "al azar" salen de un generador con semilla fija y las fechas son relativas al día del despliegue.
+- **Imágenes**: `api/seed-assets/productos/` (versionadas). Las genera `npm run imagenes:semilla` (en `api/`) a partir de las rutas de la semilla, sin sobrescribir las existentes; `npm run imagenes:verificar` comprueba que estén todas y sean JPEG cuadrados de hasta 300 KB. Se pueden reemplazar por fotos reales con el mismo nombre (ver `LISTA.md`).
+- **Verificación**: `tests/integridad/021_Integridad_Semillas.sql` comprueba que la semilla esté completa (estados, transiciones, cada parámetro dentro de su rango y legible por su función, municipios por departamento, usuario de sistema) y que el historial sea coherente: el kardex cuadra con la existencia, los totales con sus líneas, cada pedido tiene su pago y su historial en orden, y ninguna fecha está en el futuro.
 
 ### Pruebas de la base de datos
 
@@ -283,4 +290,12 @@ Todas ocurren en transacciones que se revierten: no dejan datos. En `tests/proce
 
 ## Credenciales de prueba
 
-_Se documentarán al cargar los datos semilla._
+Cargadas por `110_Seed_Demo.sql`, solo para demostración. La base guarda únicamente el hash Argon2id.
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Administrador | `admin@shopcart.test` | `Admin#2026` |
+| Operador | `operador@shopcart.test`, `operador2@shopcart.test` | `Operador#2026` |
+| Cliente | `cliente@shopcart.test` (tiene pedidos en varios estados) | `Cliente#2026` |
+
+Los otros 24 clientes de demostración (`nombre.apellido@correo.test`) usan la misma contraseña de cliente. Cupones para probar: `BIENVENIDA10` (primera compra), `ROPA15` (ropa desde Q200), `DESCUENTO50` (desde Q500); `NAVIDAD30` está programado, `VERANO20` vencido, `FLASH25` agotado y `BLACKFRIDAY` inactivo.

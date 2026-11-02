@@ -505,7 +505,7 @@ INSERT INTO @Errores (Descripcion, Esperado, Sql, Preparacion) VALUES
         @IniciarCliente + N'EXEC dbo.SP_Pedidos_Crear @IDUsuario = @Cliente, @IDCheckout = @ID, @Marca = ''VISA'', @Ultimos4 = ''4242'',
           @CodigoAutorizacion = ''AUT-E'', @ReferenciaExterna = ''REF-PED-PRUEBA-E9'', @TokenSeguimientoHash = NULL;', NULL),
     (N'Crear: sin el tipo de movimiento SALIDA_VENTA → CONFIGURACION_INCOMPLETA', 59001,
-        @IniciarCliente + @Pagar, N'DELETE FROM dbo.TipoMovimiento WHERE Codigo = ''SALIDA_VENTA'';'),
+        @IniciarCliente + @Pagar, N'UPDATE dbo.TipoMovimiento SET Codigo = ''SALIDA_VENTA_RETIRADA'' WHERE Codigo = ''SALIDA_VENTA'';'),
     (N'Cambiar estado: un cliente → PERMISO_DENEGADO', 50201,
         @Comprar + N'EXEC dbo.SP_Pedidos_CambiarEstado @Cliente, @Pedido, ''EN_PREPARACION'';', NULL),
     (N'Cambiar estado: estado inexistente → ESTADO_PEDIDO_INVALIDO', 50038,

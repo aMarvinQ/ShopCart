@@ -653,7 +653,7 @@ END;
 /* Ningún caso dejó datos: todos se revirtieron. */
 SET @Texto = (SELECT CONCAT(
                   (SELECT COUNT(*) FROM dbo.Producto WHERE Slug LIKE '%prueba%'), N'|',
-                  (SELECT COUNT(*) FROM dbo.Variante WHERE SKU LIKE 'PRUEBA-%' OR SKU LIKE 'SUD-%' OR SKU LIKE 'NUEVA-%'), N'|',
+                  (SELECT COUNT(*) FROM dbo.Variante WHERE SKU LIKE 'PRUEBA-%' OR SKU IN ('SUD-AZUL-S', 'SUD-ROJO-M', 'SUD-ROJO-S') OR SKU LIKE 'NUEVA-%'), N'|',
                   (SELECT COUNT(*) FROM dbo.Usuario WHERE Correo LIKE N'%.productos@shopcart.test')));
 EXEC #Verificar N'Limpieza: no quedan datos de prueba', N'0|0|0', @Texto;
 

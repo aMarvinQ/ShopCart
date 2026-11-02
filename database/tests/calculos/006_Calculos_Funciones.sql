@@ -53,7 +53,7 @@ BEGIN
     INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                               EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio, IDCupon,
                               Subtotal, Descuento, CostoEnvio, Total, Estado, FechaExpiracion, FechaCierre)
-    VALUES (@IDCarrito, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    VALUES (@IDCarrito, @IDUsuario, NEWID(), N'cliente.calculos@shopcart.test', N'Cliente Prueba', '5555-1234',
             N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', 200, @IDMetodoEnvio, @IDCupon,
             100.00, 10.00, 25.00, 115.00, 'COMPLETADO', DATEADD(MINUTE, 15, SYSUTCDATETIME()), SYSUTCDATETIME());
     DECLARE @IDCheckout BIGINT = SCOPE_IDENTITY();
@@ -65,7 +65,7 @@ BEGIN
                             IDEstadoPedido, EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento,
                             IDMetodoEnvio, NombreMetodoEnvio, IDCupon, CodigoCupon,
                             Subtotal, Descuento, CostoEnvio, Total, BaseImponible, IVA)
-    SELECT @IDCheckout, @IDUsuario, N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234',
+    SELECT @IDCheckout, @IDUsuario, N'cliente.calculos@shopcart.test', N'Cliente Prueba', '5555-1234',
            HASHBYTES('SHA2_256', CONVERT(VARCHAR(36), NEWID())),
            200, N'Cliente Prueba', '5555-1234', N'1a calle 1-23 zona 1', N'Guatemala', 200,
            @IDMetodoEnvio, N'Envío de prueba', c.IDCupon, c.Codigo,
@@ -84,7 +84,7 @@ DECLARE @Texto NVARCHAR(400);
 /* --- Datos de apoyo ----------------------------------------------------------------------- */
 INSERT INTO dbo.Rol (IDRol, Codigo, Nombre) VALUES (200, 'PRUEBA_CALCULOS', N'Prueba');
 INSERT INTO dbo.Usuario (IDRol, Correo, HashContrasena, Nombre, Apellido)
-VALUES (200, N'cliente@shopcart.test', @Hash, N'Cliente', N'Prueba');
+VALUES (200, N'cliente.calculos@shopcart.test', @Hash, N'Cliente', N'Prueba');
 DECLARE @IDUsuario INT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.Departamento (IDDepartamento, Nombre) VALUES (200, N'Departamento de prueba');
@@ -171,21 +171,21 @@ DECLARE @IDCarritoReservas INT = SCOPE_IDENTITY();
 INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                           EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                           Subtotal, CostoEnvio, Total, Estado, FechaCreacion, FechaExpiracion, FechaCierre)
-VALUES (@IDCarritoReservas, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234', N'Cliente Prueba', '5555-1234',
+VALUES (@IDCarritoReservas, @IDUsuario, NEWID(), N'cliente.calculos@shopcart.test', N'Cliente Prueba', '5555-1234', N'Cliente Prueba', '5555-1234',
         N'1a calle 1-23 zona 1', N'Guatemala', 200, @IDMetodoEnvio, 350.00, 25.00, 375.00,
         'PENDIENTE', DATEADD(MINUTE, -5, @Ahora), DATEADD(MINUTE, 10, @Ahora), NULL);
 DECLARE @IDCheckout1 BIGINT = SCOPE_IDENTITY();
 INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                           EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                           Subtotal, CostoEnvio, Total, Estado, FechaCreacion, FechaExpiracion, FechaCierre)
-VALUES (@IDCarritoReservas, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234', N'Cliente Prueba', '5555-1234',
+VALUES (@IDCarritoReservas, @IDUsuario, NEWID(), N'cliente.calculos@shopcart.test', N'Cliente Prueba', '5555-1234', N'Cliente Prueba', '5555-1234',
         N'1a calle 1-23 zona 1', N'Guatemala', 200, @IDMetodoEnvio, 100.00, 25.00, 125.00,
         'EXPIRADO', DATEADD(MINUTE, -30, @Ahora), DATEADD(MINUTE, -15, @Ahora), DATEADD(MINUTE, -15, @Ahora));
 DECLARE @IDCheckout2 BIGINT = SCOPE_IDENTITY();
 INSERT INTO dbo.Checkout (IDCarrito, IDUsuario, ClaveIdempotencia, CorreoContacto, NombreContacto, TelefonoContacto,
                           EnvioNombre, EnvioTelefono, EnvioLinea1, EnvioMunicipio, IDDepartamento, IDMetodoEnvio,
                           Subtotal, CostoEnvio, Total, Estado, FechaCreacion, FechaExpiracion, FechaCierre)
-VALUES (@IDCarritoReservas, @IDUsuario, NEWID(), N'cliente@shopcart.test', N'Cliente Prueba', '5555-1234', N'Cliente Prueba', '5555-1234',
+VALUES (@IDCarritoReservas, @IDUsuario, NEWID(), N'cliente.calculos@shopcart.test', N'Cliente Prueba', '5555-1234', N'Cliente Prueba', '5555-1234',
         N'1a calle 1-23 zona 1', N'Guatemala', 200, @IDMetodoEnvio, 300.00, 25.00, 325.00,
         'CANCELADO', DATEADD(MINUTE, -20, @Ahora), DATEADD(MINUTE, -5, @Ahora), DATEADD(MINUTE, -10, @Ahora));
 DECLARE @IDCheckout3 BIGINT = SCOPE_IDENTITY();
@@ -259,8 +259,8 @@ DECLARE @IDRevertido     INT = (SELECT IDCupon FROM dbo.Cupon WHERE Codigo = 'CA
 EXEC #CrearPedidoConCupon @IDUsuario, @IDUnoPorCliente, @IDPedidoUso OUTPUT;
 EXEC #CrearPedidoConCupon @IDUsuario, @IDRevertido, @IDPedidoRevertido OUTPUT;
 INSERT INTO dbo.CuponUso (IDCupon, IDPedido, IDUsuario, CorreoCliente, MontoDescontado, FechaReversion)
-VALUES (@IDUnoPorCliente, @IDPedidoUso,       @IDUsuario, N'cliente@shopcart.test', 10.00, NULL),
-       (@IDRevertido,     @IDPedidoRevertido, @IDUsuario, N'cliente@shopcart.test', 10.00, SYSUTCDATETIME());
+VALUES (@IDUnoPorCliente, @IDPedidoUso,       @IDUsuario, N'cliente.calculos@shopcart.test', 10.00, NULL),
+       (@IDRevertido,     @IDPedidoRevertido, @IDUsuario, N'cliente.calculos@shopcart.test', 10.00, SYSUTCDATETIME());
 
 SELECT @Texto = STRING_AGG(CONCAT(c.Codigo, '=', ISNULL(v.CodigoError, 'OK')), ' ') WITHIN GROUP (ORDER BY c.IDCupon)
 FROM dbo.Cupon AS c
@@ -279,7 +279,7 @@ EXEC #Verificar N'Validación para el cliente registrado (usó UNOXCLI; su uso d
 
 SELECT @Texto = STRING_AGG(CONCAT(c.Codigo, '=', ISNULL(v.CodigoError, 'OK')), ' ') WITHIN GROUP (ORDER BY c.IDCupon)
 FROM dbo.Cupon AS c
-CROSS APPLY dbo.FU_Cupones_Validar(c.IDCupon, NULL, N'cliente@shopcart.test', @Ahora) AS v
+CROSS APPLY dbo.FU_Cupones_Validar(c.IDCupon, NULL, N'cliente.calculos@shopcart.test', @Ahora) AS v
 WHERE c.Codigo = 'CALC-UNOXCLI';
 EXEC #Verificar N'Un invitado con el correo de quien ya usó el cupón (límite por correo, D19)',
      N'CALC-UNOXCLI=CUPON_LIMITE_CLIENTE', @Texto;

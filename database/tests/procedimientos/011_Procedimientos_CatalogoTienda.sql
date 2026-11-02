@@ -260,14 +260,14 @@ EXEC #Verificar N'Buscar: sin distinguir mayúsculas', N'1|Playera Prueba:120.00
 
 -- Si se agota la selección inicial, el precio mostrado pasa a la siguiente disponible (Azul/S, 90).
 UPDATE dbo.Variante SET ExistenciaFisica = 0 WHERE SKU = 'PRUEBA-ROJO-M';
-EXEC #Buscar @Texto = N'Playera', @Resultado = @Texto OUTPUT;
+EXEC #Buscar @Texto = N'Playera Prueba', @Resultado = @Texto OUTPUT;
 SET @Texto += N'|' + (SELECT ImagenPrincipal FROM #Tarjeta);
 EXEC #Verificar N'Buscar: al agotarse la selección inicial cambian el precio y la imagen a la siguiente disponible',
      N'1|Playera Prueba:90.00:1|/uploads/productos/prueba-azul.webp', @Texto;
 
 -- Todo agotado: se sigue mostrando, con la primera combinación (Rojo/S) y no disponible.
 UPDATE dbo.Variante SET ExistenciaFisica = 0 WHERE SKU = 'PRUEBA-AZUL-S';
-EXEC #Buscar @Texto = N'Playera', @Resultado = @Texto OUTPUT;
+EXEC #Buscar @Texto = N'Playera Prueba', @Resultado = @Texto OUTPUT;
 EXEC #Verificar N'Buscar: un producto con todo agotado se muestra como no disponible con la primera combinación',
      N'1|Playera Prueba:100.00:0', @Texto;
 UPDATE dbo.Variante SET ExistenciaFisica = 5 WHERE SKU = 'PRUEBA-ROJO-M';

@@ -29,6 +29,15 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 |---|---|---|
 | 400 | `SOLICITUD_INVALIDA` | Los datos de la petición no cumplen su esquema; `detalles` indica cada campo y su problema. |
 | 400 | `JSON_INVALIDO` | El cuerpo no es un JSON válido. |
+| 401 | `NO_AUTENTICADO` | La ruta requiere sesión y no llegó `Authorization: Bearer <token>`. |
+| 401 | `TOKEN_INVALIDO` | El access token está alterado, mal formado o firmado con otra clave. |
+| 401 | `TOKEN_EXPIRADO` | El access token venció: el frontend lo renueva con `POST /auth/refresh`. |
+| 401 | `CREDENCIALES_INVALIDAS` | Correo o contraseña incorrectos (misma respuesta en ambos casos, para no revelar qué correos existen). |
+| 401 | `USUARIO_INACTIVO` | Inicio de sesión correcto de una cuenta desactivada. |
+| 401 | `SESION_INVALIDA`, `ROTACION_CONCURRENTE`, `REUSO_DETECTADO`, `SESION_EXPIRADA` | Resultado de `POST /auth/refresh` que no emite token (ver *Resultados de la rotación de sesión*). Sin cookie: `SESION_INVALIDA`. |
+| 403 | `PERMISO_DENEGADO` | El rol del token no tiene permiso para la ruta (la API lo valida antes que el SP). |
+| 422 | `CONTRASENA_ACTUAL_INCORRECTA` | Al cambiar la contraseña, la actual no coincide. |
+| 429 | `DEMASIADOS_INTENTOS` | Se superó el límite de intentos de login, registro o renovación; ver `Retry-After`. |
 | 404 | `RUTA_NO_ENCONTRADA` | La ruta o el método no existen. |
 | 413 | `CUERPO_DEMASIADO_GRANDE` | El cuerpo supera 100 KB. |
 | 500 | `CONFIGURACION_INCOMPLETA` | Un SP lanzó un 59xxx; el detalle queda en el log, no en la respuesta. |

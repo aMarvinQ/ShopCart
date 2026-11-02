@@ -4,10 +4,20 @@ import cors from 'cors';
 import express, { Router, type Express } from 'express';
 import helmet from 'helmet';
 import type { Logger } from 'pino';
+import swaggerUi from 'swagger-ui-express';
 import type { Configuracion } from './config/configuracion.js';
+import { generarDocumento } from './docs/openapi.js';
+import type { DependenciasRutas } from './http/dependencias.js';
+import { crearAutenticacion } from './middlewares/autenticacion.js';
+import { crearLimitesIntentos } from './middlewares/limiteIntentos.js';
 import { manejadorErrores, rutaNoEncontrada } from './middlewares/manejadorErrores.js';
 import { registroPeticiones } from './middlewares/registroPeticiones.js';
+import { crearRutasAuth } from './modules/auth/auth.routes.js';
+import { crearRutasDirecciones } from './modules/direcciones/direcciones.routes.js';
+import { crearRutasEnvios } from './modules/envios/envios.routes.js';
 import { rutasSistema } from './modules/sistema/sistema.routes.js';
+import { crearRutasUsuarios } from './modules/usuarios/usuarios.routes.js';
+import { Tokens } from './seguridad/tokens.js';
 
 export interface DependenciasApp {
     config: Configuracion;
@@ -20,7 +30,7 @@ export function crearApp({ config, logger }: DependenciasApp): Express {
 
     app.use(registroPeticiones(logger));
     app.use(helmet());
-    // Solo los orígenes configurados (el frontend); credentials para las cookies de sesión.
+    // Solo los orígenes configurados (el frontend); credentials para la cookie de sesión.
     app.use(
         cors({
             origin: (origen, responder) => {
@@ -44,10 +54,38 @@ export function crearApp({ config, logger }: DependenciasApp): Express {
         }),
     );
 
+    // Dependencias por app (no globales): cada prueba crea la suya con su configuración.
+    const tokens = new Tokens(config.JWT_SECRETO, config.JWT_ACCESO_MINUTOS);
+    const dependencias: DependenciasRutas = {
+        config,
+        tokens,
+        autenticacion: crearAutenticacion(tokens),
+        limites: crearLimitesIntentos(config),
+    };
+
     const api = Router();
     api.use(rutasSistema);
-    app.use('/api/v1', api);
+    api.use(crearRutasAuth(dependencias));
+    api.use(crearRutasUsuarios(dependencias));
+    api.use(crearRutasDirecciones(dependencias));
+    api.use(crearRutasEnvios());
 
+    if (config.DOCS_ACTIVAS) {
+        const documento = generarDocumento();
+        api.get('/docs/openapi.json', (_req, res) => {
+            res.json(documento);
+        });
+        api.use(
+            '/docs',
+            swaggerUi.serve,
+            swaggerUi.setup(documento, {
+                customSiteTitle: 'ShopCart API',
+                swaggerOptions: { persistAuthorization: true, withCredentials: true, displayRequestDuration: true },
+            }),
+        );
+    }
+
+    app.use('/api/v1', api);
     app.use(rutaNoEncontrada);
     app.use(manejadorErrores);
     return app;

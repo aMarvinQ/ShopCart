@@ -81,11 +81,13 @@ Copy-Item .env.example .env
 
 npm install
 npm run setup     # copia las imágenes de la semilla a uploads/
-npm run dev       # http://localhost:3000/api/v1/health
+npm run dev       # http://localhost:3000/api/v1/health · documentación: http://localhost:3000/api/v1/docs
 npm test          # pruebas unitarias y de integración (contra ShopCart_Pruebas)
 ```
 
 Otros comandos: `npm run build` y `npm start` (producción), `npm run lint`, `npm run typecheck`.
+
+**Probar la API**: `http://localhost:3000/api/v1/docs` (Swagger) documenta cada endpoint con sus datos de entrada, respuestas y errores, y permite ejecutarlos. Para las rutas protegidas: ejecuta `POST /auth/login` con una de las [credenciales de prueba](#credenciales-de-prueba), copia `accessToken` y pégalo en **Authorize**. La documentación se genera de los mismos esquemas que validan las peticiones, así que no puede quedar desactualizada.
 
 ---
 
@@ -217,6 +219,10 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Refresh token** opaco en cookie `httpOnly`; la base guarda solo su SHA-256. Se **rota en cada uso** y vence a los 7 días sin uso; aunque se use a diario, la sesión termina a los 30 días del inicio de sesión. Ambos valores están en `Parametro`, así la base es la única fuente de la regla.
 - **Robo de sesión**: si se presenta un token que ya fue rotado, se asume robado y se revoca la sesión completa. Excepción: dentro de los 30 segundos siguientes a la rotación se rechaza sin cerrar la sesión, porque es el caso legítimo de dos pestañas renovando a la vez. Dos renovaciones simultáneas se serializan con un bloqueo: una rota y la otra recibe `ROTACION_CONCURRENTE`.
 - **Desactivar un usuario** revoca todas sus sesiones en la misma transacción; el access token ya emitido deja de servir al vencer (máximo 15 minutos). Cambiar la contraseña cierra las demás sesiones.
+- **Política de contraseña** (la valida la API, porque la base nunca la ve): de 8 a 128 caracteres, con al menos una letra y un número; sin exigir símbolos (guía NIST). El inicio de sesión responde igual, y con el mismo costo de verificación, si el correo no existe o la contraseña es incorrecta.
+- **Access token**: JWT HS256 de 15 minutos con lo mínimo (`sub`, `rol`), enviado en `Authorization: Bearer`. Vencido → 401 `TOKEN_EXPIRADO` (el frontend renueva); rol insuficiente → 403. El usuario siempre sale del token, nunca del cuerpo de la petición.
+- **Cookie del refresh token**: `httpOnly` (JavaScript no la lee), `SameSite=Strict` (no viaja en peticiones de otros sitios), solo para `/api/v1/auth` y `Secure` en producción.
+- **Límite de intentos**: login, 10 fallidos por correo e IP (y 50 por IP) cada 15 minutos; registro, 5 por IP cada hora; renovación, 60 por IP cada 15 minutos. Después responde 429 con `Retry-After`. Se guarda en memoria del proceso (una instancia; con varias, un almacén compartido como Redis).
 - **Orden de bloqueo**: todos los SPs del módulo bloquean primero `Usuario` y después `RefreshToken`, así una desactivación simultánea a un inicio de sesión o una rotación no puede dejar una sesión viva ni producir interbloqueos.
 
 ### Inventario

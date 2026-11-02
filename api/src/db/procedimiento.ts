@@ -1,5 +1,6 @@
 import sql from 'mssql';
 import { obtenerPool } from './conexion.js';
+import { filaACamel } from './nombres.js';
 import type { NombreProcedimiento } from './procedimientos.js';
 
 /*
@@ -61,9 +62,12 @@ export async function ejecutarProcedimiento<T = Record<string, unknown>>(
             for (const [nombreSalida, tipo] of Object.entries(opciones.salidas ?? {})) {
                 solicitud.output(nombreSalida, tipo);
             }
-            const resultado = await solicitud.execute<T>(nombre);
+            const resultado = await solicitud.execute<Record<string, unknown>>(nombre);
             // Los tipos de mssql no lo reflejan, pero un SP sin SELECT no devuelve conjunto de resultados.
-            return { filas: resultado.recordsets.length > 0 ? resultado.recordset : [], salidas: resultado.output };
+            // Las filas llegan con sus columnas en camelCase (ver nombres.ts).
+            const filas =
+                resultado.recordsets.length > 0 ? resultado.recordset.map((fila) => filaACamel(fila) as T) : [];
+            return { filas, salidas: resultado.output };
         } catch (error) {
             if (intento < intentos && numeroErrorSql(error) === ERROR_DEADLOCK) continue;
             throw error;

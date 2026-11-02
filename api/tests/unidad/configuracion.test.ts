@@ -45,6 +45,13 @@ describe('configuración', () => {
         expect(encontrados.some((p) => p.startsWith('CORS_ORIGENES'))).toBe(true);
     });
 
+    it('el límite de intentos solo puede desactivarse en las pruebas', () => {
+        expect(problemas({ ...valida, LIMITE_INTENTOS: 'inactivo' })[0]).toMatch(/^LIMITE_INTENTOS/);
+        expect(
+            problemas({ ...valida, NODE_ENV: 'test', DB_NOMBRE: 'ShopCart_Pruebas', LIMITE_INTENTOS: 'inactivo' }),
+        ).toEqual([]);
+    });
+
     it('no permite ejecutar las pruebas sobre la base principal', () => {
         expect(problemas({ ...valida, NODE_ENV: 'test', DB_NOMBRE: 'ShopCart' })[0]).toMatch(/^DB_NOMBRE/);
         expect(problemas({ ...valida, NODE_ENV: 'test', DB_NOMBRE: 'ShopCart_Pruebas' })).toEqual([]);

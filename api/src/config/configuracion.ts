@@ -34,8 +34,16 @@ const esquema = z
             )
             .pipe(z.array(z.url()).min(1)),
         CARPETA_UPLOADS: z.string().min(1).default('uploads'),
+        // Límite de intentos en login/registro/refresh (D66). "inactivo" solo para pruebas automatizadas.
+        LIMITE_INTENTOS: z.enum(['activo', 'inactivo']).default('activo'),
+        // Documentación interactiva en /api/v1/docs (D68).
+        DOCS_ACTIVAS: booleano.default(true),
     })
     // Protección: las pruebas crean y modifican datos, nunca deben correr sobre la base principal.
+    .refine((c) => c.NODE_ENV === 'test' || c.LIMITE_INTENTOS === 'activo', {
+        path: ['LIMITE_INTENTOS'],
+        message: 'solo puede desactivarse en las pruebas (NODE_ENV=test)',
+    })
     .refine((c) => c.NODE_ENV !== 'test' || c.DB_NOMBRE !== 'ShopCart', {
         path: ['DB_NOMBRE'],
         message: 'las pruebas no pueden ejecutarse sobre la base ShopCart (usa DB_NOMBRE_PRUEBAS)',

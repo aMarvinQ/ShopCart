@@ -14,10 +14,10 @@ export async function obtenerEstado(): Promise<EstadoSistema> {
     return {
         estado: 'ok',
         baseDatos: {
-            scriptsAplicados: fila.ScriptsAplicados,
-            ultimoScript: fila.UltimoScript,
-            fechaUltimoScript: fila.FechaUltimoScript,
+            scriptsAplicados: fila.scriptsAplicados,
+            ultimoScript: fila.ultimoScript,
+            fechaUltimoScript: fila.fechaUltimoScript,
         },
-        fechaServidor: fila.FechaServidor,
+        fechaServidor: fila.fechaServidor,
     };
 }

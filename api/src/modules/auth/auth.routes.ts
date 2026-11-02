@@ -14,7 +14,7 @@ documentar({
     etiqueta: ETIQUETA,
     resumen: 'Registrar un cliente',
     descripcion:
-        'Crea la cuenta e inicia la sesión: devuelve el access token y deja el refresh token en una cookie httpOnly. Límite: 5 registros por hora por IP.',
+        'Crea la cuenta e inicia la sesión: devuelve el access token y deja el refresh token en una cookie httpOnly. Si había un carrito de invitado, sus productos pasan al de la cuenta. Límite: 5 registros por hora por IP.',
     cuerpo: esquemaRegistro,
     respuesta: esquemaSesion,
     estado: 201,
@@ -26,7 +26,7 @@ documentar({
     etiqueta: ETIQUETA,
     resumen: 'Iniciar sesión',
     descripcion:
-        'Responde lo mismo si el correo no existe o la contraseña es incorrecta (CREDENCIALES_INVALIDAS). Límite: 10 intentos fallidos por correo cada 15 minutos.',
+        'Responde lo mismo si el correo no existe o la contraseña es incorrecta (CREDENCIALES_INVALIDAS). Si había un carrito de invitado, sus productos pasan al del cliente. Límite: 10 intentos fallidos por correo cada 15 minutos.',
     cuerpo: esquemaLogin,
     respuesta: esquemaSesion,
     errores: [400, 401, 429],

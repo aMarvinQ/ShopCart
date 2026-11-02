@@ -1,6 +1,6 @@
 import { ErrorApi } from '../../errors/ErrorApi.js';
 import { hashearContrasena, verificacionFicticia, verificarContrasena } from '../../seguridad/contrasenas.js';
-import { generarRefreshToken, hashToken, type Tokens } from '../../seguridad/tokens.js';
+import { generarTokenOpaco, hashToken, type Tokens } from '../../seguridad/tokens.js';
 import * as repositorio from './auth.repository.js';
 import type { ContextoCliente, ResultadoRotacion, UsuarioSesionFila } from './auth.repository.js';
 import type { DatosRegistro, Sesion } from './auth.schemas.js';
@@ -43,7 +43,7 @@ export function crearServicioAuth(tokens: Tokens) {
     }
 
     async function abrirSesion(idUsuario: number, cliente: ContextoCliente): Promise<SesionEmitida> {
-        const refreshToken = generarRefreshToken();
+        const refreshToken = generarTokenOpaco();
         const fila = await repositorio.iniciarSesion(idUsuario, hashToken(refreshToken), cliente);
         return emitir(fila, refreshToken, fila.fechaExpiracion);
     }
@@ -73,7 +73,7 @@ export function crearServicioAuth(tokens: Tokens) {
 
         /** Rota el refresh token: el actual queda revocado y se emite uno nuevo con un access token nuevo. */
         async renovar(refreshActual: string, cliente: ContextoCliente): Promise<SesionEmitida> {
-            const refreshNuevo = generarRefreshToken();
+            const refreshNuevo = generarTokenOpaco();
             const fila = await repositorio.rotarSesion(hashToken(refreshActual), hashToken(refreshNuevo), cliente);
             if (fila.resultado !== 'ROTADO' || !fila.idUsuario || !fila.fechaExpiracion) {
                 const codigo = fila.resultado === 'ROTADO' ? 'SESION_INVALIDA' : fila.resultado;

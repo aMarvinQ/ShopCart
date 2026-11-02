@@ -1,8 +1,10 @@
 import type { CookieOptions, Request, Response } from 'express';
 import type { Configuracion } from '../../config/configuracion.js';
 import { ErrorApi } from '../../errors/ErrorApi.js';
+import { borrarTokenInvitado, leerTokenInvitado } from '../../http/cookieInvitado.js';
 import { responder, validar } from '../../http/respuesta.js';
 import { usuarioDe } from '../../middlewares/autenticacion.js';
+import { fusionarAlIniciarSesion } from '../carrito/carrito.service.js';
 import type { ContextoCliente } from './auth.repository.js';
 import { esquemaCambioContrasena, esquemaLogin, esquemaRegistro } from './auth.schemas.js';
 import type { ServicioAuth, SesionEmitida } from './auth.service.js';
@@ -36,14 +38,26 @@ export function crearControladorAuth(servicio: ServicioAuth, config: Configuraci
 
     const limpiarCookie = (res: Response) => res.clearCookie(COOKIE_REFRESH, opcionesCookie);
 
+    // Si llega con un carrito de invitado, sus productos pasan al carrito del cliente (D70).
+    async function fusionarCarrito(req: Request, res: Response, emitida: SesionEmitida): Promise<void> {
+        const tokenInvitado = leerTokenInvitado(req);
+        if (!tokenInvitado || emitida.sesion.usuario.codigoRol !== 'CLIENTE') return;
+        await fusionarAlIniciarSesion(emitida.sesion.usuario.idUsuario, tokenInvitado, req.log);
+        borrarTokenInvitado(res, config);
+    }
+
     return {
         registrar: async (req: Request, res: Response): Promise<void> => {
-            entregar(res, await servicio.registrar(validar(esquemaRegistro, req.body), cliente(req)), 201);
+            const emitida = await servicio.registrar(validar(esquemaRegistro, req.body), cliente(req));
+            await fusionarCarrito(req, res, emitida);
+            entregar(res, emitida, 201);
         },
 
         iniciarSesion: async (req: Request, res: Response): Promise<void> => {
             const { correo, contrasena } = validar(esquemaLogin, req.body);
-            entregar(res, await servicio.iniciarSesion(correo, contrasena, cliente(req)));
+            const emitida = await servicio.iniciarSesion(correo, contrasena, cliente(req));
+            await fusionarCarrito(req, res, emitida);
+            entregar(res, emitida);
         },
 
         renovar: async (req: Request, res: Response): Promise<void> => {

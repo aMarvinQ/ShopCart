@@ -59,11 +59,12 @@ export class Tokens {
     }
 }
 
-export function generarRefreshToken(): string {
+/** 256 bits aleatorios en base64url: refresh token y token del invitado. */
+export function generarTokenOpaco(): string {
     return randomBytes(32).toString('base64url');
 }
 
-/** SHA-256 del refresh token: lo único que conoce la base. */
+/** SHA-256 del token opaco: lo único que conoce la base. */
 export function hashToken(token: string): Buffer {
     return createHash('sha256').update(token).digest();
 }

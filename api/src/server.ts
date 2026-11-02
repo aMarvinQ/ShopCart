@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { crearApp } from './app.js';
+import { crearApp, type ServiciosApp } from './app.js';
 import { cargarConfiguracion, ConfiguracionInvalidaError } from './config/configuracion.js';
 import { cerrarConexion, configurarConexion } from './db/index.js';
 import { programarExpiracionCheckouts } from './jobs/expirarCheckouts.js';
@@ -46,6 +46,8 @@ function cerrar(senal: string): void {
         logger.error('El cierre tardó demasiado: se fuerza la salida');
         process.exit(1);
     }, 10_000).unref();
+    // Las conexiones SSE quedan abiertas indefinidamente: se cierran primero para que close() termine.
+    (app.locals.servicios as ServiciosApp).cerrar();
     servidor.close(() => {
         Promise.all(tareas.map((t) => t.detener()))
             .then(() => cerrarConexion())

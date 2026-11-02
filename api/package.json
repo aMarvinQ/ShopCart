@@ -25,6 +25,7 @@
     "argon2": "^0.45.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "exceljs": "^4.4.0",
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.2",
     "file-type": "^22.3.0",
@@ -32,6 +33,7 @@
     "jose": "^6.2.15",
     "mssql": "^12.7.13",
     "multer": "^2.5.0",
+    "pdfkit": "^0.20.2",
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
     "sharp": "^0.35.5",
@@ -46,6 +48,7 @@
     "@types/mssql": "^12.3.0",
     "@types/multer": "^2.3.0",
     "@types/node": "^26.6.6",
+    "@types/pdfkit": "^0.17.7",
     "@types/supertest": "^7.2.1",
     "@types/swagger-ui-express": "^4.1.8",
     "eslint": "^10.14.0",
@@ -58,6 +61,9 @@
     "vitest": "^5.0.5"
   },
   "overrides": {
-    "minimatch": "^11.0.1"
+    "minimatch": "^11.0.1",
+    "exceljs": {
+      "uuid": "^11.1.1"
+    }
   }
 }

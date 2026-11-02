@@ -71,9 +71,10 @@ export function crearRutasCheckout({
     pasarela,
     claves,
     limites,
+    eventos,
     autenticacion: { autenticarOpcional },
 }: DependenciasRutas): Router {
-    const c = crearControladorCheckout(crearServicioCheckout({ pasarela, claves }));
+    const c = crearControladorCheckout(crearServicioCheckout({ pasarela, claves }), eventos);
     const rutas = Router();
     rutas.post('/checkout', autenticarOpcional, c.iniciar);
     rutas.get('/checkout/:id', autenticarOpcional, c.obtener);

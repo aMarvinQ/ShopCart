@@ -62,6 +62,10 @@ describe('documentación (D68)', () => {
                 '/api/v1/checkout/{id}/pago',
                 '/api/v1/pedidos/{id}/devoluciones',
                 '/api/v1/seguimiento/{token}',
+                '/api/v1/reportes/resumen',
+                '/api/v1/reportes/tiempo-real',
+                '/api/v1/bitacora/exportar',
+                '/api/v1/parametros/{clave}',
             ]),
         );
         expect(documento.components).toHaveProperty('securitySchemes.bearerAuth');

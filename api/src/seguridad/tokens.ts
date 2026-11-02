@@ -12,6 +12,8 @@ export type Rol = 'CLIENTE' | 'OPERADOR' | 'ADMIN';
 export interface UsuarioSesion {
     id: number;
     rol: Rol;
+    /** Vencimiento del access token (ms desde 1970); lo usan las conexiones largas (SSE). */
+    expiraEn?: number;
 }
 
 const ROLES: readonly string[] = ['CLIENTE', 'OPERADOR', 'ADMIN'];
@@ -48,7 +50,7 @@ export class Tokens {
             if (!Number.isInteger(id) || typeof payload.rol !== 'string' || !ROLES.includes(payload.rol)) {
                 throw new ErrorApi(401, 'TOKEN_INVALIDO', 'El token de acceso no es válido.');
             }
-            return { id, rol: payload.rol as Rol };
+            return { id, rol: payload.rol as Rol, ...(payload.exp ? { expiraEn: payload.exp * 1000 } : {}) };
         } catch (error) {
             if (error instanceof ErrorApi) throw error;
             if (error instanceof errors.JWTExpired) {

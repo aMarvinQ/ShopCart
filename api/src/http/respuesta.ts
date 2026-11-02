@@ -6,6 +6,8 @@ export interface Meta {
     pagina?: number;
     tamanoPagina?: number;
     totalRegistros?: number;
+    /** Reportes: cuándo se calcularon los datos (pueden venir del caché). */
+    generadoEn?: string;
 }
 
 export function responder(res: Response, data: unknown, opciones: { estado?: number; meta?: Meta } = {}): void {

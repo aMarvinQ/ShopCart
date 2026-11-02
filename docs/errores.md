@@ -46,6 +46,7 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 | 422 | `CONTRASENA_ACTUAL_INCORRECTA` | Al cambiar la contraseña, la actual no coincide. |
 | 404 | `PEDIDO_NO_ENCONTRADO` | Enlace de seguimiento con un token mal formado: responde igual que uno desconocido (el SP responde el 50116 para los demás). |
 | 409 | `CHECKOUT_NO_PAGABLE` | Se intenta pagar un checkout cancelado o cuyo carrito cambió: la API lo detecta antes de cobrar (el SP lo vuelve a validar, 51603). |
+| 429 | `DEMASIADAS_CONEXIONES` | Más de 3 conexiones abiertas al dashboard en tiempo real del mismo usuario, o más de 50 en total. |
 | 429 | `DEMASIADOS_INTENTOS` | Se superó el límite de intentos de login, registro, renovación o pago (10 fallidos por IP cada 15 minutos); ver `Retry-After`. |
 | 404 | `RUTA_NO_ENCONTRADA` | La ruta o el método no existen. |
 | 413 | `CUERPO_DEMASIADO_GRANDE` | El cuerpo supera 100 KB. |

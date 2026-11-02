@@ -10,6 +10,9 @@ import { pinoHttp } from 'pino-http';
 */
 const FORMATO_ID = /^[A-Za-z0-9-]{8,64}$/;
 
+/** El token del enlace de seguimiento es una credencial: no se escribe en los logs. */
+export const ocultarCredencialesUrl = (url: string): string => url.replace(/(\/seguimiento\/)[^/?#]+/, '$1[OCULTO]');
+
 export function registroPeticiones(logger: Logger) {
     return pinoHttp({
         logger,
@@ -29,7 +32,7 @@ export function registroPeticiones(logger: Logger) {
             req: (req: { id: unknown; method: string; url: string }) => ({
                 id: req.id,
                 method: req.method,
-                url: req.url,
+                url: ocultarCredencialesUrl(req.url),
             }),
             res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
         },

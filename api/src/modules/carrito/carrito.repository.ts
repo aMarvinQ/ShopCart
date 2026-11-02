@@ -1,19 +1,13 @@
 import { ejecutarProcedimiento, TipoSql, type Parametro } from '../../db/index.js';
+import { parametrosPropietario as propietario, type Propietario } from './comprador.js';
 
 /*
     El carrito pertenece a un cliente (IDUsuario, del token) o a un invitado (SHA-256 del token de
     su cookie), nunca a ambos. Todos los SPs devuelven el carrito completo (SP_Carrito_Obtener).
 */
-export type Propietario = { idUsuario: number } | { tokenHash: Buffer };
-
 type Fila = Record<string, unknown>;
 const JSON_CARRITO = { json: ['cupon', 'items'] };
 
-function propietario(p: Propietario): Record<string, Parametro> {
-    return 'idUsuario' in p
-        ? { IDUsuario: { tipo: TipoSql.Int, valor: p.idUsuario } }
-        : { TokenInvitadoHash: { tipo: TipoSql.VarBinary(64), valor: p.tokenHash } };
-}
 const variante = (idVariante: number): Parametro => ({ tipo: TipoSql.Int, valor: idVariante });
 
 // Los SPs del carrito siempre devuelven una fila (sin carrito: IDCarrito NULL e Items vacío).

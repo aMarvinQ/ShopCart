@@ -27,7 +27,7 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 
 | HTTP | Código | Cuándo |
 |---|---|---|
-| 400 | `SOLICITUD_INVALIDA` | Los datos de la petición no cumplen su esquema; `detalles` indica cada campo y su problema. |
+| 400 | `SOLICITUD_INVALIDA` | Los datos de la petición no cumplen su esquema; `detalles` indica cada campo y su problema. Incluye la cabecera `Idempotency-Key` ausente o que no es UUID al iniciar el checkout, y la tarjeta que no pasa Luhn, de marca no aceptada, vencida o con CVV de longitud incorrecta (`tarjeta.numero`, `tarjeta.vencimiento`, `tarjeta.cvv`): estas no llegan a la pasarela. |
 | 400 | `JSON_INVALIDO` | El cuerpo no es un JSON válido. |
 | 400 | `ARCHIVO_INVALIDO` | Un archivo subido no es una imagen JPEG, PNG o WebP según su contenido (aunque su extensión lo diga), o está dañado. |
 | 400 | `ARCHIVOS_INVALIDOS` | La subida no trae de 1 a 10 imágenes en el campo `archivos` de un `multipart/form-data`. |
@@ -37,9 +37,16 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 | 401 | `CREDENCIALES_INVALIDAS` | Correo o contraseña incorrectos (misma respuesta en ambos casos, para no revelar qué correos existen). |
 | 401 | `USUARIO_INACTIVO` | Inicio de sesión correcto de una cuenta desactivada. |
 | 401 | `SESION_INVALIDA`, `ROTACION_CONCURRENTE`, `REUSO_DETECTADO`, `SESION_EXPIRADA` | Resultado de `POST /auth/refresh` que no emite token (ver *Resultados de la rotación de sesión*). Sin cookie: `SESION_INVALIDA`. |
+| 402 | `FONDOS_INSUFICIENTES` | La pasarela rechazó el cobro por fondos. El intento queda registrado (`Pago` `RECHAZADO`) y el checkout sigue pagable. |
+| 402 | `TARJETA_RECHAZADA` | Rechazo genérico del banco. También se responde así a una tarjeta reportada como robada o extraviada (en la base queda `TARJETA_REPORTADA`), para no informar a quien la usa. |
+| 402 | `TARJETA_VENCIDA` | El banco indica que la tarjeta está vencida (aunque la fecha escrita sea futura). |
+| 402 | `CVV_INCORRECTO` | El banco indica que el código de seguridad no coincide. |
+| 402 | `PAGO_NO_PROCESADO` | La pasarela no pudo procesar el cobro (`ERROR_PROCESADOR`); se puede reintentar. |
 | 403 | `PERMISO_DENEGADO` | El rol del token no tiene permiso para la ruta (la API lo valida antes que el SP). |
 | 422 | `CONTRASENA_ACTUAL_INCORRECTA` | Al cambiar la contraseña, la actual no coincide. |
-| 429 | `DEMASIADOS_INTENTOS` | Se superó el límite de intentos de login, registro o renovación; ver `Retry-After`. |
+| 404 | `PEDIDO_NO_ENCONTRADO` | Enlace de seguimiento con un token mal formado: responde igual que uno desconocido (el SP responde el 50116 para los demás). |
+| 409 | `CHECKOUT_NO_PAGABLE` | Se intenta pagar un checkout cancelado o cuyo carrito cambió: la API lo detecta antes de cobrar (el SP lo vuelve a validar, 51603). |
+| 429 | `DEMASIADOS_INTENTOS` | Se superó el límite de intentos de login, registro, renovación o pago (10 fallidos por IP cada 15 minutos); ver `Retry-After`. |
 | 404 | `RUTA_NO_ENCONTRADA` | La ruta o el método no existen. |
 | 413 | `CUERPO_DEMASIADO_GRANDE` | El cuerpo supera 100 KB. |
 | 413 | `ARCHIVO_DEMASIADO_GRANDE` | Una imagen subida pesa más de 5 MB. |

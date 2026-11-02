@@ -15,6 +15,7 @@ const CAMPOS_OCULTOS = [
     '*.password',
     '*.token',
     '*.refreshToken',
+    '*.tarjeta',
     '*.numeroTarjeta',
     '*.cvv',
     '*.vencimiento',

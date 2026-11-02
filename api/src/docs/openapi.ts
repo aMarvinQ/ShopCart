@@ -30,6 +30,7 @@ const esquemaError = registro.register(
 const DESCRIPCION_ERROR: Record<number, string> = {
     400: 'Datos de entrada inválidos',
     401: 'Sin sesión o token inválido o vencido',
+    402: 'Pago rechazado por el banco',
     403: 'Sin permiso para la acción',
     404: 'No encontrado',
     409: 'Conflicto con el estado actual',
@@ -51,6 +52,8 @@ export interface DefinicionRuta {
     autenticado?: boolean;
     params?: ZodObject;
     query?: ZodObject;
+    /** Cabeceras de la petición (p. ej. Idempotency-Key). */
+    cabeceras?: ZodObject;
     cuerpo?: ZodType;
     /** Formato del cuerpo: JSON (por defecto) o multipart/form-data (subida de archivos). */
     tipoCuerpo?: 'json' | 'multipart';
@@ -92,6 +95,7 @@ export function documentar(definicion: DefinicionRuta): void {
         request: {
             ...(definicion.params ? { params: definicion.params } : {}),
             ...(definicion.query ? { query: definicion.query } : {}),
+            ...(definicion.cabeceras ? { headers: definicion.cabeceras } : {}),
             ...(definicion.cuerpo
                 ? {
                       body: {

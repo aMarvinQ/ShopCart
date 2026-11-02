@@ -32,6 +32,17 @@ describe('límite de intentos (D66)', () => {
     });
 });
 
+describe('límite de intentos de pago (D75)', () => {
+    it('el intento fallido 11 desde la misma IP en 15 minutos → 429, sin llegar a la pasarela', async () => {
+        const tarjeta = { numero: '4242424242424242', titular: 'PRUEBA', vencimiento: '12/30', cvv: '123' };
+        for (let i = 1; i <= 10; i += 1) {
+            await request(app).post('/api/v1/checkout/999999999/pago').send({ tarjeta }).expect(404);
+        }
+        const bloqueado = await request(app).post('/api/v1/checkout/999999999/pago').send({ tarjeta }).expect(429);
+        expect(bloqueado.body).toMatchObject({ error: { codigo: 'DEMASIADOS_INTENTOS' } });
+    });
+});
+
 describe('documentación (D68)', () => {
     it('OpenAPI generado de los esquemas, con las rutas de la API y el esquema de seguridad', async () => {
         const respuesta = await request(app).get('/api/v1/docs/openapi.json').expect(200);
@@ -47,6 +58,10 @@ describe('documentación (D68)', () => {
                 '/api/v1/perfil',
                 '/api/v1/usuarios/{id}/estado',
                 '/api/v1/direcciones/{id}',
+                '/api/v1/checkout',
+                '/api/v1/checkout/{id}/pago',
+                '/api/v1/pedidos/{id}/devoluciones',
+                '/api/v1/seguimiento/{token}',
             ]),
         );
         expect(documento.components).toHaveProperty('securitySchemes.bearerAuth');

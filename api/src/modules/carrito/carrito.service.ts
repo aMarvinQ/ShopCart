@@ -1,10 +1,8 @@
-import { randomBytes } from 'node:crypto';
 import type { Logger } from 'pino';
 import { numeroErrorSql } from '../../db/index.js';
-import { ErrorApi } from '../../errors/ErrorApi.js';
-import { generarTokenOpaco, hashToken, type UsuarioSesion } from '../../seguridad/tokens.js';
+import { generarTokenOpaco, hashToken } from '../../seguridad/tokens.js';
 import * as repositorio from './carrito.repository.js';
-import type { Propietario } from './carrito.repository.js';
+import { propietarioDe, propietarioODesconocido, type Comprador, type Propietario } from './comprador.js';
 
 /*
     Lo que la API agrega al carrito: quién es el dueño (cliente del token o invitado de la
@@ -12,33 +10,14 @@ import type { Propietario } from './carrito.repository.js';
 */
 const CARRITO_CERRADO = 51303;
 
-export interface Comprador {
-    usuario: UsuarioSesion | undefined;
-    tokenInvitado: string | undefined;
-}
-
 export interface ResultadoCarrito {
     carrito: Record<string, unknown>;
     /** Token nuevo del invitado: el controlador lo deja en la cookie. */
     tokenNuevo?: string;
 }
 
-/** El personal no tiene carrito (D71); el cliente se identifica por su token, el invitado por su cookie. */
-function propietarioDe({ usuario, tokenInvitado }: Comprador): Propietario | null {
-    if (usuario) {
-        if (usuario.rol !== 'CLIENTE') {
-            throw new ErrorApi(403, 'PERMISO_DENEGADO', 'El personal de la tienda no tiene carrito.');
-        }
-        return { idUsuario: usuario.id };
-    }
-    return tokenInvitado ? { tokenHash: hashToken(tokenInvitado) } : null;
-}
-
-/** Invitado sin cookie: un dueño que no tiene carrito (consultar no crea la cookie). */
-const sinCarrito = (): Propietario => ({ tokenHash: randomBytes(32) });
-
 export async function obtener(comprador: Comprador): Promise<ResultadoCarrito> {
-    return { carrito: await repositorio.obtener(propietarioDe(comprador) ?? sinCarrito()) };
+    return { carrito: await repositorio.obtener(propietarioODesconocido(comprador)) };
 }
 
 /*
@@ -65,7 +44,7 @@ export async function modificar(
     comprador: Comprador,
     operacion: (propietario: Propietario) => Promise<Record<string, unknown>>,
 ): Promise<ResultadoCarrito> {
-    return { carrito: await operacion(propietarioDe(comprador) ?? sinCarrito()) };
+    return { carrito: await operacion(propietarioODesconocido(comprador)) };
 }
 
 /*

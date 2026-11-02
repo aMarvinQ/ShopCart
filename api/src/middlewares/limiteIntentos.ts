@@ -4,7 +4,7 @@ import type { Configuracion } from '../config/configuracion.js';
 import { ErrorApi } from '../errors/ErrorApi.js';
 
 /*
-    Límite de intentos en autenticación (D66), en memoria del proceso (una instancia de la API;
+    Límite de intentos en autenticación (D66) y en el pago (D75), en memoria del proceso (una instancia de la API;
     con varias haría falta un almacén compartido como Redis). Al superarlo: 429 con Retry-After.
 */
 export interface LimitesIntentos {
@@ -14,6 +14,8 @@ export interface LimitesIntentos {
     registro: RequestHandler;
     /** Renovación de sesión: 60 por IP cada 15 minutos. */
     refresh: RequestHandler;
+    /** Pago (D75): 10 intentos fallidos por IP cada 15 minutos (evita probar tarjetas robadas). */
+    pago: RequestHandler;
 }
 
 const QUINCE_MINUTOS = 15 * 60 * 1000;
@@ -56,5 +58,6 @@ export function crearLimitesIntentos(config: Configuracion): LimitesIntentos {
         ],
         registro: limite(60 * 60 * 1000, 5, ip, false),
         refresh: limite(QUINCE_MINUTOS, 60, ip, false),
+        pago: limite(QUINCE_MINUTOS, 10, ip, true),
     };
 }

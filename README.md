@@ -89,6 +89,8 @@ Otros comandos: `npm run build` y `npm start` (producción), `npm run lint`, `np
 
 **Probar la API**: `http://localhost:3000/api/v1/docs` (Swagger) documenta cada endpoint con sus datos de entrada, respuestas y errores, y permite ejecutarlos. Para las rutas protegidas: ejecuta `POST /auth/login` con una de las [credenciales de prueba](#credenciales-de-prueba), copia `accessToken` y pégalo en **Authorize**. La documentación se genera de los mismos esquemas que validan las peticiones, así que no puede quedar desactualizada.
 
+**Probar una compra en Swagger**: agrega productos con `POST /carrito/items` (sin **Authorize** compras como invitado; el navegador guarda la cookie), inicia el checkout con `POST /checkout` escribiendo un UUID cualquiera en la cabecera `idempotency-key` y paga con `POST /checkout/{id}/pago` usando una de las [tarjetas de prueba](#pago-simulado). Con el `tokenSeguimiento` de la respuesta, `GET /seguimiento/{token}` muestra el pedido sin sesión; el panel (`/pedidos`) se prueba con la cuenta del operador.
+
 ---
 
 ## Decisiones técnicas
@@ -189,7 +191,8 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Imágenes de productos**: subida en dos pasos (primero los archivos, después se asocian sus rutas al producto). Cada archivo se identifica por su contenido real, no por la extensión ni el `Content-Type`; se aceptan JPEG, PNG y WebP de hasta 5 MB y se vuelven a codificar como WebP de hasta 1600 px, lo que elimina metadatos (p. ej. la ubicación GPS) y cualquier contenido escondido. Se guardan con nombre aleatorio. Al eliminar una imagen del producto se borra su archivo, y un proceso horario borra los archivos subidos que nunca se asociaron (más de 24 horas).
 - **Carrito sin obligar a iniciar sesión**: el comprador es el cliente del access token o el invitado de la cookie `shopcart_invitado` (token aleatorio de 256 bits; la base guarda su SHA-256; `httpOnly`, `SameSite=Strict`, 30 días), que se crea al agregar el primer producto. Un token vencido responde 401 en lugar de tratarse como invitado, y el personal no tiene carrito (403). Al iniciar sesión o registrarse, el carrito del invitado se fusiona con el de la cuenta.
 - **Edición concurrente**: las lecturas devuelven `versionFila` (base64) y las ediciones la reciben; si otro usuario guardó antes, 409 `EDICION_CONCURRENTE`. Un producto con todas sus variantes e imágenes se crea en una sola llamada y transacción (parámetros con valor de tabla).
-- **Resiliencia**: la API arranca aunque la base no esté lista (se conecta en la primera petición y `/health` responde 503 mientras tanto); ante un deadlock reintenta una vez solo las operaciones seguras de repetir; al detenerse (Ctrl+C o SIGTERM) termina las peticiones en curso y cierra el pool. En Windows, el modo de desarrollo (`npm run dev`, con recarga automática) termina el proceso sin ese cierre ordenado; con `npm start` sí ocurre.
+- **Resiliencia**: la API arranca aunque la base no esté lista (se conecta en la primera petición y `/health` responde 503 mientras tanto); ante un deadlock reintenta una vez solo las operaciones seguras de repetir; al detenerse (Ctrl+C o SIGTERM) termina las peticiones en curso y las tareas periódicas, y cierra el pool.
+- **Tareas periódicas dentro de la API** (SQL Server Express no tiene SQL Agent): expiración de checkouts cada minuto (y una vez al arrancar) y limpieza de imágenes cada hora. Nunca se ejecutan encimadas consigo mismas y un error queda en el log sin detener las siguientes. En Windows, el modo de desarrollo (`npm run dev`, con recarga automática) termina el proceso sin ese cierre ordenado; con `npm start` sí ocurre.
 
 ### Stored procedures: contrato con la API
 
@@ -225,7 +228,7 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Política de contraseña** (la valida la API, porque la base nunca la ve): de 8 a 128 caracteres, con al menos una letra y un número; sin exigir símbolos (guía NIST). El inicio de sesión responde igual, y con el mismo costo de verificación, si el correo no existe o la contraseña es incorrecta.
 - **Access token**: JWT HS256 de 15 minutos con lo mínimo (`sub`, `rol`), enviado en `Authorization: Bearer`. Vencido → 401 `TOKEN_EXPIRADO` (el frontend renueva); rol insuficiente → 403. El usuario siempre sale del token, nunca del cuerpo de la petición.
 - **Cookie del refresh token**: `httpOnly` (JavaScript no la lee), `SameSite=Strict` (no viaja en peticiones de otros sitios), solo para `/api/v1/auth` y `Secure` en producción.
-- **Límite de intentos**: login, 10 fallidos por correo e IP (y 50 por IP) cada 15 minutos; registro, 5 por IP cada hora; renovación, 60 por IP cada 15 minutos. Después responde 429 con `Retry-After`. Se guarda en memoria del proceso (una instancia; con varias, un almacén compartido como Redis).
+- **Límite de intentos**: login, 10 fallidos por correo e IP (y 50 por IP) cada 15 minutos; registro, 5 por IP cada hora; renovación, 60 por IP cada 15 minutos; pago, 10 fallidos por IP cada 15 minutos (evita que la tienda se use para probar tarjetas robadas). Después responde 429 con `Retry-After`. Se guarda en memoria del proceso (una instancia; con varias, un almacén compartido como Redis).
 - **Orden de bloqueo**: todos los SPs del módulo bloquean primero `Usuario` y después `RefreshToken`, así una desactivación simultánea a un inicio de sesión o una rotación no puede dejar una sesión viva ni producir interbloqueos.
 
 ### Inventario
@@ -271,6 +274,27 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Montos e IVA**: total = subtotal − descuento + envío; el descuento se reparte por línea cuadrado al centavo y el IVA incluido se desglosa (`TASA_IVA`).
 - **Expiración**: un checkout vencido deja de restar disponibilidad en el instante en que vence; un proceso de la API lo marca `EXPIRADO` cada minuto y libera sus reservas en la misma transacción.
 - **Pagos rechazados**: se registra cada intento con marca, últimos 4 dígitos y motivo; nunca el número completo, el CVV ni el vencimiento.
+- **Clave de idempotencia obligatoria**: `POST /checkout` exige la cabecera `Idempotency-Key` (UUID) que el frontend genera cada vez que el comprador pasa al pago; sin ella responde 400. La garantía está en la base (índice único por carrito y clave), así funciona aunque la API tenga varias instancias.
+
+### Pago simulado
+
+- **Pasarela reemplazable**: la API depende de una interfaz `PasarelaPagos` (cobrar y anular); la implementación incluida es simulada. En producción se usaría el adaptador de una pasarela real, donde además la tarjeta la captura el navegador (tokenización) y el servidor nunca la ve.
+- **Validación antes de cobrar**: número con el algoritmo de Luhn, marca por prefijo (Visa `4`; Mastercard `51–55` y `2221–2720`; American Express `34` y `37`) con su longitud, vencimiento `MM/AA` no pasado y CVV de 3 dígitos (4 en Amex). Un error responde 400 indicando el campo y no llega a la pasarela.
+- **Datos de tarjeta (PCI DSS)**: el número completo, el CVV y el vencimiento no se guardan ni se escriben en los logs; a la base llegan solo la marca, los últimos 4 dígitos, el código de autorización y la referencia del cobro.
+- **Orden que evita cobrar dos veces**: (1) si el checkout ya tiene pedido, se devuelve ese pedido sin cobrar; (2) la pasarela cobra con una clave de idempotencia derivada del checkout y la tarjeta, así un doble clic es el mismo cobro aunque las dos peticiones lleguen a la vez; (3) un rechazo se registra y responde 402 con su motivo; (4) con el cobro aprobado, el SP crea el pedido. Si la base lo rechaza por una regla (otro cobro ganó la carrera, el carrito cambió, venció sin existencia, el cupón se agotó) la API **anula el cobro**; si la falla no es de negocio (se cortó la conexión), no lo anula, porque el pedido pudo crearse: lo deja en el log para conciliar y el reintento llega al mismo cobro y al mismo pedido. Verificado por la API: doble clic y dos tarjetas distintas a la vez producen un solo pedido y un solo cobro en firme.
+- **Enlace de seguimiento**: token de 256 bits derivado del checkout con una clave secreta del servidor (HMAC); la base guarda su SHA-256. Es el mismo en cada respuesta del mismo pago, así un reintento devuelve un enlace que funciona. No se escribe en los logs y su respuesta no se guarda en cachés (`Cache-Control: no-store`).
+- **Tarjetas de prueba** (cualquier nombre, vencimiento futuro y CVV de la longitud correcta; cualquier otra tarjeta válida se aprueba):
+
+| Número | Resultado |
+|---|---|
+| `4242 4242 4242 4242` (Visa), `5555 5555 5555 4444` (Mastercard), `3782 822463 10005` (Amex) | Aprobada |
+| `4000 0000 0000 9995` | 402 `FONDOS_INSUFICIENTES` |
+| `4000 0000 0000 0002` | 402 `TARJETA_RECHAZADA` |
+| `4000 0000 0000 9979` | 402 `TARJETA_RECHAZADA` (en la base: `TARJETA_REPORTADA`, robada; al comprador no se le dice) |
+| `4000 0000 0000 0069` | 402 `TARJETA_VENCIDA` |
+| `4000 0000 0000 0127` | 402 `CVV_INCORRECTO` |
+| `4000 0000 0000 0119` | 402 `PAGO_NO_PROCESADO` |
+| `4242 4242 4242 4241` | 400: no pasa Luhn |
 
 ### Pedidos
 

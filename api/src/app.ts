@@ -15,21 +15,27 @@ import { registroPeticiones } from './middlewares/registroPeticiones.js';
 import { crearRutasAuth } from './modules/auth/auth.routes.js';
 import { crearRutasCarrito } from './modules/carrito/carrito.routes.js';
 import { crearRutasCatalogo } from './modules/catalogo/catalogo.routes.js';
+import { crearRutasCheckout } from './modules/checkout/checkout.routes.js';
 import { crearRutasCupones } from './modules/cupones/cupones.routes.js';
 import { crearRutasDirecciones } from './modules/direcciones/direcciones.routes.js';
 import { crearRutasEnvios } from './modules/envios/envios.routes.js';
 import { crearRutasInventario } from './modules/inventario/inventario.routes.js';
+import { crearRutasPedidos } from './modules/pedidos/pedidos.routes.js';
 import { rutasSistema } from './modules/sistema/sistema.routes.js';
 import { crearRutasTienda } from './modules/tienda/tienda.routes.js';
 import { crearRutasUsuarios } from './modules/usuarios/usuarios.routes.js';
+import { PasarelaSimulada, type PasarelaPagos } from './pagos/pasarela.js';
+import { ClavesCheckout } from './seguridad/clavesCheckout.js';
 import { Tokens } from './seguridad/tokens.js';
 
 export interface DependenciasApp {
     config: Configuracion;
     logger: Logger;
+    /** Pasarela de pagos; por defecto la simulada (las pruebas pasan la suya para revisar los cobros). */
+    pasarela?: PasarelaPagos;
 }
 
-export function crearApp({ config, logger }: DependenciasApp): Express {
+export function crearApp({ config, logger, pasarela = new PasarelaSimulada() }: DependenciasApp): Express {
     const app = express();
     app.disable('x-powered-by');
 
@@ -66,6 +72,8 @@ export function crearApp({ config, logger }: DependenciasApp): Express {
         tokens,
         autenticacion: crearAutenticacion(tokens),
         limites: crearLimitesIntentos(config),
+        pasarela,
+        claves: new ClavesCheckout(config.JWT_SECRETO),
     };
 
     const api = Router();
@@ -79,6 +87,8 @@ export function crearApp({ config, logger }: DependenciasApp): Express {
     api.use(crearRutasInventario(dependencias));
     api.use(crearRutasCarrito(dependencias));
     api.use(crearRutasCupones(dependencias));
+    api.use(crearRutasCheckout(dependencias));
+    api.use(crearRutasPedidos(dependencias));
 
     if (config.DOCS_ACTIVAS) {
         const documento = generarDocumento();

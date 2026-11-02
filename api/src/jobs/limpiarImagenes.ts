@@ -1,6 +1,7 @@
 import type { Logger } from 'pino';
 import { filtrarImagenesEnUso } from '../modules/catalogo/catalogo.repository.js';
 import type { AlmacenImagenes } from '../storage/almacenImagenes.js';
+import { programarTarea, type TareaProgramada } from './programador.js';
 
 /*
     Borra los archivos subidos que nunca se asociaron a un producto (subida en dos pasos). Solo
@@ -24,18 +25,15 @@ export async function limpiarImagenesHuerfanas(almacen: AlmacenImagenes, ahora =
     return eliminadas;
 }
 
-/** Ejecuta la limpieza cada hora (no impide que el proceso termine). */
-export function programarLimpiezaImagenes(almacen: AlmacenImagenes, logger: Logger): NodeJS.Timeout {
-    const ejecutar = () => {
-        limpiarImagenesHuerfanas(almacen).then(
-            (eliminadas) => {
-                if (eliminadas.length > 0)
-                    logger.info({ eliminadas: eliminadas.length }, 'Imágenes huérfanas eliminadas');
-            },
-            (error: unknown) => {
-                logger.error({ err: error }, 'Falló la limpieza de imágenes huérfanas');
-            },
-        );
-    };
-    return setInterval(ejecutar, 60 * 60 * 1000).unref();
+/** Ejecuta la limpieza cada hora. */
+export function programarLimpiezaImagenes(almacen: AlmacenImagenes, logger: Logger): TareaProgramada {
+    return programarTarea(
+        'limpiar-imagenes',
+        60 * 60 * 1000,
+        async () => {
+            const eliminadas = await limpiarImagenesHuerfanas(almacen);
+            if (eliminadas.length > 0) logger.info({ eliminadas: eliminadas.length }, 'Imágenes huérfanas eliminadas');
+        },
+        logger,
+    );
 }

@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { crearApp } from './app.js';
 import { cargarConfiguracion, ConfiguracionInvalidaError } from './config/configuracion.js';
 import { cerrarConexion, configurarConexion } from './db/index.js';
+import { programarExpiracionCheckouts } from './jobs/expirarCheckouts.js';
 import { programarLimpiezaImagenes } from './jobs/limpiarImagenes.js';
 import { crearLogger } from './logger.js';
 import { AlmacenImagenes } from './storage/almacenImagenes.js';
@@ -29,9 +30,13 @@ const servidor = app.listen(config.PUERTO, () => {
 });
 
 // Procesos periódicos (solo en el servidor; las pruebas los ejecutan directamente).
-programarLimpiezaImagenes(new AlmacenImagenes(config.CARPETA_UPLOADS), logger);
+const expiracion = programarExpiracionCheckouts(logger);
+const tareas = [expiracion, programarLimpiezaImagenes(new AlmacenImagenes(config.CARPETA_UPLOADS), logger)];
+// Al arrancar se ponen al día los checkouts que vencieron mientras la API estaba detenida.
+void expiracion.ejecutar();
 
-// Cierre ordenado: deja de aceptar peticiones, termina las que están en curso y cierra el pool.
+// Cierre ordenado: deja de aceptar peticiones, termina las que están en curso (y las tareas
+// periódicas) y cierra el pool.
 let cerrando = false;
 function cerrar(senal: string): void {
     if (cerrando) return;
@@ -42,13 +47,15 @@ function cerrar(senal: string): void {
         process.exit(1);
     }, 10_000).unref();
     servidor.close(() => {
-        cerrarConexion().then(
-            () => process.exit(0),
-            (error: unknown) => {
-                logger.error({ err: error }, 'Error al cerrar la conexión');
-                process.exit(1);
-            },
-        );
+        Promise.all(tareas.map((t) => t.detener()))
+            .then(() => cerrarConexion())
+            .then(
+                () => process.exit(0),
+                (error: unknown) => {
+                    logger.error({ err: error }, 'Error al cerrar la conexión');
+                    process.exit(1);
+                },
+            );
     });
 }
 process.on('SIGINT', () => {

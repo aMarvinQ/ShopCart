@@ -5,12 +5,16 @@ import { crearApp } from '../../src/app.js';
 import { cargarConfiguracion, type Configuracion } from '../../src/config/configuracion.js';
 import { cerrarConexion, configurarConexion } from '../../src/db/index.js';
 import { crearLogger } from '../../src/logger.js';
+import type { PasarelaPagos } from '../../src/pagos/pasarela.js';
 
-/** App completa conectada a la base de pruebas, sin abrir un puerto (supertest la invoca directo). */
-export function crearAppPrueba(cambios: Partial<Configuracion> = {}): Express {
+/**
+ * App completa conectada a la base de pruebas, sin abrir un puerto (supertest la invoca directo).
+ * Las pruebas de pago pasan su propia pasarela para revisar los cobros.
+ */
+export function crearAppPrueba(cambios: Partial<Configuracion> = {}, pasarela?: PasarelaPagos): Express {
     const config = { ...cargarConfiguracion(), ...cambios };
     configurarConexion(config);
-    return crearApp({ config, logger: crearLogger(config) });
+    return crearApp({ config, logger: crearLogger(config), ...(pasarela ? { pasarela } : {}) });
 }
 
 export { cerrarConexion };

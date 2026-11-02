@@ -1,17 +1,12 @@
 import type { Request, Response } from 'express';
 import type { Configuracion } from '../../config/configuracion.js';
-import { escribirTokenInvitado, leerTokenInvitado } from '../../http/cookieInvitado.js';
+import { escribirTokenInvitado } from '../../http/cookieInvitado.js';
 import { responder, validar } from '../../http/respuesta.js';
 import * as repositorio from './carrito.repository.js';
 import { esquemaAgregarItem, esquemaCantidad, esquemaCodigoCupon, esquemaIdVariante } from './carrito.schemas.js';
 import * as servicio from './carrito.service.js';
 import type { ResultadoCarrito } from './carrito.service.js';
-
-/* Cliente (token) o invitado (cookie): el comprador sale siempre de la sesión, nunca del cuerpo. */
-const comprador = (req: Request): servicio.Comprador => ({
-    usuario: req.usuario,
-    tokenInvitado: leerTokenInvitado(req),
-});
+import { compradorDe as comprador } from './comprador.js';
 
 export function crearControladorCarrito(config: Configuracion) {
     function entregar(res: Response, { carrito, tokenNuevo }: ResultadoCarrito): void {

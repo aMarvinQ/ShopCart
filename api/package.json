@@ -1,0 +1,17 @@
+{
+  "name": "shopcart-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API de ShopCart (Node.js + TypeScript + Express).",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "imagenes:semilla": "node scripts/generar-imagenes-semilla.mjs",
+    "imagenes:verificar": "node scripts/generar-imagenes-semilla.mjs --verificar"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.5"
+  }
+}

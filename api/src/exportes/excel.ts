@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import {
     aFecha,
     aTexto,
+    esperarCliente,
     esVerdadero,
     horaGuatemala,
     recorrer,
@@ -101,6 +102,7 @@ export async function escribirExcel(
         encabezado(hoja, seccion.columnas.length);
         for await (const fila of recorrer(seccion.filas)) {
             if (cancelado()) return;
+            await esperarCliente(destino);
             hoja.addRow(
                 Object.fromEntries(seccion.columnas.map((c) => [c.clave, celda(fila[c.clave], c.tipo)])),
             ).commit();

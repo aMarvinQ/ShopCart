@@ -1,5 +1,5 @@
 import type { z } from '../../config/zod.js';
-import { ejecutarProcedimiento, tablaSql, TipoSql } from '../../db/index.js';
+import { ejecutarProcedimiento, parametrosOrden, tablaSql, TipoSql } from '../../db/index.js';
 import type { esquemaExistencias, esquemaKardex, esquemaMovimiento } from './inventario.schemas.js';
 
 /* Inventario (OPERADOR y ADMIN): la existencia cambia solo junto con su kardex, dentro del SP. */
@@ -16,6 +16,7 @@ export async function listarExistencias(idUsuario: number, f: z.infer<typeof esq
             SoloAgotadas: { tipo: TipoSql.Bit, valor: f.soloAgotadas ?? false },
             Pagina: { tipo: TipoSql.Int, valor: f.pagina },
             TamanoPagina: { tipo: TipoSql.Int, valor: f.tamanoPagina },
+            ...parametrosOrden(f),
             SoloExistenciaBaja: { tipo: TipoSql.Bit, valor: f.soloExistenciaBaja ?? false },
         },
         { salidas: { TotalRegistros: TipoSql.Int }, reintentable: true },
@@ -34,6 +35,7 @@ export async function listarKardex(idUsuario: number, f: z.infer<typeof esquemaK
             FechaHasta: { tipo: TipoSql.DateTime2(3), valor: f.fechaHasta ?? null },
             Pagina: { tipo: TipoSql.Int, valor: f.pagina },
             TamanoPagina: { tipo: TipoSql.Int, valor: f.tamanoPagina },
+            ...parametrosOrden(f),
         },
         { salidas: { TotalRegistros: TipoSql.Int }, reintentable: true },
     );

@@ -141,7 +141,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Inventario_ListarExistencias
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
     @TotalRegistros  INT = NULL OUTPUT,
-    @SoloExistenciaBaja BIT = 0
+    @SoloExistenciaBaja BIT = 0,
+    @OrdenarPor      VARCHAR(21) = 'PRODUCTO',
+    @Direccion       VARCHAR(5) = 'ASC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -168,6 +170,10 @@ BEGIN
             THROW 59001, N'CONFIGURACION_INCOMPLETA: falta EXISTENCIA_MINIMA (0–999).', 1;
     END;
 
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'PRODUCTO'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'ASC')));
+    IF @OrdenarPor NOT IN ('PRODUCTO', 'SKU', 'CATEGORIA', 'FISICA', 'RESERVADO', 'DISPONIBLE') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por PRODUCTO, SKU, CATEGORIA, FISICA, RESERVADO o DISPONIBLE, en dirección ASC o DESC.', 1;
+
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.Variante AS v
     JOIN dbo.Producto AS p ON p.IDProducto = v.IDProducto
@@ -193,7 +199,19 @@ BEGIN
       AND (@Patron IS NULL OR p.Nombre LIKE @Patron ESCAPE N'\' OR v.SKU LIKE @Patron ESCAPE N'\')
       AND (@SoloAgotadas = 0 OR d.Disponible = 0)
       AND (@ExistenciaMinima IS NULL OR (v.Activo = 1 AND p.Activo = 1 AND d.Disponible <= @ExistenciaMinima))
-    ORDER BY p.Nombre, v.SKU
+    ORDER BY CASE WHEN @OrdenarPor = 'PRODUCTO' AND @Direccion = 'ASC' THEN p.Nombre END ASC,
+             CASE WHEN @OrdenarPor = 'PRODUCTO' AND @Direccion = 'DESC' THEN p.Nombre END DESC,
+             CASE WHEN @OrdenarPor = 'SKU' AND @Direccion = 'ASC' THEN v.SKU END ASC,
+             CASE WHEN @OrdenarPor = 'SKU' AND @Direccion = 'DESC' THEN v.SKU END DESC,
+             CASE WHEN @OrdenarPor = 'CATEGORIA' AND @Direccion = 'ASC' THEN c.Nombre END ASC,
+             CASE WHEN @OrdenarPor = 'CATEGORIA' AND @Direccion = 'DESC' THEN c.Nombre END DESC,
+             CASE WHEN @OrdenarPor = 'FISICA' AND @Direccion = 'ASC' THEN d.ExistenciaFisica END ASC,
+             CASE WHEN @OrdenarPor = 'FISICA' AND @Direccion = 'DESC' THEN d.ExistenciaFisica END DESC,
+             CASE WHEN @OrdenarPor = 'RESERVADO' AND @Direccion = 'ASC' THEN d.Reservado END ASC,
+             CASE WHEN @OrdenarPor = 'RESERVADO' AND @Direccion = 'DESC' THEN d.Reservado END DESC,
+             CASE WHEN @OrdenarPor = 'DISPONIBLE' AND @Direccion = 'ASC' THEN d.Disponible END ASC,
+             CASE WHEN @OrdenarPor = 'DISPONIBLE' AND @Direccion = 'DESC' THEN d.Disponible END DESC,
+             v.SKU
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);
@@ -213,7 +231,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Inventario_ListarKardex
     @FechaHasta      DATETIME2(3) = NULL,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 50,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'FECHA',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -240,6 +260,10 @@ BEGIN
     IF @IDVariante IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.Variante AS v WHERE v.IDVariante = @IDVariante)
         THROW 50106, N'VARIANTE_NO_ENCONTRADA: la variante no existe.', 1;
 
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'FECHA'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('FECHA', 'PRODUCTO', 'CANTIDAD') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por FECHA, PRODUCTO o CANTIDAD, en dirección ASC o DESC.', 1;
+
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.MovimientoInventario AS m
     WHERE (@IDVariante IS NULL OR m.IDVariante = @IDVariante)
@@ -260,7 +284,13 @@ BEGIN
       AND (@IDTipo IS NULL OR m.IDTipoMovimiento = @IDTipo)
       AND (@FechaDesde IS NULL OR m.Fecha >= @FechaDesde)
       AND (@FechaHasta IS NULL OR m.Fecha < @FechaHasta)
-    ORDER BY m.IDMovimientoInventario DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'ASC' THEN m.IDMovimientoInventario END ASC,
+             CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'DESC' THEN m.IDMovimientoInventario END DESC,
+             CASE WHEN @OrdenarPor = 'PRODUCTO' AND @Direccion = 'ASC' THEN p.Nombre END ASC,
+             CASE WHEN @OrdenarPor = 'PRODUCTO' AND @Direccion = 'DESC' THEN p.Nombre END DESC,
+             CASE WHEN @OrdenarPor = 'CANTIDAD' AND @Direccion = 'ASC' THEN m.Cantidad END ASC,
+             CASE WHEN @OrdenarPor = 'CANTIDAD' AND @Direccion = 'DESC' THEN m.Cantidad END DESC,
+             m.IDMovimientoInventario DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);

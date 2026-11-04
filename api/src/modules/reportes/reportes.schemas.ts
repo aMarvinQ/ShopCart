@@ -1,5 +1,5 @@
 import { z } from '../../config/zod.js';
-import { esquemaPaginacion } from '../../http/esquemas.js';
+import { esquemaOrden, esquemaPaginacion } from '../../http/esquemas.js';
 
 /** Día de Guatemala AAAA-MM-DD que existe en el calendario (2026-02-30 no). */
 export const esquemaDia = z
@@ -25,6 +25,7 @@ export const esquemaVentasPeriodo = esquemaRango.extend({
 });
 
 export const esquemaCarritosAbandonados = esquemaPaginacion.extend({
+    ...esquemaOrden(['ACTIVIDAD', 'VALOR', 'ARTICULOS'], 'ACTIVIDAD', 'DESC'),
     fechaDesde: esquemaDia.optional().openapi({ description: 'Última actividad desde (día de Guatemala).' }),
     fechaHasta: esquemaDia.optional().openapi({ description: 'Última actividad hasta (incluido).' }),
 });

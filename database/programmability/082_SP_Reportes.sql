@@ -268,7 +268,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Reportes_CarritosAbandonados
     @FechaHasta      DATE = NULL,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'ACTIVIDAD',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -291,6 +293,10 @@ BEGIN
     SELECT @DesdeUtc = r.DesdeUtc FROM dbo.FU_Reportes_RangoUtc(@FechaDesde, @FechaDesde) AS r;
     SELECT @HastaUtc = r.HastaUtc FROM dbo.FU_Reportes_RangoUtc(@FechaHasta, @FechaHasta) AS r;
 
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'ACTIVIDAD'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('ACTIVIDAD', 'VALOR', 'ARTICULOS') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por ACTIVIDAD, VALOR o ARTICULOS, en dirección ASC o DESC.', 1;
+
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.FU_Reportes_CarritosAbandonados(@Ahora, @HorasCarritoAbandonado) AS ca
     WHERE (@DesdeUtc IS NULL OR ca.FechaUltimaActividad >= @DesdeUtc)
@@ -306,7 +312,13 @@ BEGIN
     LEFT JOIN dbo.Cupon AS cu ON cu.IDCupon = ca.IDCupon
     WHERE (@DesdeUtc IS NULL OR ca.FechaUltimaActividad >= @DesdeUtc)
       AND (@HastaUtc IS NULL OR ca.FechaUltimaActividad < @HastaUtc)
-    ORDER BY ca.FechaUltimaActividad DESC, ca.IDCarrito DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'ACTIVIDAD' AND @Direccion = 'ASC' THEN ca.FechaUltimaActividad END ASC,
+             CASE WHEN @OrdenarPor = 'ACTIVIDAD' AND @Direccion = 'DESC' THEN ca.FechaUltimaActividad END DESC,
+             CASE WHEN @OrdenarPor = 'VALOR' AND @Direccion = 'ASC' THEN ca.Valor END ASC,
+             CASE WHEN @OrdenarPor = 'VALOR' AND @Direccion = 'DESC' THEN ca.Valor END DESC,
+             CASE WHEN @OrdenarPor = 'ARTICULOS' AND @Direccion = 'ASC' THEN ca.Articulos END ASC,
+             CASE WHEN @OrdenarPor = 'ARTICULOS' AND @Direccion = 'DESC' THEN ca.Articulos END DESC,
+             ca.IDCarrito DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);

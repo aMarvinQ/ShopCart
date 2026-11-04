@@ -68,6 +68,8 @@ export const TARJETAS_PRUEBA: Readonly<Record<string, MotivoRechazo>> = {
 
 const VIGENCIA_CLAVE_MS = 24 * 60 * 60 * 1000;
 const MAXIMO_CLAVES = 10_000;
+/** Memoria acotada: solo se conservan los últimos movimientos, para diagnóstico y pruebas. */
+const MAXIMO_MOVIMIENTOS = 1_000;
 
 export interface MovimientoPasarela {
     tipo: 'COBRO' | 'ANULACION';
@@ -100,11 +102,11 @@ export class PasarelaSimulada implements PasarelaPagos {
     }
 
     anular(referencia: string): Promise<void> {
-        this.historial.push({ tipo: 'ANULACION', referencia });
+        this.registrar({ tipo: 'ANULACION', referencia });
         return Promise.resolve();
     }
 
-    /** Cobros y anulaciones procesados (para las pruebas y el diagnóstico; sin datos de tarjeta). */
+    /** Últimos cobros y anulaciones (para las pruebas y el diagnóstico; sin datos de tarjeta). */
     movimientos(): readonly MovimientoPasarela[] {
         return this.historial;
     }
@@ -118,8 +120,13 @@ export class PasarelaSimulada implements PasarelaPagos {
         const motivo = TARJETAS_PRUEBA[numero];
         if (motivo) return { ...comun, estado: 'RECHAZADO', motivo };
 
-        this.historial.push({ tipo: 'COBRO', referencia: comun.referencia, monto });
+        this.registrar({ tipo: 'COBRO', referencia: comun.referencia, monto });
         return { ...comun, estado: 'APROBADO', codigoAutorizacion: String(randomInt(100_000, 1_000_000)) };
+    }
+
+    private registrar(movimiento: MovimientoPasarela): void {
+        this.historial.push(movimiento);
+        if (this.historial.length > MAXIMO_MOVIMIENTOS) this.historial.shift();
     }
 
     private depurar(ahora: number): void {

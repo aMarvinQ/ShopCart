@@ -56,7 +56,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Pedidos_Listar
     @Busqueda        NVARCHAR(101) = NULL,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'FECHA',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -87,6 +89,10 @@ BEGIN
     SET @Patron = N'%' + REPLACE(REPLACE(REPLACE(REPLACE(@Busqueda,
                       N'\', N'\\'), N'%', N'\%'), N'_', N'\_'), N'[', N'\[') + N'%';
 
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'FECHA'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('FECHA', 'NUMERO', 'CLIENTE', 'TOTAL', 'ESTADO') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por FECHA, NUMERO, CLIENTE, TOTAL o ESTADO, en dirección ASC o DESC.', 1;
+
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.Pedido AS p
     WHERE (@IDEstado IS NULL OR p.IDEstadoPedido = @IDEstado)
@@ -106,7 +112,17 @@ BEGIN
       AND (@FechaHasta IS NULL OR p.FechaPedido < @FechaHasta)
       AND (@Patron IS NULL OR p.NumeroPedido LIKE @Patron ESCAPE N'\' OR p.CorreoContacto LIKE @Patron ESCAPE N'\'
            OR p.NombreContacto LIKE @Patron ESCAPE N'\')
-    ORDER BY p.FechaPedido DESC, p.IDPedido DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'ASC' THEN p.FechaPedido END ASC,
+             CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'DESC' THEN p.FechaPedido END DESC,
+             CASE WHEN @OrdenarPor = 'NUMERO' AND @Direccion = 'ASC' THEN p.NumeroPedido END ASC,
+             CASE WHEN @OrdenarPor = 'NUMERO' AND @Direccion = 'DESC' THEN p.NumeroPedido END DESC,
+             CASE WHEN @OrdenarPor = 'CLIENTE' AND @Direccion = 'ASC' THEN p.NombreContacto END ASC,
+             CASE WHEN @OrdenarPor = 'CLIENTE' AND @Direccion = 'DESC' THEN p.NombreContacto END DESC,
+             CASE WHEN @OrdenarPor = 'TOTAL' AND @Direccion = 'ASC' THEN p.Total END ASC,
+             CASE WHEN @OrdenarPor = 'TOTAL' AND @Direccion = 'DESC' THEN p.Total END DESC,
+             CASE WHEN @OrdenarPor = 'ESTADO' AND @Direccion = 'ASC' THEN e.Orden END ASC,
+             CASE WHEN @OrdenarPor = 'ESTADO' AND @Direccion = 'DESC' THEN e.Orden END DESC,
+             p.IDPedido DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);
@@ -118,7 +134,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Pedidos_ListarCliente
     @IDUsuario      INT,
     @Pagina         INT = 1,
     @TamanoPagina   INT = 10,
-    @TotalRegistros INT = NULL OUTPUT
+    @TotalRegistros INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'FECHA',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -129,6 +147,10 @@ BEGIN
     IF @Pagina IS NULL OR @Pagina < 1 OR @TamanoPagina IS NULL OR @TamanoPagina NOT BETWEEN 1 AND 100
         THROW 50007, N'PAGINACION_INVALIDA: la página inicia en 1 y el tamaño va de 1 a 100.', 1;
 
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'FECHA'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('FECHA', 'TOTAL') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por FECHA o TOTAL, en dirección ASC o DESC.', 1;
+
     SELECT @TotalRegistros = COUNT(*) FROM dbo.Pedido AS p WHERE p.IDUsuario = @IDUsuario;
 
     SELECT p.IDPedido, p.NumeroPedido, p.FechaPedido, e.Codigo AS CodigoEstado, e.Nombre AS Estado, p.Total,
@@ -136,7 +158,11 @@ BEGIN
     FROM dbo.Pedido AS p
     JOIN dbo.EstadoPedido AS e ON e.IDEstadoPedido = p.IDEstadoPedido
     WHERE p.IDUsuario = @IDUsuario
-    ORDER BY p.FechaPedido DESC, p.IDPedido DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'ASC' THEN p.FechaPedido END ASC,
+             CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'DESC' THEN p.FechaPedido END DESC,
+             CASE WHEN @OrdenarPor = 'TOTAL' AND @Direccion = 'ASC' THEN p.Total END ASC,
+             CASE WHEN @OrdenarPor = 'TOTAL' AND @Direccion = 'DESC' THEN p.Total END DESC,
+             p.IDPedido DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY;
 END;
@@ -382,9 +408,13 @@ BEGIN
             -- Otro checkout pendiente del mismo carrito (se pagó uno que acababa de vencer): ya no
             -- se podrá pagar, así que se cancela y libera sus reservas (checkout antes que reservas,
             -- como el job de expiración).
-            UPDATE dbo.Checkout SET Estado = 'CANCELADO', FechaCierre = @Ahora
+            -- Índice obligado: solo toca las filas de este carrito. Si recorriera la tabla (el optimizador
+            -- lo elige cuando es pequeña) chocaría con el checkout de otro comprador que está pagando
+            -- y, con el cupón o las variantes ya bloqueados, produciría un interbloqueo.
+            UPDATE ch SET Estado = 'CANCELADO', FechaCierre = @Ahora
             OUTPUT inserted.IDCheckout INTO @OtrosPendientes (IDCheckout)
-            WHERE IDCarrito = @IDCarrito AND Estado = 'PENDIENTE';
+            FROM dbo.Checkout AS ch WITH (INDEX (UQ_Checkout_CarritoPendiente))
+            WHERE ch.IDCarrito = @IDCarrito AND ch.Estado = 'PENDIENTE';
 
             UPDATE r SET Estado = 'LIBERADA', FechaCierre = @Ahora
             FROM dbo.ReservaInventario AS r

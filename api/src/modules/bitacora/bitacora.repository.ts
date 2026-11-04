@@ -1,4 +1,4 @@
-import { ejecutarProcedimiento, TipoSql } from '../../db/index.js';
+import { ejecutarProcedimiento, parametrosOrden, TipoSql } from '../../db/index.js';
 import type { FiltrosBitacora } from './bitacora.schemas.js';
 
 /*
@@ -25,6 +25,7 @@ export async function listar(idUsuario: number, f: FiltrosBitacora, pagina: numb
             FechaHasta: dia(f.fechaHasta),
             Pagina: { tipo: TipoSql.Int, valor: pagina },
             TamanoPagina: { tipo: TipoSql.Int, valor: tamanoPagina },
+            ...parametrosOrden(f),
         },
         { salidas: { TotalRegistros: TipoSql.Int }, json: ['valorAnterior', 'valorNuevo'], reintentable: true },
     );

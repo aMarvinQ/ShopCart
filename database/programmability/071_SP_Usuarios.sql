@@ -216,7 +216,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Usuarios_Listar
     @Busqueda        NVARCHAR(101) = NULL,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'CREACION',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -236,6 +238,10 @@ BEGIN
     SET @Patron = N'%' + REPLACE(REPLACE(REPLACE(REPLACE(@Busqueda,
                       N'\', N'\\'), N'%', N'\%'), N'_', N'\_'), N'[', N'\[') + N'%';
 
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'CREACION'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('CREACION', 'NOMBRE', 'CORREO', 'ROL', 'ACCESO', 'ESTADO') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por CREACION, NOMBRE, CORREO, ROL, ACCESO o ESTADO, en dirección ASC o DESC.', 1;
+
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.VW_Usuarios_Detalle AS d
     WHERE (@CodigoRol IS NULL OR d.CodigoRol = @CodigoRol)
@@ -251,7 +257,22 @@ BEGIN
       AND (@Activo IS NULL OR d.Activo = @Activo)
       AND (@Patron IS NULL OR d.Correo LIKE @Patron ESCAPE N'\'
            OR CONCAT(d.Nombre, N' ', d.Apellido) LIKE @Patron ESCAPE N'\')
-    ORDER BY d.FechaCreacion DESC, d.IDUsuario DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'ACCESO' AND d.UltimoAcceso IS NULL THEN 1 ELSE 0 END,
+             CASE WHEN @OrdenarPor = 'CREACION' AND @Direccion = 'ASC' THEN d.FechaCreacion END ASC,
+             CASE WHEN @OrdenarPor = 'CREACION' AND @Direccion = 'DESC' THEN d.FechaCreacion END DESC,
+             CASE WHEN @OrdenarPor = 'NOMBRE' AND @Direccion = 'ASC' THEN d.Nombre END ASC,
+             CASE WHEN @OrdenarPor = 'NOMBRE' AND @Direccion = 'DESC' THEN d.Nombre END DESC,
+             CASE WHEN @OrdenarPor = 'NOMBRE' AND @Direccion = 'ASC' THEN d.Apellido END ASC,
+             CASE WHEN @OrdenarPor = 'NOMBRE' AND @Direccion = 'DESC' THEN d.Apellido END DESC,
+             CASE WHEN @OrdenarPor = 'CORREO' AND @Direccion = 'ASC' THEN d.Correo END ASC,
+             CASE WHEN @OrdenarPor = 'CORREO' AND @Direccion = 'DESC' THEN d.Correo END DESC,
+             CASE WHEN @OrdenarPor = 'ROL' AND @Direccion = 'ASC' THEN d.NombreRol END ASC,
+             CASE WHEN @OrdenarPor = 'ROL' AND @Direccion = 'DESC' THEN d.NombreRol END DESC,
+             CASE WHEN @OrdenarPor = 'ACCESO' AND @Direccion = 'ASC' THEN d.UltimoAcceso END ASC,
+             CASE WHEN @OrdenarPor = 'ACCESO' AND @Direccion = 'DESC' THEN d.UltimoAcceso END DESC,
+             CASE WHEN @OrdenarPor = 'ESTADO' AND @Direccion = 'ASC' THEN d.Activo END ASC,
+             CASE WHEN @OrdenarPor = 'ESTADO' AND @Direccion = 'DESC' THEN d.Activo END DESC,
+             d.IDUsuario DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);

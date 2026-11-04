@@ -390,6 +390,33 @@ describe('el último uso de un cupón (RF-05)', () => {
     });
 });
 
+describe('pagos simultáneos sin interbloqueos', () => {
+    /*
+        Regresión: al cerrar la compra, SP_Pedidos_Crear recorría toda la tabla Checkout y chocaba
+        con el comprador de al lado; SQL Server tardaba de 1 a 5 s en resolver el interbloqueo. Sin
+        él, varios pagos del mismo producto se atienden en orden en una fracción de ese tiempo.
+    */
+    it('ocho invitados pagan el mismo producto a la vez: todos compran, sin esperas de segundos', async () => {
+        const producto = await crearProducto(app, admin, { existencia: 20 });
+        const compradores = await Promise.all(
+            Array.from({ length: 8 }, async () => {
+                const invitado = await agregar(app, { cookie: '' }, producto.idVariante, 1);
+                const { idCheckout } = datos<Checkout>(
+                    await iniciarCheckout(app, invitado, { idMetodoEnvio: 1, invitado: DIRECCION_INVITADO }).expect(
+                        201,
+                    ),
+                );
+                return { invitado, idCheckout };
+            }),
+        );
+        const inicio = performance.now();
+        const pagos = await Promise.all(compradores.map((c) => pagar(app, c.invitado, c.idCheckout)));
+        expect(performance.now() - inicio).toBeLessThan(1500);
+        expect(pagos.map((p) => p.status)).toEqual(Array.from({ length: 8 }, () => 201));
+        expect(await existenciaDe(app, admin, producto)).toBe(12);
+    });
+});
+
 describe('quién puede comprar', () => {
     it('el personal no inicia checkouts (403) y un invitado sin carrito recibe 404', async () => {
         await iniciarCheckout(app, { token: admin.token }, { idMetodoEnvio: 1, idDireccion: 1 }).expect(403);

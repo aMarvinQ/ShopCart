@@ -1,6 +1,6 @@
 import type { Writable } from 'node:stream';
 import PDFDocument from 'pdfkit';
-import { formatear, recorrer, type Columna, type Documento, type TipoColumna } from './documento.js';
+import { esperarCliente, formatear, recorrer, type Columna, type Documento, type TipoColumna } from './documento.js';
 
 /*
     PDF en flujo con pdfkit: cada página se envía al terminarla (sin bufferPages), así la memoria
@@ -147,6 +147,7 @@ export async function escribirPdf(
         let vacia = true;
         for await (const fila of recorrer(seccion.filas)) {
             if (cancelado()) break;
+            await esperarCliente(destino);
             vacia = false;
             if (y + ALTO_FILA > limiteInferior(doc)) {
                 doc.addPage();

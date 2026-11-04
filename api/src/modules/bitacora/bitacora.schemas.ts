@@ -1,5 +1,5 @@
 import { z } from '../../config/zod.js';
-import { esquemaPaginacion } from '../../http/esquemas.js';
+import { esquemaOrden, esquemaPaginacion } from '../../http/esquemas.js';
 import { esquemaDia } from '../reportes/reportes.schemas.js';
 
 /* Las mismas listas que CK_Bitacora_Modulo y CK_Bitacora_Accion. */
@@ -7,6 +7,7 @@ export const MODULOS = ['CATALOGO', 'INVENTARIO', 'CUPONES', 'PEDIDOS', 'USUARIO
 export const ACCIONES = ['CREAR', 'MODIFICAR', 'ACTIVAR', 'DESACTIVAR', 'CAMBIAR_ESTADO'] as const;
 
 const filtros = {
+    ...esquemaOrden(['FECHA', 'MODULO', 'ACCION'], 'FECHA', 'DESC'),
     modulo: z.enum(MODULOS).optional(),
     accion: z.enum(ACCIONES).optional(),
     idUsuario: z.coerce.number().int().positive().optional().openapi({ description: 'Quién hizo el cambio.' }),

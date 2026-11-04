@@ -47,6 +47,7 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 | 404 | `PEDIDO_NO_ENCONTRADO` | Enlace de seguimiento con un token mal formado: responde igual que uno desconocido (el SP responde el 50116 para los demás). |
 | 409 | `CHECKOUT_NO_PAGABLE` | Se intenta pagar un checkout cancelado o cuyo carrito cambió: la API lo detecta antes de cobrar (el SP lo vuelve a validar, 51603). |
 | 429 | `DEMASIADAS_CONEXIONES` | Más de 3 conexiones abiertas al dashboard en tiempo real del mismo usuario, o más de 50 en total. |
+| 429 | `DEMASIADAS_EXPORTACIONES` | Ya hay 3 exportaciones a Excel o PDF en curso en el servidor. |
 | 429 | `DEMASIADOS_INTENTOS` | Se superó el límite de intentos de login, registro, renovación o pago (10 fallidos por IP cada 15 minutos); ver `Retry-After`. |
 | 404 | `RUTA_NO_ENCONTRADA` | La ruta o el método no existen. |
 | 413 | `CUERPO_DEMASIADO_GRANDE` | El cuerpo supera 100 KB. |
@@ -79,7 +80,7 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 | 50019 | `COMBINACION_INCOMPLETA` | Las variantes del producto no usan todas los mismos atributos, hay más de una y alguna no tiene atributos, o hay atributos para una variante que no viene en la lista. |
 | 50020 | `IMAGEN_INVALIDA` | Ruta fuera de `/uploads/` o con `..`, texto alternativo vacío, imagen de un valor que ninguna variante del producto usa, imágenes por valor de dos atributos distintos, o más de una principal en un grupo. |
 | 50021 | `RANGO_PRECIO_INVALIDO` | Búsqueda con un precio negativo o con el mínimo mayor que el máximo. |
-| 50022 | `ORDENAMIENTO_INVALIDO` | Búsqueda ordenada por algo distinto de `RECIENTES`, `NOMBRE` o `PRECIO`, o con una dirección distinta de `ASC`/`DESC`. |
+| 50022 | `ORDENAMIENTO_INVALIDO` | Listado ordenado por una columna que no está en su lista permitida, o con una dirección distinta de `ASC`/`DESC`. |
 | 50023 | `TIPO_MOVIMIENTO_INVALIDO` | El tipo de movimiento no existe o no se puede registrar a mano (ventas, cancelaciones, devoluciones e inventario inicial los generan sus procesos). |
 | 50024 | `MOTIVO_INVALIDO` | Falta el motivo en un tipo que lo exige (ajustes) o tiene más de 300 caracteres. En pedidos: cancelación de un operador o devolución sin motivo, o motivo o comentario de más de 500. |
 | 50025 | `CANTIDAD_INVALIDA` | Cantidad cero o negativa en un movimiento de inventario, en el carrito o en una devolución. |

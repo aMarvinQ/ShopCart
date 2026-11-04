@@ -1,4 +1,4 @@
-import { ejecutarProcedimiento, TipoSql } from '../../db/index.js';
+import { ejecutarProcedimiento, parametrosOrden, TipoSql } from '../../db/index.js';
 import type { FiltrosCarritos, FiltrosVentasPeriodo, Rango } from './reportes.schemas.js';
 
 /*
@@ -70,6 +70,7 @@ export async function carritosAbandonados(
             ...rango(f),
             Pagina: { tipo: TipoSql.Int, valor: pagina },
             TamanoPagina: { tipo: TipoSql.Int, valor: tamanoPagina },
+            ...parametrosOrden(f),
         },
         { salidas: { TotalRegistros: TipoSql.Int }, ...LECTURA },
     );

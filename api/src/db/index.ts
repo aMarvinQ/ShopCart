@@ -1,5 +1,5 @@
 export { configurarConexion, cerrarConexion } from './conexion.js';
-export { ejecutarProcedimiento, numeroErrorSql, tablaSql, TipoSql } from './procedimiento.js';
+export { ejecutarProcedimiento, numeroErrorSql, parametrosOrden, tablaSql, TipoSql } from './procedimiento.js';
 export type {
     ColumnaTabla,
     ValorCelda,

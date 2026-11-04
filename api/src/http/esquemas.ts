@@ -7,6 +7,24 @@ export const esquemaPaginacion = z.object({
     tamanoPagina: z.coerce.number().int().min(1).max(100).default(20).openapi({ example: 20 }),
 });
 
+/**
+ * Ordenamiento del lado del servidor: `ordenarPor` solo acepta las columnas de la lista del
+ * listado (el SP vuelve a validarla) y `direccion`, ASC o DESC. Se agrega con `...esquemaOrden()`.
+ */
+export function esquemaOrden<const C extends readonly [string, ...string[]]>(
+    columnas: C,
+    porDefecto: C[number],
+    direccion: 'ASC' | 'DESC',
+) {
+    return {
+        ordenarPor: z
+            .enum(columnas)
+            .default(porDefecto as never)
+            .openapi({ description: `Columna por la que se ordena (por defecto ${porDefecto}).` }),
+        direccion: z.enum(['ASC', 'DESC']).default(direccion),
+    };
+}
+
 export const esquemaId = z.object({
     id: z.coerce
         .number()

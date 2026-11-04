@@ -68,7 +68,13 @@ export function crearServicioReportes(eventos: EventosNegocio) {
                 topProductos(idUsuario, f),
             ]);
             const existencias = await paginado((pagina, tamanoPagina) =>
-                listarExistencias(idUsuario, { pagina, tamanoPagina, soloExistenciaBaja: true }),
+                listarExistencias(idUsuario, {
+                    pagina,
+                    tamanoPagina,
+                    soloExistenciaBaja: true,
+                    ordenarPor: 'PRODUCTO',
+                    direccion: 'ASC',
+                }),
             );
             const d = r.datos;
             return {

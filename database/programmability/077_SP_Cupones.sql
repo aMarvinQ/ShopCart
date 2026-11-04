@@ -65,7 +65,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Cupones_Listar
     @Situacion       VARCHAR(11) = NULL,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'RECIENTES',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -89,6 +91,10 @@ BEGIN
     SET @Patron = N'%' + REPLACE(REPLACE(REPLACE(REPLACE(@Busqueda,
                       N'\', N'\\'), N'%', N'\%'), N'_', N'\_'), N'[', N'\[') + N'%';
 
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'RECIENTES'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('RECIENTES', 'CODIGO', 'VIGENCIA', 'USOS') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por RECIENTES, CODIGO, VIGENCIA o USOS, en dirección ASC o DESC.', 1;
+
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.Cupon AS c
     JOIN dbo.FU_Cupones_Situacion(@Ahora) AS s ON s.IDCupon = c.IDCupon
@@ -104,7 +110,15 @@ BEGIN
     LEFT JOIN dbo.Categoria AS cat ON cat.IDCategoria = c.IDCategoria
     WHERE (@Patron IS NULL OR c.Codigo LIKE @Patron ESCAPE N'\' OR c.Descripcion LIKE @Patron ESCAPE N'\')
       AND (@Situacion IS NULL OR s.Situacion = @Situacion)
-    ORDER BY c.IDCupon DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'RECIENTES' AND @Direccion = 'ASC' THEN c.IDCupon END ASC,
+             CASE WHEN @OrdenarPor = 'RECIENTES' AND @Direccion = 'DESC' THEN c.IDCupon END DESC,
+             CASE WHEN @OrdenarPor = 'CODIGO' AND @Direccion = 'ASC' THEN c.Codigo END ASC,
+             CASE WHEN @OrdenarPor = 'CODIGO' AND @Direccion = 'DESC' THEN c.Codigo END DESC,
+             CASE WHEN @OrdenarPor = 'VIGENCIA' AND @Direccion = 'ASC' THEN c.FechaFin END ASC,
+             CASE WHEN @OrdenarPor = 'VIGENCIA' AND @Direccion = 'DESC' THEN c.FechaFin END DESC,
+             CASE WHEN @OrdenarPor = 'USOS' AND @Direccion = 'ASC' THEN c.UsosActuales END ASC,
+             CASE WHEN @OrdenarPor = 'USOS' AND @Direccion = 'DESC' THEN c.UsosActuales END DESC,
+             c.IDCupon DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);

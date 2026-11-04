@@ -1,3 +1,5 @@
+import type { Writable } from 'node:stream';
+
 /*
     Modelo común de un documento exportable (D77): un título, indicadores opcionales y secciones
     con columnas tipadas. El mismo documento se escribe en Excel o en PDF, así los dos formatos
@@ -41,6 +43,36 @@ export interface Documento {
 }
 
 export const TOPE_FILAS = 10_000;
+/** Un cliente que deja de leer más de este tiempo se desconecta: no retiene memoria ni un cupo. */
+const LIMITE_CLIENTE_SIN_LEER_MS = 60_000;
+
+/**
+ * Control de flujo: si el cliente lee más lento de lo que se genera, se espera a que vacíe lo
+ * pendiente antes de seguir, así el archivo no se acumula en memoria. También continúa si la
+ * conexión se cerró (el escritor lo detecta) y falla si el cliente deja de leer.
+ */
+export async function esperarCliente(destino: Writable, limiteMs = LIMITE_CLIENTE_SIN_LEER_MS): Promise<void> {
+    if (!destino.writableNeedDrain || destino.destroyed) return;
+    await new Promise<void>((resolver, rechazar) => {
+        const limpiar = () => {
+            clearTimeout(temporizador);
+            destino.off('drain', continuar);
+            destino.off('close', continuar);
+            destino.off('error', continuar);
+        };
+        const continuar = () => {
+            limpiar();
+            resolver();
+        };
+        const temporizador = setTimeout(() => {
+            limpiar();
+            rechazar(new Error('El cliente dejó de leer la descarga.'));
+        }, limiteMs);
+        destino.once('drain', continuar);
+        destino.once('close', continuar);
+        destino.once('error', continuar);
+    });
+}
 
 /* --- Formato para mostrar (PDF y nombres) ------------------------------------------------- */
 

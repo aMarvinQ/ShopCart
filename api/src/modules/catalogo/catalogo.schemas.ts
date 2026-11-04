@@ -1,5 +1,12 @@
 import { z } from '../../config/zod.js';
-import { booleanoQuery, esquemaMonto, esquemaPaginacion, esquemaSlug, esquemaVersion } from '../../http/esquemas.js';
+import {
+    booleanoQuery,
+    esquemaMonto,
+    esquemaOrden,
+    esquemaPaginacion,
+    esquemaSlug,
+    esquemaVersion,
+} from '../../http/esquemas.js';
 
 /* Entrada: los límites coinciden con los de las columnas; las reglas de negocio las valida el SP. */
 
@@ -50,6 +57,7 @@ export const esquemaActualizarValor = esquemaCrearValor.extend({ orden: z.number
 
 /* --- Productos ---------------------------------------------------------------------------- */
 export const esquemaListarProductos = esquemaPaginacion.extend({
+    ...esquemaOrden(['MODIFICACION', 'NOMBRE', 'CATEGORIA', 'PRECIO', 'EXISTENCIA'], 'MODIFICACION', 'DESC'),
     idCategoria: z.coerce.number().int().positive().optional(),
     activo: booleanoQuery.optional(),
     busqueda: z.string().trim().max(100).optional().openapi({ description: 'Nombre o SKU (contiene).' }),

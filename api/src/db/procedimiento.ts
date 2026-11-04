@@ -19,6 +19,12 @@ export interface Parametro {
     valor: unknown;
 }
 
+/** Parámetros @OrdenarPor y @Direccion de los listados con ordenamiento del servidor. */
+export const parametrosOrden = (orden: { ordenarPor: string; direccion: string }): Record<string, Parametro> => ({
+    OrdenarPor: { tipo: sql.VarChar(21), valor: orden.ordenarPor },
+    Direccion: { tipo: sql.VarChar(5), valor: orden.direccion },
+});
+
 export interface OpcionesProcedimiento {
     /** Parámetros OUTPUT del SP, con su tipo. */
     salidas?: Record<string, TipoParametro>;

@@ -1,4 +1,4 @@
-import { ejecutarProcedimiento, TipoSql } from '../../db/index.js';
+import { ejecutarProcedimiento, parametrosOrden, TipoSql } from '../../db/index.js';
 import type { z } from '../../config/zod.js';
 import type { esquemaActualizarPerfil, esquemaCrearInterno, esquemaListarUsuarios } from './usuarios.schemas.js';
 
@@ -67,6 +67,7 @@ export async function listar(
             Busqueda: { tipo: TipoSql.NVarChar(101), valor: filtros.busqueda || null },
             Pagina: { tipo: TipoSql.Int, valor: filtros.pagina },
             TamanoPagina: { tipo: TipoSql.Int, valor: filtros.tamanoPagina },
+            ...parametrosOrden(filtros),
         },
         { salidas: { TotalRegistros: TipoSql.Int }, reintentable: true },
     );

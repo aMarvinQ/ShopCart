@@ -39,14 +39,17 @@ async function existencia(sku: string): Promise<Existencia> {
 
 describe('existencias', () => {
     it('el filtro de existencia baja incluye las variantes en venta con disponible ≤ EXISTENCIA_MINIMA', async () => {
-        const respuesta = await comoOperador(
-            request(app).get('/api/v1/inventario/existencias?soloExistenciaBaja=true&tamanoPagina=100'),
-        ).expect(200);
-        const filas = datos<Existencia[]>(respuesta);
-        expect(filas.map((f) => f.sku)).toEqual(
-            expect.arrayContaining(['CTL-ROJ', 'TEN-BLA-42', 'TER-VER', 'PLA-NEG-S']),
-        );
-        expect(filas.every((f) => f.disponible <= 5)).toBe(true);
+        const buscar = async (filtro: string) =>
+            datos<Existencia[]>(
+                await comoOperador(
+                    request(app).get(`/api/v1/inventario/existencias?soloExistenciaBaja=true&${filtro}`),
+                ).expect(200),
+            );
+        // Por SKU: la base de pruebas acumula productos que no deben sacarlos de la primera página.
+        for (const sku of ['CTL-ROJ', 'TEN-BLA-42', 'TER-VER', 'PLA-NEG-S']) {
+            expect((await buscar(`busqueda=${sku}`)).map((f) => f.sku)).toContain(sku);
+        }
+        expect((await buscar('tamanoPagina=100')).every((f) => f.disponible <= 5)).toBe(true);
     });
 });
 

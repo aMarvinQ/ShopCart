@@ -1,5 +1,12 @@
 import type { z } from '../../config/zod.js';
-import { ejecutarProcedimiento, tablaSql, TipoSql, type Parametro, type ValorCelda } from '../../db/index.js';
+import {
+    ejecutarProcedimiento,
+    parametrosOrden,
+    tablaSql,
+    TipoSql,
+    type Parametro,
+    type ValorCelda,
+} from '../../db/index.js';
 import type { esquemaDatosCategoria, esquemaListarProductos, ImagenNueva, VarianteNueva } from './catalogo.schemas.js';
 
 /* Administración del catálogo (ADMIN). Cada SP valida permisos y reglas, y registra la bitácora. */
@@ -242,6 +249,7 @@ export async function listarProductos(admin: number, f: z.infer<typeof esquemaLi
             Busqueda: { tipo: TipoSql.NVarChar(101), valor: f.busqueda || null },
             Pagina: entero(f.pagina),
             TamanoPagina: entero(f.tamanoPagina),
+            ...parametrosOrden(f),
         },
         { salidas: { TotalRegistros: TipoSql.Int }, reintentable: true },
     );

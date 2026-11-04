@@ -77,7 +77,9 @@ describe('integridad de los reportes', () => {
         expect(suma(meses)).toBe(centavos(resumen.ventaNeta));
         expect(meses.reduce((t, m) => t + m.pedidos, 0)).toBe(resumen.pedidos);
         expect(suma(categorias)).toBe(centavos(resumen.ventaNeta));
-        expect(Math.abs(categorias.reduce((t, c) => t + c.porcentaje, 0) - 100)).toBeLessThan(0.1);
+        // Cada porcentaje se redondea a 2 decimales: la suma puede desviarse hasta 0,005 por categoría.
+        const desviacion = Math.abs(categorias.reduce((t, c) => t + c.porcentaje, 0) - 100);
+        expect(desviacion).toBeLessThanOrEqual(categorias.length * 0.005 + 1e-9);
         expect(resumen.ticketPromedio).toBeCloseTo(resumen.ventaNeta / resumen.pedidos, 2);
         expect(top.length).toBeLessThanOrEqual(10);
         expect(top.map((t) => t.posicion)).toEqual(top.map((_, i) => i + 1));

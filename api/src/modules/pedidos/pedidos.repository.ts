@@ -1,5 +1,5 @@
 import type { z } from '../../config/zod.js';
-import { ejecutarProcedimiento, tablaSql, TipoSql } from '../../db/index.js';
+import { ejecutarProcedimiento, parametrosOrden, tablaSql, TipoSql } from '../../db/index.js';
 import type {
     esquemaListarDevoluciones,
     esquemaListarPedidos,
@@ -30,7 +30,12 @@ async function pedido(promesa: ReturnType<typeof ejecutarProcedimiento>): Promis
 export async function listarCliente(idUsuario: number, f: z.infer<typeof esquemaMisPedidos>) {
     const { filas, salidas } = await ejecutarProcedimiento(
         'SP_Pedidos_ListarCliente',
-        { IDUsuario: entero(idUsuario), Pagina: entero(f.pagina), TamanoPagina: entero(f.tamanoPagina) },
+        {
+            IDUsuario: entero(idUsuario),
+            Pagina: entero(f.pagina),
+            TamanoPagina: entero(f.tamanoPagina),
+            ...parametrosOrden(f),
+        },
         { salidas: { TotalRegistros: TipoSql.Int }, reintentable: true },
     );
     return { filas, total: Number(salidas.TotalRegistros ?? 0) };
@@ -68,6 +73,7 @@ export async function listar(idUsuario: number, f: z.infer<typeof esquemaListarP
             Busqueda: { tipo: TipoSql.NVarChar(101), valor: f.busqueda || null },
             Pagina: entero(f.pagina),
             TamanoPagina: entero(f.tamanoPagina),
+            ...parametrosOrden(f),
         },
         { salidas: { TotalRegistros: TipoSql.Int }, reintentable: true },
     );
@@ -151,6 +157,7 @@ export async function listarDevoluciones(idUsuario: number, f: z.infer<typeof es
             FechaHasta: { tipo: TipoSql.DateTime2(3), valor: f.fechaHasta ?? null },
             Pagina: entero(f.pagina),
             TamanoPagina: entero(f.tamanoPagina),
+            ...parametrosOrden(f),
         },
         { salidas: { TotalRegistros: TipoSql.Int }, reintentable: true },
     );

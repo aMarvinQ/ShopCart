@@ -1,5 +1,5 @@
 import { z } from '../../config/zod.js';
-import { booleanoQuery, esquemaPaginacion, esquemaTelefono } from '../../http/esquemas.js';
+import { booleanoQuery, esquemaOrden, esquemaPaginacion, esquemaTelefono } from '../../http/esquemas.js';
 import { esquemaContrasenaNueva, esquemaCorreo } from '../auth/auth.schemas.js';
 
 const nombre = z.string().trim().min(1).max(100);
@@ -22,6 +22,7 @@ export const esquemaCrearInterno = z.object({
 export const esquemaCambiarEstado = z.object({ activo: z.boolean() });
 
 export const esquemaListarUsuarios = esquemaPaginacion.extend({
+    ...esquemaOrden(['CREACION', 'NOMBRE', 'CORREO', 'ROL', 'ACCESO', 'ESTADO'], 'CREACION', 'DESC'),
     rol: z.enum(['CLIENTE', 'OPERADOR', 'ADMIN']).optional(),
     activo: booleanoQuery.optional(),
     busqueda: z.string().trim().max(100).optional().openapi({ description: 'Correo o nombre completo (contiene).' }),

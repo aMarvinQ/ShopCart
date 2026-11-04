@@ -29,7 +29,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Bitacora_Listar
     @FechaHasta      DATE = NULL,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'FECHA',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -61,6 +63,10 @@ BEGIN
     SELECT @DesdeUtc = r.DesdeUtc FROM dbo.FU_Reportes_RangoUtc(@FechaDesde, @FechaDesde) AS r;
     SELECT @HastaUtc = r.HastaUtc FROM dbo.FU_Reportes_RangoUtc(@FechaHasta, @FechaHasta) AS r;
 
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'FECHA'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('FECHA', 'MODULO', 'ACCION') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por FECHA, MODULO o ACCION, en dirección ASC o DESC.', 1;
+
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.Bitacora AS b
     WHERE (@Modulo IS NULL OR b.Modulo = @Modulo)
@@ -84,7 +90,13 @@ BEGIN
       AND (@IDEntidad IS NULL OR b.IDEntidad = @IDEntidad)
       AND (@DesdeUtc IS NULL OR b.Fecha >= @DesdeUtc)
       AND (@HastaUtc IS NULL OR b.Fecha < @HastaUtc)
-    ORDER BY b.Fecha DESC, b.IDBitacora DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'ASC' THEN b.Fecha END ASC,
+             CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'DESC' THEN b.Fecha END DESC,
+             CASE WHEN @OrdenarPor = 'MODULO' AND @Direccion = 'ASC' THEN b.Modulo END ASC,
+             CASE WHEN @OrdenarPor = 'MODULO' AND @Direccion = 'DESC' THEN b.Modulo END DESC,
+             CASE WHEN @OrdenarPor = 'ACCION' AND @Direccion = 'ASC' THEN b.Accion END ASC,
+             CASE WHEN @OrdenarPor = 'ACCION' AND @Direccion = 'DESC' THEN b.Accion END DESC,
+             b.Fecha DESC, b.IDBitacora DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);

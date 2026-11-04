@@ -1,5 +1,5 @@
 import type { z } from '../../config/zod.js';
-import { ejecutarProcedimiento, TipoSql, type Parametro } from '../../db/index.js';
+import { ejecutarProcedimiento, parametrosOrden, TipoSql, type Parametro } from '../../db/index.js';
 import type { DatosCupon, esquemaListarCupones } from './cupones.schemas.js';
 
 /* Cupones (ADMIN). Las reglas (situación, términos bloqueados tras el primer uso, límites) las aplica el SP. */
@@ -37,6 +37,7 @@ export async function listar(admin: number, f: z.infer<typeof esquemaListarCupon
             Situacion: { tipo: TipoSql.VarChar(11), valor: f.situacion ?? null },
             Pagina: { tipo: TipoSql.Int, valor: f.pagina },
             TamanoPagina: { tipo: TipoSql.Int, valor: f.tamanoPagina },
+            ...parametrosOrden(f),
         },
         { salidas: { TotalRegistros: TipoSql.Int }, reintentable: true },
     );

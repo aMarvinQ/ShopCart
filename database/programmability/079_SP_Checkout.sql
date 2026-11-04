@@ -239,10 +239,12 @@ BEGIN
                 THROW 50114, N'METODO_ENVIO_NO_ENCONTRADO: el método de envío no existe o no está disponible.', 1;
 
             -- El checkout pendiente anterior del carrito (otra clave) se cancela y libera sus reservas.
-            UPDATE dbo.Checkout
+            -- Índice obligado: solo las filas de este carrito, sin esperar a compradores ajenos (ver SP_Pedidos_Crear).
+            UPDATE ch
             SET Estado = 'CANCELADO', FechaCierre = @Ahora
             OUTPUT inserted.IDCheckout INTO @Cancelados (IDCheckout)
-            WHERE IDCarrito = @IDCarrito AND Estado = 'PENDIENTE';
+            FROM dbo.Checkout AS ch WITH (INDEX (UQ_Checkout_CarritoPendiente))
+            WHERE ch.IDCarrito = @IDCarrito AND ch.Estado = 'PENDIENTE';
 
             UPDATE r
             SET Estado = 'LIBERADA', FechaCierre = @Ahora

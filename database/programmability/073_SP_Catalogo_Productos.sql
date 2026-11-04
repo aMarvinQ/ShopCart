@@ -88,7 +88,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Catalogo_ListarProductos
     @Busqueda        NVARCHAR(101) = NULL,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'MODIFICACION',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -107,6 +109,10 @@ BEGIN
 
     SET @Patron = N'%' + REPLACE(REPLACE(REPLACE(REPLACE(@Busqueda,
                       N'\', N'\\'), N'%', N'\%'), N'_', N'\_'), N'[', N'\[') + N'%';
+
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'MODIFICACION'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('MODIFICACION', 'NOMBRE', 'CATEGORIA', 'PRECIO', 'EXISTENCIA') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por MODIFICACION, NOMBRE, CATEGORIA, PRECIO o EXISTENCIA, en dirección ASC o DESC.', 1;
 
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.Producto AS p
@@ -142,7 +148,18 @@ BEGIN
       AND (@Activo IS NULL OR p.Activo = @Activo)
       AND (@Patron IS NULL OR p.Nombre LIKE @Patron ESCAPE N'\' OR p.Slug LIKE @Patron ESCAPE N'\'
            OR EXISTS (SELECT 1 FROM dbo.Variante AS v WHERE v.IDProducto = p.IDProducto AND v.SKU LIKE @Patron ESCAPE N'\'))
-    ORDER BY p.FechaModificacion DESC, p.IDProducto DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'PRECIO' AND va.PrecioMinimo IS NULL THEN 1 ELSE 0 END,
+             CASE WHEN @OrdenarPor = 'MODIFICACION' AND @Direccion = 'ASC' THEN p.FechaModificacion END ASC,
+             CASE WHEN @OrdenarPor = 'MODIFICACION' AND @Direccion = 'DESC' THEN p.FechaModificacion END DESC,
+             CASE WHEN @OrdenarPor = 'NOMBRE' AND @Direccion = 'ASC' THEN p.Nombre END ASC,
+             CASE WHEN @OrdenarPor = 'NOMBRE' AND @Direccion = 'DESC' THEN p.Nombre END DESC,
+             CASE WHEN @OrdenarPor = 'CATEGORIA' AND @Direccion = 'ASC' THEN c.Nombre END ASC,
+             CASE WHEN @OrdenarPor = 'CATEGORIA' AND @Direccion = 'DESC' THEN c.Nombre END DESC,
+             CASE WHEN @OrdenarPor = 'PRECIO' AND @Direccion = 'ASC' THEN va.PrecioMinimo END ASC,
+             CASE WHEN @OrdenarPor = 'PRECIO' AND @Direccion = 'DESC' THEN va.PrecioMinimo END DESC,
+             CASE WHEN @OrdenarPor = 'EXISTENCIA' AND @Direccion = 'ASC' THEN ISNULL(va.ExistenciaTotal, 0) END ASC,
+             CASE WHEN @OrdenarPor = 'EXISTENCIA' AND @Direccion = 'DESC' THEN ISNULL(va.ExistenciaTotal, 0) END DESC,
+             p.IDProducto DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);

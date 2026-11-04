@@ -1,5 +1,5 @@
 import { z } from '../../config/zod.js';
-import { esquemaPaginacion } from '../../http/esquemas.js';
+import { esquemaOrden, esquemaPaginacion } from '../../http/esquemas.js';
 
 export const ESTADOS_PEDIDO = [
     'PAGADO',
@@ -17,6 +17,7 @@ const fecha = (descripcion: string) =>
     z.coerce.date().optional().openapi({ type: 'string', format: 'date-time', description: descripcion });
 
 export const esquemaListarPedidos = esquemaPaginacion.extend({
+    ...esquemaOrden(['FECHA', 'NUMERO', 'CLIENTE', 'TOTAL', 'ESTADO'], 'FECHA', 'DESC'),
     estado: z.enum(ESTADOS_PEDIDO).optional(),
     fechaDesde: fecha('Desde (incluida), fecha y hora UTC.'),
     fechaHasta: fecha('Hasta (excluida), fecha y hora UTC.'),
@@ -29,10 +30,12 @@ export const esquemaListarPedidos = esquemaPaginacion.extend({
 });
 
 export const esquemaMisPedidos = esquemaPaginacion.extend({
+    ...esquemaOrden(['FECHA', 'TOTAL'], 'FECHA', 'DESC'),
     tamanoPagina: z.coerce.number().int().min(1).max(100).default(10),
 });
 
 export const esquemaListarDevoluciones = esquemaPaginacion.extend({
+    ...esquemaOrden(['FECHA', 'PEDIDO', 'MONTO'], 'FECHA', 'DESC'),
     fechaDesde: fecha('Desde (incluida), fecha y hora UTC.'),
     fechaHasta: fecha('Hasta (excluida), fecha y hora UTC.'),
 });

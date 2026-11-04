@@ -1,9 +1,10 @@
 import { z } from '../../config/zod.js';
-import { esquemaMonto, esquemaPaginacion, esquemaVersion } from '../../http/esquemas.js';
+import { esquemaMonto, esquemaOrden, esquemaPaginacion, esquemaVersion } from '../../http/esquemas.js';
 
 const SITUACIONES = ['VIGENTE', 'PROGRAMADO', 'VENCIDO', 'AGOTADO', 'INACTIVO'] as const;
 
 export const esquemaListarCupones = esquemaPaginacion.extend({
+    ...esquemaOrden(['RECIENTES', 'CODIGO', 'VIGENCIA', 'USOS'], 'RECIENTES', 'DESC'),
     busqueda: z.string().trim().max(100).optional().openapi({ description: 'Código o descripción (contiene).' }),
     situacion: z.enum(SITUACIONES).optional(),
 });

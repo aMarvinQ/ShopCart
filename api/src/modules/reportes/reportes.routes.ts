@@ -138,7 +138,7 @@ export function crearRutasReportes(
             const hoy = hoyGuatemala();
             const [resumen, pedidos] = await Promise.all([
                 servicio.resumen(idUsuario, { fechaDesde: hoy, fechaHasta: hoy }),
-                listarPedidos(idUsuario, { pagina: 1, tamanoPagina: 5 }),
+                listarPedidos(idUsuario, { pagina: 1, tamanoPagina: 5, ordenarPor: 'FECHA', direccion: 'DESC' }),
             ]);
             return { hoy, resumen: resumen.datos, ultimosPedidos: pedidos.filas, generadoEn: new Date().toISOString() };
         },

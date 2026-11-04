@@ -1,10 +1,11 @@
 import { z } from '../../config/zod.js';
-import { booleanoQuery, esquemaPaginacion } from '../../http/esquemas.js';
+import { booleanoQuery, esquemaOrden, esquemaPaginacion } from '../../http/esquemas.js';
 
 const TIPOS_MANUALES = ['ENTRADA_COMPRA', 'AJUSTE_ENTRADA', 'AJUSTE_SALIDA'] as const;
 const TIPOS = [...TIPOS_MANUALES, 'INVENTARIO_INICIAL', 'SALIDA_VENTA', 'CANCELACION', 'DEVOLUCION'] as const;
 
 export const esquemaExistencias = esquemaPaginacion.extend({
+    ...esquemaOrden(['PRODUCTO', 'SKU', 'CATEGORIA', 'FISICA', 'RESERVADO', 'DISPONIBLE'], 'PRODUCTO', 'ASC'),
     busqueda: z.string().trim().max(100).optional().openapi({ description: 'SKU o nombre del producto (contiene).' }),
     idCategoria: z.coerce.number().int().positive().optional(),
     soloAgotadas: booleanoQuery.optional(),
@@ -14,6 +15,7 @@ export const esquemaExistencias = esquemaPaginacion.extend({
 });
 
 export const esquemaKardex = esquemaPaginacion.extend({
+    ...esquemaOrden(['FECHA', 'PRODUCTO', 'CANTIDAD'], 'FECHA', 'DESC'),
     tamanoPagina: z.coerce.number().int().min(1).max(100).default(50),
     idVariante: z.coerce.number().int().positive().optional(),
     tipo: z.enum(TIPOS).optional(),

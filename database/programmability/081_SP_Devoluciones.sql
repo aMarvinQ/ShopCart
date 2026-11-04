@@ -187,7 +187,9 @@ CREATE OR ALTER PROCEDURE dbo.SP_Devoluciones_Listar
     @FechaHasta      DATETIME2(3) = NULL,
     @Pagina          INT = 1,
     @TamanoPagina    INT = 20,
-    @TotalRegistros  INT = NULL OUTPUT
+    @TotalRegistros  INT = NULL OUTPUT,
+    @OrdenarPor      VARCHAR(21) = 'FECHA',
+    @Direccion       VARCHAR(5) = 'DESC'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -200,6 +202,10 @@ BEGIN
 
     IF @FechaDesde >= @FechaHasta
         THROW 50026, N'RANGO_FECHAS_INVALIDO: la fecha inicial debe ser anterior a la final.', 1;
+
+    SELECT @OrdenarPor = UPPER(TRIM(ISNULL(@OrdenarPor, 'FECHA'))), @Direccion = UPPER(TRIM(ISNULL(@Direccion, 'DESC')));
+    IF @OrdenarPor NOT IN ('FECHA', 'PEDIDO', 'MONTO') OR @Direccion NOT IN ('ASC', 'DESC')
+        THROW 50022, N'ORDENAMIENTO_INVALIDO: se ordena por FECHA, PEDIDO o MONTO, en dirección ASC o DESC.', 1;
 
     SELECT @TotalRegistros = COUNT(*)
     FROM dbo.Devolucion AS dv
@@ -215,7 +221,13 @@ BEGIN
     JOIN dbo.Usuario AS u ON u.IDUsuario = dv.IDUsuario
     WHERE (@FechaDesde IS NULL OR dv.Fecha >= @FechaDesde)
       AND (@FechaHasta IS NULL OR dv.Fecha < @FechaHasta)
-    ORDER BY dv.Fecha DESC, dv.IDDevolucion DESC
+    ORDER BY CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'ASC' THEN dv.Fecha END ASC,
+             CASE WHEN @OrdenarPor = 'FECHA' AND @Direccion = 'DESC' THEN dv.Fecha END DESC,
+             CASE WHEN @OrdenarPor = 'PEDIDO' AND @Direccion = 'ASC' THEN p.NumeroPedido END ASC,
+             CASE WHEN @OrdenarPor = 'PEDIDO' AND @Direccion = 'DESC' THEN p.NumeroPedido END DESC,
+             CASE WHEN @OrdenarPor = 'MONTO' AND @Direccion = 'ASC' THEN dv.MontoReembolso END ASC,
+             CASE WHEN @OrdenarPor = 'MONTO' AND @Direccion = 'DESC' THEN dv.MontoReembolso END DESC,
+             dv.IDDevolucion DESC
     OFFSET CAST(@Pagina - 1 AS BIGINT) * @TamanoPagina ROWS
     FETCH NEXT @TamanoPagina ROWS ONLY
     OPTION (RECOMPILE);

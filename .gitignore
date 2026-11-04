@@ -23,3 +23,7 @@ npm-debug.log*
 *.swp
 Thumbs.db
 .DS_Store
+
+# Resultados de las pruebas de extremo a extremo
+playwright-report/
+test-results/

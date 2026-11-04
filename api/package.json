@@ -17,6 +17,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "setup": "node scripts/setup.mjs",
+    "openapi:exportar": "tsx src/docs/exportar-openapi.ts",
     "imagenes:semilla": "node scripts/generar-imagenes-semilla.mjs",
     "imagenes:verificar": "node scripts/generar-imagenes-semilla.mjs --verificar"
   },

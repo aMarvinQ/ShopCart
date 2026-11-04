@@ -6,7 +6,7 @@ Plataforma web de ventas con carrito de compras: catálogo con variantes, invent
 |---|---|
 | Base de datos | Microsoft SQL Server 2019 · acceso exclusivo mediante stored procedures |
 | Backend | Node.js 24 LTS · TypeScript (strict) · Express |
-| Frontend | React 18+ · TypeScript |
+| Frontend | React 19 · TypeScript (strict) · Vite · Bootstrap 5.3 |
 
 ---
 
@@ -31,6 +31,13 @@ ShopCart/
     tests/             Pruebas unitarias y de integración (vitest + supertest, contra ShopCart_Pruebas)
     seed-assets/       Imágenes de los productos de la semilla (versionadas)
     scripts/           Utilidades (genera y verifica las imágenes de la semilla)
+  frontend/
+    src/api/           Cliente HTTP y tipos generados del OpenAPI de la API
+    src/sesion/        Sesión, renovación del token, guardas y tabla de permisos por rol
+    src/app/           Rutas, layouts y páginas generales
+    src/ui/            Sistema de diseño (componentes reutilizables)
+    src/features/      Pantallas por módulo
+    tests/e2e/         Pruebas de extremo a extremo (Playwright, contra la API real)
   docs/                Diagrama entidad-relación, catálogo de errores y diagramas de apoyo
 ```
 
@@ -87,6 +94,27 @@ npm test          # pruebas unitarias y de integración (contra ShopCart_Pruebas
 ```
 
 Otros comandos: `npm run build` y `npm start` (producción), `npm run lint`, `npm run typecheck`.
+
+### 3. Frontend
+
+Con la API en marcha, en otra terminal:
+
+```powershell
+cd frontend
+Copy-Item .env.example .env   # API_URL: dónde está la API (por defecto http://localhost:3000)
+npm install
+npm run dev                   # http://localhost:5173
+```
+
+| Comando | Qué hace |
+|---|---|
+| `npm run build` y `npm run preview` | Compila y sirve la versión de producción, con sus cabeceras de seguridad |
+| `npm test` | Pruebas unitarias y de componentes |
+| `npx playwright install chromium` y `npm run test:e2e` | Pruebas de extremo a extremo: levantan la API contra `ShopCart_Pruebas` y la app compilada, en escritorio y móvil |
+| `npm run tipos` | Regenera los tipos de TypeScript desde el OpenAPI de la API |
+| `npm run verificar` | Tipos al día, formato, lint, compilación, pruebas y build |
+
+### Probar la API
 
 **Probar la API**: `http://localhost:3000/api/v1/docs` (Swagger) documenta cada endpoint con sus datos de entrada, respuestas y errores, y permite ejecutarlos. Para las rutas protegidas: ejecuta `POST /auth/login` con una de las [credenciales de prueba](#credenciales-de-prueba), copia `accessToken` y pégalo en **Authorize**. La documentación se genera de los mismos esquemas que validan las peticiones, así que no puede quedar desactualizada.
 
@@ -329,6 +357,18 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Resiliencia**: la API arranca aunque la base no esté lista (se conecta en la primera petición y `/health` responde 503 mientras tanto); ante un deadlock reintenta una vez solo las operaciones seguras de repetir; al detenerse (Ctrl+C o SIGTERM) termina las peticiones en curso y las tareas periódicas, y cierra el pool. En Windows, el modo de desarrollo (`npm run dev`, con recarga automática) termina el proceso sin ese cierre ordenado; con `npm start` sí ocurre.
 - **Tareas periódicas dentro de la API** (SQL Server Express no tiene SQL Agent): expiración de checkouts cada minuto (y una vez al arrancar) y limpieza de imágenes cada hora. Nunca se ejecutan encimadas consigo mismas, un error queda en el log sin detener las siguientes y cada pasada tiene un máximo de lotes, así el ciclo siempre termina.
 - **Ordenamiento del lado del servidor**: los listados del panel y "Mis pedidos" reciben `ordenarPor` y `direccion`. Cada listado tiene su lista blanca de columnas, validada en la API (400) y en el SP (`ORDENAMIENTO_INVALIDO`), con SQL estático: no hay SQL dinámico que inyectar. Siempre hay desempate por ID, para que las páginas no repitan ni salten registros, y los valores nulos quedan al final. Sin parámetros se conserva el orden de siempre. No se ofrecen columnas que obligarían a calcular una subconsulta por cada fila de la tabla (p. ej. artículos del pedido).
+
+### Arquitectura del frontend
+
+- **El backend es la fuente de verdad**: el frontend no recalcula precios, totales ni disponibilidad. Valida formatos para dar errores inmediatos, pero la regla la aplica el servidor.
+- **Tipos generados del OpenAPI**: rutas, parámetros, cuerpos y respuestas los comprueba el compilador. Si la API cambia, el frontend no compila hasta adaptarse (`npm run tipos:verificar` lo vigila).
+- **Access token solo en memoria**, nunca en `localStorage`, donde un script inyectado podría leerlo. Al recargar se recupera con el refresh token de la cookie `httpOnly`. El navegador solo guarda una marca sin datos ("hubo sesión"), para que quien nunca inició sesión no gaste el límite de intentos de renovación.
+- **Renovación transparente en vuelo único**: si varias peticiones vencen a la vez, se hace una sola renovación y todas se repiten; entre pestañas se ordenan con Web Locks. Una falla pasajera (sin red, 503) no cierra la sesión; solo el rechazo de la API lo hace.
+- **Sin datos cruzados**: al cerrar sesión se vacía el caché, y la acción se avisa a las demás pestañas. Mientras se recupera la sesión no se monta ninguna pantalla, para que ninguna petición salga como invitado por error.
+- **Una sola tabla de permisos** (`sesion/permisos.ts`) genera las guardas y los menús, así no pueden contradecirse. Es experiencia de usuario: quien autoriza es la API (403) y cada stored procedure.
+- **Seguridad**: redirección después del login solo a rutas internas; sin HTML inyectado (lo prohíbe el lint); la versión de producción se sirve con CSP (`script-src 'self'`), `X-Content-Type-Options` y `Referrer-Policy`, y las pruebas comprueban que no haya violaciones.
+- **Sin fugas ni consumo inútil**: cada consulta se cancela al salir de la pantalla y tiene tiempo máximo; el caché borra lo que no se usa a los 5 minutos; solo se reintentan lecturas con fallas pasajeras y con tope; los efectos limpian sus oyentes (el lint de hooks está en error). Cada layout se carga aparte: quien visita la tienda no descarga el panel.
+- **Accesibilidad**: enlace para saltar al contenido, foco visible, navegación por teclado y "reducir movimiento"; las pruebas de extremo a extremo pasan axe.
 
 ### Stored procedures: contrato con la API
 

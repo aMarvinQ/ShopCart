@@ -1,0 +1,84 @@
+@use 'tokens' as *;
+
+/* Bootstrap con la paleta del proyecto: solo los módulos que se usan. */
+$primary: $primario;
+$secondary: $texto-secundario;
+$success: $exito;
+$danger: $peligro;
+$warning: $aviso;
+$info: $info;
+$light: $fondo;
+$dark: $marca-oscura;
+$body-bg: $fondo;
+$body-color: $texto;
+$border-color: $borde;
+$link-color: $primario;
+$link-hover-color: $primario-oscuro;
+$font-family-sans-serif:
+    'Inter Variable',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+$border-radius: $radio-control;
+$border-radius-sm: $radio-control;
+$border-radius-lg: $radio-tarjeta;
+$card-bg: $superficie;
+$input-bg: $superficie;
+$input-border-color: $borde-control;
+$input-btn-focus-color: rgba($resaltado, 0.5);
+$input-focus-border-color: $resaltado;
+$enable-smooth-scroll: true;
+/* Contraste de texto sobre colores: el umbral AA de WCAG. */
+$min-contrast-ratio: 4.5;
+
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/variables-dark';
+@import 'bootstrap/scss/maps';
+@import 'bootstrap/scss/mixins';
+@import 'bootstrap/scss/utilities';
+@import 'bootstrap/scss/root';
+@import 'bootstrap/scss/reboot';
+@import 'bootstrap/scss/type';
+@import 'bootstrap/scss/images';
+@import 'bootstrap/scss/containers';
+@import 'bootstrap/scss/grid';
+@import 'bootstrap/scss/tables';
+@import 'bootstrap/scss/forms';
+@import 'bootstrap/scss/buttons';
+@import 'bootstrap/scss/transitions';
+@import 'bootstrap/scss/dropdown';
+@import 'bootstrap/scss/nav';
+@import 'bootstrap/scss/card';
+@import 'bootstrap/scss/breadcrumb';
+@import 'bootstrap/scss/pagination';
+@import 'bootstrap/scss/badge';
+@import 'bootstrap/scss/alert';
+@import 'bootstrap/scss/close';
+@import 'bootstrap/scss/toasts';
+@import 'bootstrap/scss/modal';
+@import 'bootstrap/scss/tooltip';
+@import 'bootstrap/scss/offcanvas';
+@import 'bootstrap/scss/helpers';
+@import 'bootstrap/scss/utilities/api';
+
+/* Foco visible en todo control, también sobre fondos oscuros. */
+:focus-visible {
+    outline: 2px solid $resaltado;
+    outline-offset: 2px;
+}
+
+body {
+    font-variant-numeric: lining-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

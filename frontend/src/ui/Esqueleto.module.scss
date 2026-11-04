@@ -1,0 +1,46 @@
+@use '../estilos/tokens' as *;
+
+.esqueleto {
+    display: block;
+    border-radius: $radio-control;
+    background: linear-gradient(90deg, $esqueleto 25%, $esqueleto-brillo 50%, $esqueleto 75%);
+    background-size: 200% 100%;
+    animation: brillo 1.4s ease-in-out infinite;
+}
+
+@keyframes brillo {
+    from {
+        background-position: 200% 0;
+    }
+    to {
+        background-position: -200% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .esqueleto {
+        animation: none;
+    }
+}
+
+.app {
+    min-height: 100vh;
+}
+
+.barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: 3.5rem;
+    padding-inline: 1rem;
+    background: $marca-oscura;
+
+    .esqueleto {
+        opacity: 0.25;
+    }
+}
+
+.contenido {
+    padding-block: 1.5rem;
+}

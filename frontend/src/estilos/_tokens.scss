@@ -1,0 +1,54 @@
+/*
+    Tokens del sistema de diseño: la única fuente de colores, radios y medidas. Cada color con su
+    uso permitido y el contraste medido (WCAG AA) está documentado en el catálogo de componentes.
+*/
+
+/* Neutros */
+$texto: #0f172a;
+$texto-secundario: #334155;
+$fondo: #f1f5f9;
+$superficie: #ffffff;
+$borde: #cbd5e1; // solo bordes y divisores: nunca como texto (1,5:1 sobre blanco)
+$borde-control: #64748b; // bordes de campos: 3:1 sobre blanco (WCAG 1.4.11)
+
+/* Marca */
+$marca-oscura: #293241; // barra, menú lateral y pie; encima blanco o $primario-suave
+$primario: #3d5a80; // botones y enlaces; encima blanco
+$primario-oscuro: #2f4665;
+$primario-suave: #98c1d9; // encima solo texto oscuro
+$acento: #ee6c4d; // comprar y cupones; encima solo texto oscuro
+$acento-oscuro: #e0593a;
+$acento-profundo: #b54a2f; // si hace falta texto blanco o precio destacado
+$resaltado: #38bdf8; // anillo de foco e indicador en vivo
+
+/* Estados */
+$exito: #15803d;
+$exito-fondo: #dcfce7;
+$exito-texto: #14532d;
+$aviso: #b45309;
+$aviso-fondo: #fef3c7;
+$aviso-texto: #78350f;
+$peligro: #b91c1c;
+$peligro-fondo: #fee2e2;
+$peligro-texto: #7f1d1d;
+$info: #1d4ed8;
+$info-fondo: #dbeafe;
+$info-texto: #1e3a8a;
+
+/* Carga */
+$esqueleto: #e2e8f0;
+$esqueleto-brillo: #f1f5f9;
+
+/* Forma */
+$radio-control: 6px;
+$radio-tarjeta: 12px;
+$radio-modal: 16px;
+$sombra-1: 0 1px 3px rgb(15 23 42 / 10%);
+$sombra-2: 0 8px 24px rgb(15 23 42 / 15%);
+
+/* Puntos de corte (los de Bootstrap) */
+$corte-sm: 576px;
+$corte-md: 768px;
+$corte-lg: 992px;
+$corte-xl: 1200px;
+$corte-xxl: 1400px;

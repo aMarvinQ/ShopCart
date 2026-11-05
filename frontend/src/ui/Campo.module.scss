@@ -1,5 +1,6 @@
 @use '../estilos/tokens' as *;
 
+/* Sobre .form-control de Bootstrap: la línea reservada del pie, los iconos y el anillo de error. */
 .campo {
     display: flex;
     flex-direction: column;
@@ -8,23 +9,13 @@
     max-width: 100%;
 }
 
-.etiqueta {
-    color: $texto;
-    font-size: 0.875rem;
-    font-weight: 600;
-}
-
 .pie {
     min-height: 1.3125rem;
-    color: $texto-secundario;
-    font-size: 0.875rem;
 }
 
 .error {
-    display: flex;
     align-items: center;
     gap: 0.375rem;
-    color: $peligro;
     font-weight: 500;
 
     svg {
@@ -34,40 +25,18 @@
 
 .caja {
     position: relative;
-}
 
-.control {
-    width: 100%;
-    height: $alto-control;
-    padding: 0 0.75rem;
-    border: 1px solid $borde-control;
-    border-radius: $radio-control;
-    background: $superficie;
-    color: $texto;
-    font-size: 1rem;
-
-    &::placeholder {
-        color: $borde-control;
-    }
-
-    &:disabled {
-        border-color: $borde;
-        background: $fondo;
-        color: $texto-secundario;
-        cursor: not-allowed;
-    }
-
-    &::-webkit-search-cancel-button {
+    input::-webkit-search-cancel-button {
         display: none;
     }
 }
 
-.controlError {
-    border-color: $peligro;
+.controlError.controlError {
     box-shadow: 0 0 0 1px $peligro;
 
     &:focus-visible {
         outline-color: $peligro;
+        box-shadow: 0 0 0 1px $peligro;
     }
 }
 
@@ -83,6 +52,7 @@
     position: absolute;
     top: 0.75rem;
     left: 0.75rem;
+    z-index: 1;
     color: $texto-secundario;
     pointer-events: none;
 }

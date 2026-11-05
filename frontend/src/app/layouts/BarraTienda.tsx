@@ -1,9 +1,9 @@
 import { ChevronDown, ChevronRight, LayoutGrid, ShoppingCart } from 'lucide-react';
-import { useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
-import { Link, useNavigate, useSearchParams } from 'react-router';
-import { useCarrito } from '../../features/carrito/consultas';
-import { useCategorias } from '../../features/tienda/consultas';
+import { Link } from 'react-router';
+import { useCarrito } from '../../features/carrito/hooks/useCarrito';
+import { useCategorias } from '../../features/tienda/hooks/useCatalogo';
+import { useBuscadorTienda } from '../../features/tienda/hooks/useListaProductos';
 import { CampoBusqueda } from '../../ui/Campo';
 import estilos from './layouts.module.scss';
 
@@ -33,25 +33,15 @@ export function MenuCategorias() {
     );
 }
 
-/** Buscador: lleva a la lista con el texto en la URL. Si la URL cambia, el campo se actualiza. */
 export function BuscadorTienda() {
-    const navegar = useNavigate();
-    const [parametros] = useSearchParams();
-    const enUrl = parametros.get('texto') ?? '';
-    const [texto, setTexto] = useState(enUrl);
-    const [anterior, setAnterior] = useState(enUrl);
-    if (enUrl !== anterior) {
-        setAnterior(enUrl);
-        setTexto(enUrl);
-    }
+    const { texto, setTexto, buscar } = useBuscadorTienda();
     return (
         <form
             role="search"
             className={estilos.buscador}
             onSubmit={(evento) => {
                 evento.preventDefault();
-                const valor = texto.trim();
-                void navegar(valor ? `/productos?texto=${encodeURIComponent(valor)}` : '/productos');
+                buscar();
             }}
         >
             <CampoBusqueda

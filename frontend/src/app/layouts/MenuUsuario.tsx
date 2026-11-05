@@ -1,21 +1,17 @@
 import { LogOut } from 'lucide-react';
 import { Dropdown } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { useSesion } from '../../sesion/contexto';
 import { MENU_CUENTA, MENU_PANEL, menuPara, NOMBRE_ROL } from '../../sesion/permisos';
+import { useCerrarSesion } from '../../sesion/useCerrarSesion';
 import estilos from './layouts.module.scss';
 
 /** Menú del usuario: sus secciones según el rol y cerrar sesión. */
 export function MenuUsuario() {
-    const { usuario, cerrarSesion } = useSesion();
-    const navegar = useNavigate();
+    const { usuario } = useSesion();
+    const salir = useCerrarSesion();
     if (!usuario) return null;
 
-    const salir = async () => {
-        // Primero sale de la página: si no, la guarda de la ruta pediría ingresar de nuevo.
-        await navegar('/');
-        await cerrarSesion();
-    };
     const secciones = menuPara(MENU_CUENTA, usuario.codigoRol);
     const irAlPanel = menuPara(MENU_PANEL, usuario.codigoRol)[0];
     const nombreCompleto = `${usuario.nombre} ${usuario.apellido}`;

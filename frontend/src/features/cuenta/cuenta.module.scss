@@ -38,15 +38,6 @@
     margin-bottom: 1rem;
 }
 
-.dosColumnas {
-    display: grid;
-    gap: 0.5rem 1rem;
-
-    @media (min-width: $corte-sm) {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
 .perfil {
     display: flex;
     flex-direction: column;
@@ -103,14 +94,10 @@
     }
 }
 
-.predeterminada {
+.predeterminada.predeterminada {
+    --bs-badge-color: #{$info-texto};
     margin-left: 0.5rem;
-    padding: 0.125rem 0.625rem;
-    border-radius: $radio-pildora;
     background: $info-fondo;
-    color: $info-texto;
-    font-size: 0.75rem;
-    font-weight: 600;
 }
 
 .direccionAcciones {

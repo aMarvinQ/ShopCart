@@ -1,12 +1,11 @@
 @use '../estilos/tokens' as *;
 
-.alerta {
+/* Sobre .alert y .badge de Bootstrap: la disposición con icono y los tonos exactos del mockup. */
+.alerta.alerta {
+    --bs-alert-color: inherit;
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid;
-    border-radius: $radio-tarjeta;
     font-size: 0.875rem;
 
     svg {
@@ -14,88 +13,79 @@
     }
 }
 
-.exito {
-    border-color: $alerta-exito-borde;
-    background: $alerta-exito-fondo;
-    color: $exito-texto;
+.exito.exito {
+    --bs-alert-color: #{$exito-texto};
+    --bs-alert-bg: #{$alerta-exito-fondo};
+    --bs-alert-border-color: #{$alerta-exito-borde};
 }
 
-.aviso {
-    border-color: $alerta-aviso-borde;
-    background: $alerta-aviso-fondo;
-    color: $aviso-texto;
+.aviso.aviso {
+    --bs-alert-color: #{$aviso-texto};
+    --bs-alert-bg: #{$alerta-aviso-fondo};
+    --bs-alert-border-color: #{$alerta-aviso-borde};
 }
 
-.error {
-    border-color: $alerta-peligro-borde;
-    background: $alerta-peligro-fondo;
-    color: $peligro-texto;
+.error.error {
+    --bs-alert-color: #{$peligro-texto};
+    --bs-alert-bg: #{$alerta-peligro-fondo};
+    --bs-alert-border-color: #{$alerta-peligro-borde};
 }
 
-.informacion {
-    border-color: $alerta-info-borde;
-    background: $alerta-info-fondo;
-    color: $info-texto;
+.informacion.informacion {
+    --bs-alert-color: #{$info-texto};
+    --bs-alert-bg: #{$alerta-info-fondo};
+    --bs-alert-border-color: #{$alerta-info-borde};
 }
 
-.insignia {
+.insignia.insignia {
+    --bs-badge-padding-x: 0.625rem;
+    --bs-badge-padding-y: 0;
+    --bs-badge-font-size: 0.875rem;
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     height: 1.75rem;
-    padding: 0 0.625rem;
-    border-radius: $radio-pildora;
-    font-size: 0.875rem;
-    font-weight: 600;
     white-space: nowrap;
 }
 
-.pagado {
+.pagado.pagado {
+    --bs-badge-color: #{$info-texto};
     background: $info-fondo;
-    color: $info-texto;
 }
 
-.enPreparacion {
+.enPreparacion.enPreparacion {
+    --bs-badge-color: #{$aviso-texto};
     background: $aviso-fondo;
-    color: $aviso-texto;
 }
 
-.enviado {
+.enviado.enviado {
+    --bs-badge-color: #{$enviado-texto};
     background: $enviado-fondo;
-    color: $enviado-texto;
 }
 
-.entregado {
+.entregado.entregado {
+    --bs-badge-color: #{$exito-texto};
     background: $exito-fondo;
-    color: $exito-texto;
 }
 
-.cancelado {
+.cancelado.cancelado {
+    --bs-badge-color: #{$peligro-texto};
     background: $peligro-fondo;
-    color: $peligro-texto;
 }
 
-.devueltoParcial {
+.devueltoParcial.devueltoParcial {
+    --bs-badge-color: #{$devuelto-parcial-texto};
     background: $devuelto-parcial-fondo;
-    color: $devuelto-parcial-texto;
 }
 
-.devuelto {
+.devuelto.devuelto {
+    --bs-badge-color: #{$devuelto-texto};
     background: $devuelto-fondo;
-    color: $devuelto-texto;
 }
 
-.dialogoMarco {
-    max-width: 27.5rem;
-}
-
-/* Selector doble: debe ganarle a Bootstrap sin importar el orden en que carguen los estilos. */
 .dialogo.dialogo {
     gap: 1rem;
-    background: $superficie;
     padding: 1.5rem;
-    border: 0;
-    border-radius: $radio-modal;
     box-shadow: $sombra-2;
 }
 
@@ -133,8 +123,6 @@
 }
 
 .cajon.cajon {
-    --bs-offcanvas-width: 30rem;
-    --bs-offcanvas-bg: #{$superficie};
     border-radius: $radio-modal 0 0 $radio-modal;
     box-shadow: $sombra-2;
 

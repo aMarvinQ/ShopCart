@@ -1,51 +1,14 @@
 @use '../estilos/tokens' as *;
 
+/* Sobre .card, .nav-underline y .pagination de Bootstrap: lo que el tema no cubre. */
 .tarjeta {
-    border: 1px solid $borde;
-    border-radius: $radio-tarjeta;
-    background: $superficie;
     box-shadow: $sombra-1;
 }
 
-.miga {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-    margin: 0;
-    padding: 0;
-    color: $texto-secundario;
-    font-size: 0.875rem;
-    list-style: none;
-
-    li {
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-    }
-}
-
 .pestanas {
-    display: flex;
-    gap: 0.25rem;
+    flex-wrap: nowrap;
     overflow-x: auto;
     border-bottom: 1px solid $borde;
-}
-
-.pestana {
-    flex-shrink: 0;
-    height: $alto-control;
-    margin-bottom: -1px;
-    padding: 0 1rem;
-    border: 0;
-    border-bottom: 3px solid transparent;
-    background: none;
-    color: $texto-secundario;
-    font-weight: 600;
-}
-
-.pestanaActiva {
-    border-bottom-color: $primario;
-    color: $primario;
 }
 
 .panelPestana {
@@ -65,49 +28,21 @@
 }
 
 .paginas {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+    margin: 0;
 
-    button {
+    :global(.page-link) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         min-width: $alto-control;
         height: $alto-control;
-        border: 0;
-        border-radius: $radio-control;
-        background: transparent;
-        color: $texto;
         font-weight: 500;
-
-        &:hover:not(:disabled) {
-            background: $deshabilitado-fondo;
-        }
-
-        &:disabled {
-            color: $deshabilitado-texto;
-            cursor: not-allowed;
-        }
-    }
-
-    button.paginaActual,
-    button.paginaActual:hover:not(:disabled) {
-        background: $primario;
-        color: #fff;
     }
 }
 
 /* En pantallas angostas basta con anterior, la actual y siguiente. */
-.paginaOtra,
-.hueco {
+.soloAncho {
     @media (max-width: $corte-sm) {
-        display: none !important;
+        display: none;
     }
-}
-
-.hueco {
-    min-width: 1.5rem;
-    color: $texto-secundario;
-    text-align: center;
 }

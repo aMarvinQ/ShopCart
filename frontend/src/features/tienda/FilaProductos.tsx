@@ -1,9 +1,10 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { EstadoError } from '../../ui/Mensajes';
 import { useAlLlegar } from '../../utils/useAlLlegar';
-import { useFilaProductos, type FiltrosProductos } from './consultas';
+import { useFilaProductos, type FiltrosProductos } from './hooks/useCatalogo';
+import { useFilaDeslizable } from './hooks/useFilaDeslizable';
 import { EsqueletoTarjeta, TarjetaProducto } from './TarjetaProducto';
 import estilos from './tienda.module.scss';
 
@@ -28,35 +29,9 @@ export function FilaProductos({
         setVista(true);
     }, !vista);
     const consulta = useFilaProductos(filtros, PRODUCTOS_POR_FILA + (excluir === undefined ? 0 : 1), vista);
-    const pista = useRef<HTMLDivElement>(null);
-    const [puede, setPuede] = useState({ atras: false, adelante: false });
-
     const productos = consulta.data?.data.filter((p) => p.idProducto !== excluir).slice(0, PRODUCTOS_POR_FILA);
-
-    const medir = useCallback(() => {
-        const el = pista.current;
-        if (!el) return;
-        const atras = el.scrollLeft > 1;
-        const adelante = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
-        setPuede((actual) => (actual.atras === atras && actual.adelante === adelante ? actual : { atras, adelante }));
-    }, []);
-
     const cantidad = productos?.length ?? 0;
-    useEffect(() => {
-        const el = pista.current;
-        if (!el) return undefined;
-        medir();
-        const observador = new ResizeObserver(medir);
-        observador.observe(el);
-        return () => {
-            observador.disconnect();
-        };
-    }, [medir, cantidad]);
-
-    const mover = (sentido: 1 | -1) => {
-        const el = pista.current;
-        el?.scrollBy({ left: sentido * el.clientWidth, behavior: 'smooth' });
-    };
+    const { pista, puede, medir, mover } = useFilaDeslizable(cantidad);
 
     if (consulta.isSuccess && cantidad === 0) return null;
 

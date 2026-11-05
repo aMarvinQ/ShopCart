@@ -1,8 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { PackageX, ShoppingCart, TriangleAlert, Truck } from 'lucide-react';
-import { useMemo, useState } from 'react';
 import { useParams } from 'react-router';
-import { api } from '../../api/cliente';
 import { esErrorApi } from '../../api/errores';
 import { Boton, BotonEnlace } from '../../ui/Boton';
 import { Cantidad } from '../../ui/Controles';
@@ -10,37 +7,25 @@ import { Esqueleto } from '../../ui/Esqueleto';
 import { EstadoError, EstadoVacio } from '../../ui/Mensajes';
 import { MigaPan } from '../../ui/Navegacion';
 import { moneda } from '../../utils/formato';
-import { useAgregarAlCarrito } from '../carrito/consultas';
-import { consultaDetalle, type DetalleDeProducto } from './consultas';
 import { FilaProductos } from './FilaProductos';
+import { useDetalleProducto, useMetodosEnvio, type DetalleDeProducto } from './hooks/useCatalogo';
+import { useCompraProducto } from './hooks/useCompraProducto';
 import { ImagenProducto } from './TarjetaProducto';
-import { gruposDeAtributos, imagenesDeVariante, varianteAlElegir } from './variantes';
+import { textoPlazo } from './textos';
 import estilos from './tienda.module.scss';
 
-const POCAS_UNIDADES = 5;
-
-function plazo(minimo: number, maximo: number): string {
-    const dias = `${String(maximo)} ${maximo === 1 ? 'día' : 'días'}`;
-    if (minimo === 0) return `Hasta ${dias}`;
-    return minimo === maximo ? dias : `De ${String(minimo)} a ${dias}`;
-}
-
 function MetodosEnvio() {
-    const { data } = useQuery({
-        queryKey: ['tienda', 'metodos-envio'],
-        queryFn: ({ signal }) => api.get('/tienda/metodos-envio', { signal }),
-        staleTime: 5 * 60_000,
-    });
+    const { data } = useMetodosEnvio();
     if (!data || data.data.length === 0) return null;
     return (
-        <ul className={estilos.metodos}>
+        <ul className={`list-group ${estilos.metodos}`}>
             {data.data.map((m) => (
-                <li key={m.idMetodoEnvio}>
+                <li key={m.idMetodoEnvio} className="list-group-item">
                     <Truck size={20} aria-hidden="true" />
                     <div>
                         <strong>{m.nombre}</strong>
                         <p>
-                            {plazo(m.diasEstimadosMin, m.diasEstimadosMax)} ·{' '}
+                            {textoPlazo(m.diasEstimadosMin, m.diasEstimadosMax)} ·{' '}
                             {m.costo === 0 ? 'sin costo' : moneda(m.costo)}
                         </p>
                     </div>
@@ -51,36 +36,9 @@ function MetodosEnvio() {
 }
 
 function Contenido({ producto }: { producto: DetalleDeProducto }) {
-    const { variantes } = producto;
-    const inicial = variantes.find((v) => v.esSeleccionInicial) ?? variantes[0];
-    const [idVariante, setIdVariante] = useState(inicial?.idVariante);
-    const [cantidad, setCantidad] = useState(1);
-    const [imagenElegida, setImagenElegida] = useState<string | null>(null);
-    const { agregar, agregando } = useAgregarAlCarrito();
+    const compra = useCompraProducto(producto);
+    const { variante, grupos, imagenes, imagen, cantidad, disponible, agotado, pocasUnidades } = compra;
 
-    const variante = variantes.find((v) => v.idVariante === idVariante) ?? inicial;
-    const grupos = useMemo(() => (variante ? gruposDeAtributos(variantes, variante) : []), [variantes, variante]);
-    const imagenes = useMemo(() => imagenesDeVariante(producto.imagenes, variante), [producto.imagenes, variante]);
-    const imagen = imagenes.find((i) => i.rutaImagen === imagenElegida) ?? imagenes[0];
-
-    const disponible = variante?.disponible ?? 0;
-    const agotado = disponible === 0;
-
-    const elegir = (idAtributo: number, idValor: number) => {
-        if (!variante) return;
-        setIdVariante(varianteAlElegir(variantes, variante, idAtributo, idValor).idVariante);
-        setCantidad(1);
-        setImagenElegida(null);
-    };
-    const alAgregar = () => {
-        if (!variante) return;
-        const detalle = variante.atributos.map((a) => a.valor).join(' / ');
-        void agregar({
-            idVariante: variante.idVariante,
-            cantidad,
-            nombre: detalle ? `${producto.nombre} · ${detalle}` : producto.nombre,
-        });
-    };
     const botonAgregar = (
         <Boton
             variante="acento"
@@ -88,8 +46,8 @@ function Contenido({ producto }: { producto: DetalleDeProducto }) {
             icono={ShoppingCart}
             anchoCompleto
             disabled={agotado}
-            cargando={agregando}
-            onClick={alAgregar}
+            cargando={compra.agregando}
+            onClick={compra.agregarAlCarrito}
         >
             {agotado ? 'Agotado' : 'Agregar al carrito'}
         </Boton>
@@ -97,86 +55,109 @@ function Contenido({ producto }: { producto: DetalleDeProducto }) {
 
     return (
         <>
-            <div className={estilos.detalle}>
-                <div className={estilos.galeria}>
-                    {imagenes.length > 1 && (
-                        <div className={estilos.miniaturas}>
-                            {imagenes.map((i) => (
-                                <button
-                                    key={i.rutaImagen}
-                                    type="button"
-                                    aria-label={`Ver imagen: ${i.textoAlternativo}`}
-                                    aria-pressed={i === imagen}
-                                    className={i === imagen ? estilos.miniaturaActiva : undefined}
-                                    onClick={() => {
-                                        setImagenElegida(i.rutaImagen);
-                                    }}
-                                >
-                                    <ImagenProducto ruta={i.rutaImagen} texto="" />
-                                </button>
-                            ))}
+            <div className="row g-4 g-lg-5">
+                <div className="col-lg-7">
+                    <div className={estilos.galeria}>
+                        {imagenes.length > 1 && (
+                            <div className={estilos.miniaturas}>
+                                {imagenes.map((i) => (
+                                    <button
+                                        key={i.rutaImagen}
+                                        type="button"
+                                        aria-label={`Ver imagen: ${i.textoAlternativo}`}
+                                        aria-pressed={i === imagen}
+                                        className={i === imagen ? estilos.miniaturaActiva : undefined}
+                                        onClick={() => {
+                                            compra.elegirImagen(i.rutaImagen);
+                                        }}
+                                    >
+                                        <ImagenProducto ruta={i.rutaImagen} texto="" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <div className={estilos.imagenPrincipal}>
+                            <ImagenProducto
+                                ruta={imagen?.rutaImagen ?? null}
+                                texto={imagen?.textoAlternativo ?? producto.nombre}
+                                prioridad
+                            />
                         </div>
-                    )}
-                    <div className={estilos.imagenPrincipal}>
-                        <ImagenProducto
-                            ruta={imagen?.rutaImagen ?? null}
-                            texto={imagen?.textoAlternativo ?? producto.nombre}
-                            prioridad
-                        />
                     </div>
                 </div>
-                <div className={estilos.compra}>
-                    <p className={estilos.codigo}>
-                        {producto.categoria}
-                        {variante && ` · Código ${variante.sku}`}
-                    </p>
-                    <h1>{producto.nombre}</h1>
-                    {variante && <p className={`${estilos.precioDetalle} numero`}>{moneda(variante.precio)}</p>}
-                    <p className={estilos.notaPrecio}>Precio incluye IVA</p>
-                    {!agotado && disponible <= POCAS_UNIDADES && (
-                        <p className={estilos.quedan}>
-                            <TriangleAlert size={16} aria-hidden="true" />
-                            Quedan {disponible} en existencia
+                <div className="col-lg-5">
+                    <div className={estilos.compra}>
+                        <p className={estilos.codigo}>
+                            {producto.categoria}
+                            {variante && ` · Código ${variante.sku}`}
                         </p>
-                    )}
-                    {grupos.map((grupo) => {
-                        const elegido = variante?.atributos.find((a) => a.idAtributo === grupo.idAtributo);
-                        return (
-                            <fieldset key={grupo.idAtributo} className={estilos.atributo}>
-                                <legend>
-                                    {grupo.atributo}: {elegido?.valor}
-                                </legend>
-                                <div className={estilos.valores}>
-                                    {grupo.valores.map((v) => (
-                                        <button
-                                            key={v.idAtributoValor}
-                                            type="button"
-                                            aria-pressed={v.idAtributoValor === elegido?.idAtributoValor}
-                                            className={`${estilos.valor} ${v.conExistencia ? '' : estilos.valorAgotado}`}
-                                            onClick={() => {
-                                                elegir(grupo.idAtributo, v.idAtributoValor);
-                                            }}
-                                        >
-                                            {v.codigoHex && (
-                                                <span
-                                                    className={estilos.muestra}
-                                                    style={{ backgroundColor: v.codigoHex }}
-                                                    aria-hidden="true"
-                                                />
-                                            )}
-                                            {v.valor}
-                                            {!v.conExistencia && <span className="visually-hidden"> (agotado)</span>}
-                                        </button>
-                                    ))}
-                                </div>
-                            </fieldset>
-                        );
-                    })}
-                    <div className={estilos.comprar}>
-                        <Cantidad valor={cantidad} alCambiar={setCantidad} maximo={disponible} disabled={agotado} />
-                        <div className={estilos.comprarBoton}>{botonAgregar}</div>
+                        <h1>{producto.nombre}</h1>
+                        {variante && <p className={`${estilos.precioDetalle} numero`}>{moneda(variante.precio)}</p>}
+                        <p className={estilos.notaPrecio}>Precio incluye IVA</p>
+                        <div className={estilos.existencia}>
+                            {agotado && (
+                                <span
+                                    className={`badge rounded-pill ${estilos.avisoExistencia} ${estilos.sinExistencia}`}
+                                >
+                                    <PackageX size={16} aria-hidden="true" />
+                                    Agotado
+                                </span>
+                            )}
+                            {pocasUnidades && (
+                                <span
+                                    className={`badge rounded-pill ${estilos.avisoExistencia} ${estilos.pocaExistencia}`}
+                                >
+                                    <TriangleAlert size={16} aria-hidden="true" />
+                                    Solo {disponible} {disponible === 1 ? 'disponible' : 'disponibles'}
+                                </span>
+                            )}
+                        </div>
+                        {grupos.map((grupo) => {
+                            const elegido = variante?.atributos.find((a) => a.idAtributo === grupo.idAtributo);
+                            return (
+                                <fieldset key={grupo.idAtributo} className={estilos.atributo}>
+                                    <legend>
+                                        {grupo.atributo}: {elegido?.valor}
+                                    </legend>
+                                    <div className={estilos.valores}>
+                                        {grupo.valores.map((v) => (
+                                            <button
+                                                key={v.idAtributoValor}
+                                                type="button"
+                                                aria-pressed={v.idAtributoValor === elegido?.idAtributoValor}
+                                                className={`${estilos.valor} ${v.conExistencia ? '' : estilos.valorAgotado}`}
+                                                onClick={() => {
+                                                    compra.elegirValor(grupo.idAtributo, v.idAtributoValor);
+                                                }}
+                                            >
+                                                {v.codigoHex && (
+                                                    <span
+                                                        className={estilos.muestra}
+                                                        style={{ backgroundColor: v.codigoHex }}
+                                                        aria-hidden="true"
+                                                    />
+                                                )}
+                                                {v.valor}
+                                                {!v.conExistencia && (
+                                                    <span className="visually-hidden"> (agotado)</span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </fieldset>
+                            );
+                        })}
+                        <div className={estilos.comprar}>
+                            <Cantidad
+                                valor={cantidad}
+                                alCambiar={compra.setCantidad}
+                                maximo={disponible}
+                                disabled={agotado}
+                            />
+                            <div className={estilos.comprarBoton}>{botonAgregar}</div>
+                        </div>
+                        <MetodosEnvio />
                     </div>
-                    <MetodosEnvio />
                 </div>
             </div>
             {producto.descripcion && (
@@ -194,8 +175,8 @@ function Contenido({ producto }: { producto: DetalleDeProducto }) {
             <div className={estilos.barraCompra}>
                 {variante && (
                     <div>
-                        <small>Total</small>
-                        <strong className="numero">{moneda(variante.precio * cantidad)}</strong>
+                        <small>Precio</small>
+                        <strong className="numero">{moneda(variante.precio)}</strong>
                     </div>
                 )}
                 {botonAgregar}
@@ -206,13 +187,13 @@ function Contenido({ producto }: { producto: DetalleDeProducto }) {
 
 function EsqueletoDetalle() {
     return (
-        <div className={estilos.detalle} role="status" aria-label="Cargando producto">
-            <div className={estilos.galeria}>
+        <div className="row g-4 g-lg-5" role="status" aria-label="Cargando producto">
+            <div className="col-lg-7">
                 <div className={estilos.imagenPrincipal}>
                     <Esqueleto alto="100%" radio="12px" />
                 </div>
             </div>
-            <div className={estilos.compra}>
+            <div className="col-lg-5">
                 <Esqueleto ancho="40%" alto="0.875rem" />
                 <Esqueleto alto="2.25rem" style={{ marginTop: '0.75rem' }} />
                 <Esqueleto ancho="35%" alto="2.5rem" style={{ marginTop: '0.75rem' }} />
@@ -225,7 +206,7 @@ function EsqueletoDetalle() {
 
 export default function DetalleProducto() {
     const { slug = '' } = useParams();
-    const consulta = useQuery(consultaDetalle(slug));
+    const consulta = useDetalleProducto(slug);
     const producto = consulta.data?.data;
     const noExiste = esErrorApi(consulta.error) && consulta.error.estado === 404;
 

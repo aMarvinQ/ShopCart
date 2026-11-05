@@ -1,47 +1,31 @@
 import { ArrowRight, Info, ShoppingCart, TicketPercent, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { api } from '../../api/cliente';
 import { esErrorApi } from '../../api/errores';
-import { useSesion } from '../../sesion/contexto';
 import { Boton, BotonEnlace } from '../../ui/Boton';
 import { Campo } from '../../ui/Campo';
 import { Cantidad } from '../../ui/Controles';
 import { Esqueleto } from '../../ui/Esqueleto';
 import { Alerta, DialogoConfirmacion, EstadoError, EstadoVacio } from '../../ui/Mensajes';
 import { Tarjeta } from '../../ui/Navegacion';
-import { useAvisos } from '../../ui/avisos/contexto';
 import { moneda } from '../../utils/formato';
 import { ImagenProducto } from '../tienda/TarjetaProducto';
-import { useCambioCarrito, useCarrito, type Carrito as DatosCarrito, type LineaCarrito } from './consultas';
+import {
+    useCarrito,
+    useCuponCarrito,
+    useLineaCarrito,
+    useVaciarCarrito,
+    type Carrito as DatosCarrito,
+    type LineaCarrito,
+} from './hooks/useCarrito';
+import { avisoDeCupon, avisoDeLinea } from './mensajes';
 import estilos from './carrito.module.scss';
 
-function avisoDeLinea({ estado, cantidadMaxima }: LineaCarrito): string | null {
-    if (estado === 'AGOTADO') return 'Se agotó. Quítalo para continuar.';
-    if (estado === 'NO_DISPONIBLE') return 'Ya no está a la venta. Quítalo para continuar.';
-    if (estado === 'CANTIDAD_EXCEDIDA') return `Solo puedes llevar ${String(cantidadMaxima)}. Ajusta la cantidad.`;
-    return null;
-}
-
 function Linea({ linea }: { linea: LineaCarrito }) {
-    const avisar = useAvisos();
-    const alFallar = (error: unknown) => {
-        avisar({
-            tipo: 'error',
-            titulo: 'No se pudo actualizar',
-            detalle: error instanceof Error ? error.message : 'Intenta de nuevo.',
-        });
-    };
-    const params = { idVariante: linea.idVariante };
-    const cambiarCantidad = useCambioCarrito((cantidad: number) =>
-        api.put('/carrito/items/{idVariante}', { params, cuerpo: { cantidad } }),
-    );
-    const quitar = useCambioCarrito<undefined>(() => api.delete('/carrito/items/{idVariante}', { params }));
-    const ocupada = cambiarCantidad.isPending || quitar.isPending;
+    const { recalculando, quitando, cambiarCantidad, quitar } = useLineaCarrito(linea.idVariante);
     const aviso = avisoDeLinea(linea);
 
     return (
-        <li className={estilos.linea}>
+        <li className={`list-group-item ${estilos.linea}`}>
             <Link to={`/productos/${linea.slug}`} className={estilos.lineaImagen} tabIndex={-1} aria-hidden="true">
                 <ImagenProducto ruta={linea.imagen} texto="" />
             </Link>
@@ -55,12 +39,12 @@ function Linea({ linea }: { linea: LineaCarrito }) {
             <div className={estilos.lineaControles}>
                 <div className={estilos.lineaImporte}>
                     {/* Mientras se recalcula, el espacio queda reservado: nada se mueve. */}
-                    {cambiarCantidad.isPending ? (
+                    {recalculando ? (
                         <Esqueleto ancho="5.5rem" alto="1.25rem" />
                     ) : (
                         <strong className="numero">{moneda(linea.importe)}</strong>
                     )}
-                    {linea.cantidad > 1 ? (<small className="numero">{moneda(linea.precioUnitario)} c/u</small>) : null}
+                    {linea.cantidad > 1 ? <small className="numero">{moneda(linea.precioUnitario)} c/u</small> : ''}
                 </div>
                 <div className={estilos.lineaAcciones}>
                     <Boton
@@ -68,21 +52,17 @@ function Linea({ linea }: { linea: LineaCarrito }) {
                         icono={Trash2}
                         aria-label={`Quitar ${linea.producto}`}
                         className={estilos.quitar ?? ''}
-                        cargando={quitar.isPending}
-                        disabled={cambiarCantidad.isPending}
-                        onClick={() => {
-                            quitar.mutate(undefined, { onError: alFallar });
-                        }}
+                        cargando={quitando}
+                        disabled={recalculando}
+                        onClick={quitar}
                     />
                     <Cantidad
                         etiqueta={`Cantidad de ${linea.producto}`}
                         valor={linea.cantidad}
                         minimo={1}
                         maximo={Math.max(linea.cantidadMaxima, linea.cantidad)}
-                        disabled={ocupada}
-                        alCambiar={(cantidad) => {
-                            cambiarCantidad.mutate(cantidad, { onError: alFallar });
-                        }}
+                        disabled={recalculando || quitando}
+                        alCambiar={cambiarCantidad}
                     />
                 </div>
             </div>
@@ -90,37 +70,9 @@ function Linea({ linea }: { linea: LineaCarrito }) {
     );
 }
 
-function mensajeDeCupon({ cupon }: DatosCarrito): string | null {
-    if (!cupon || cupon.aplicable) return null;
-    if (cupon.codigoError === 'CUPON_MONTO_MINIMO' && cupon.montoFaltante !== null) {
-        return `Faltan ${moneda(cupon.montoFaltante)} para usar este cupón.`;
-    }
-    return 'Este cupón no aplica a tu carrito. Quítalo para continuar.';
-}
-
 function Cupon({ carrito }: { carrito: DatosCarrito }) {
-    const [codigo, setCodigo] = useState('');
-    const [error, setError] = useState<string | undefined>();
-    const aplicar = useCambioCarrito((valor: string) => api.post('/carrito/cupon', { cuerpo: { codigo: valor } }));
-    const quitar = useCambioCarrito<undefined>(() => api.delete('/carrito/cupon'));
-    const noAplica = mensajeDeCupon(carrito);
-
-    const enviar = () => {
-        const valor = codigo.trim();
-        if (valor.length < 3) {
-            setError('Escribe el código del cupón.');
-            return;
-        }
-        setError(undefined);
-        aplicar.mutate(valor, {
-            onSuccess: () => {
-                setCodigo('');
-            },
-            onError: (e) => {
-                setError(e.message);
-            },
-        });
-    };
+    const cupon = useCuponCarrito();
+    const noAplica = avisoDeCupon(carrito);
 
     if (carrito.cupon) {
         return (
@@ -132,10 +84,8 @@ function Cupon({ carrito }: { carrito: DatosCarrito }) {
                         <button
                             type="button"
                             aria-label={`Quitar cupón ${carrito.cupon.codigo}`}
-                            disabled={quitar.isPending}
-                            onClick={() => {
-                                quitar.mutate(undefined);
-                            }}
+                            disabled={cupon.quitando}
+                            onClick={cupon.quitar}
                         >
                             <X size={16} aria-hidden="true" />
                         </button>
@@ -153,7 +103,7 @@ function Cupon({ carrito }: { carrito: DatosCarrito }) {
             noValidate
             onSubmit={(evento) => {
                 evento.preventDefault();
-                enviar();
+                cupon.aplicar();
             }}
         >
             <Campo
@@ -161,13 +111,13 @@ function Cupon({ carrito }: { carrito: DatosCarrito }) {
                 placeholder="Escribe tu código"
                 maxLength={30}
                 autoComplete="off"
-                value={codigo}
-                error={error}
+                value={cupon.codigo}
+                error={cupon.error}
                 onChange={({ target }) => {
-                    setCodigo(target.value);
+                    cupon.setCodigo(target.value);
                 }}
             />
-            <Boton type="submit" variante="secundario" cargando={aplicar.isPending}>
+            <Boton type="submit" variante="secundario" cargando={cupon.aplicando}>
                 Aplicar
             </Boton>
         </form>
@@ -216,7 +166,7 @@ function Resumen({ carrito }: { carrito: DatosCarrito }) {
                 </div>
             </dl>
             <p className={estilos.notaIva}>Los precios incluyen IVA</p>
-            <div className={estilos.continuarEscritorio}>
+            <div className="d-none d-lg-block">
                 <BotonContinuar carrito={carrito} />
             </div>
             {!carrito.puedeComprar && (
@@ -231,40 +181,42 @@ function Resumen({ carrito }: { carrito: DatosCarrito }) {
 
 function EsqueletoCarrito() {
     return (
-        <div className={estilos.carrito} role="status" aria-label="Cargando carrito">
-            <div>
+        <div className="row g-4" role="status" aria-label="Cargando carrito">
+            <div className="col-lg-8">
                 <Esqueleto ancho="12rem" alto="2rem" style={{ marginBottom: '1rem' }} />
                 <Tarjeta>
-                    {Array.from({ length: 3 }, (_, i) => (
-                        <div key={i} className={estilos.linea}>
-                            <div className={estilos.lineaImagen}>
-                                <Esqueleto alto="100%" />
-                            </div>
-                            <div className={estilos.lineaDatos}>
-                                <Esqueleto ancho="70%" />
-                            </div>
-                            <div className={estilos.lineaControles}>
-                                <Esqueleto ancho="9rem" alto="2.75rem" />
-                            </div>
-                        </div>
-                    ))}
+                    <ul className="list-group list-group-flush">
+                        {Array.from({ length: 3 }, (_, i) => (
+                            <li key={i} className={`list-group-item ${estilos.linea}`}>
+                                <div className={estilos.lineaImagen}>
+                                    <Esqueleto alto="100%" />
+                                </div>
+                                <div className={estilos.lineaDatos}>
+                                    <Esqueleto ancho="70%" />
+                                </div>
+                                <div className={estilos.lineaControles}>
+                                    <Esqueleto ancho="9rem" alto="2.75rem" />
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
                 </Tarjeta>
             </div>
-            <Tarjeta className={estilos.resumen}>
-                <Esqueleto alto="20rem" />
-            </Tarjeta>
+            <div className="col-lg-4">
+                <Tarjeta className={estilos.resumen}>
+                    <Esqueleto alto="20rem" />
+                </Tarjeta>
+            </div>
         </div>
     );
 }
 
 export default function Carrito() {
-    const { usuario } = useSesion();
     const consulta = useCarrito();
-    const [confirmarVaciar, setConfirmarVaciar] = useState(false);
-    const vaciar = useCambioCarrito<undefined>(() => api.delete('/carrito'));
+    const vaciar = useVaciarCarrito();
     const carrito = consulta.data?.data;
 
-    if (usuario && usuario.codigoRol !== 'CLIENTE') {
+    if (consulta.esPersonal) {
         return (
             <>
                 <title>Carrito · ShopCart</title>
@@ -300,8 +252,8 @@ export default function Carrito() {
                 />
             )}
             {carrito && carrito.items.length > 0 && (
-                <div className={estilos.carrito}>
-                    <section>
+                <div className="row g-4">
+                    <section className="col-lg-8">
                         <div className={estilos.cabecera}>
                             <h1>
                                 Tu carrito{' '}
@@ -310,34 +262,30 @@ export default function Carrito() {
                                     {carrito.cantidadArticulos === 1 ? 'producto' : 'productos'})
                                 </small>
                             </h1>
-                            <Boton
-                                variante="enlace"
-                                tamano="sm"
-                                onClick={() => {
-                                    setConfirmarVaciar(true);
-                                }}
-                            >
+                            <Boton variante="enlace" tamano="sm" onClick={vaciar.pedirConfirmacion}>
                                 Vaciar carrito
                             </Boton>
                         </div>
                         <Tarjeta>
-                            <ul className={estilos.lineas}>
+                            <ul className="list-group list-group-flush">
                                 {carrito.items.map((linea) => (
                                     <Linea key={linea.idVariante} linea={linea} />
                                 ))}
                             </ul>
                         </Tarjeta>
-                        {!usuario && (
+                        {consulta.esInvitado && (
                             <p className={estilos.nota}>
                                 <Info size={18} aria-hidden="true" />
                                 Puedes comprar como invitado; no necesitas crear una cuenta.
                             </p>
                         )}
                     </section>
-                    <Tarjeta className={estilos.resumen}>
-                        <Resumen carrito={carrito} />
-                    </Tarjeta>
-                    <div className={estilos.barraPago}>
+                    <div className="col-lg-4">
+                        <Tarjeta className={estilos.resumen}>
+                            <Resumen carrito={carrito} />
+                        </Tarjeta>
+                    </div>
+                    <div className={`col-12 d-lg-none ${estilos.barraPago}`}>
                         <div className={estilos.barraPagoTotal}>
                             <span>Total con IVA</span>
                             <strong className="numero">{moneda(carrito.total)}</strong>
@@ -347,20 +295,12 @@ export default function Carrito() {
                 </div>
             )}
             <DialogoConfirmacion
-                mostrar={confirmarVaciar}
+                mostrar={vaciar.confirmando}
                 titulo="¿Vaciar el carrito?"
                 textoConfirmar="Sí, vaciar"
-                cargando={vaciar.isPending}
-                alCancelar={() => {
-                    setConfirmarVaciar(false);
-                }}
-                alConfirmar={() => {
-                    vaciar.mutate(undefined, {
-                        onSettled: () => {
-                            setConfirmarVaciar(false);
-                        },
-                    });
-                }}
+                cargando={vaciar.vaciando}
+                alCancelar={vaciar.cancelar}
+                alConfirmar={vaciar.confirmar}
             >
                 Se quitarán todos los productos.
             </DialogoConfirmacion>

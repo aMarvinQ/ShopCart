@@ -7,7 +7,7 @@ type PropsMarcable = Omit<ComponentProps<'input'>, 'type' | 'className'> & { eti
 export function Casilla({ etiqueta, ...resto }: PropsMarcable) {
     return (
         <label className={estilos.opcion}>
-            <input {...resto} type="checkbox" className={estilos.casilla} />
+            <input {...resto} type="checkbox" className={`form-check-input ${estilos.casilla}`} />
             {etiqueta}
         </label>
     );
@@ -17,7 +17,7 @@ export function Casilla({ etiqueta, ...resto }: PropsMarcable) {
 export function Radio({ etiqueta, contador, ...resto }: PropsMarcable & { contador?: number }) {
     return (
         <label className={estilos.opcion}>
-            <input {...resto} type="radio" className={estilos.casilla} />
+            <input {...resto} type="radio" className={`form-check-input ${estilos.casilla}`} />
             {etiqueta}
             {contador !== undefined && <span className={`${estilos.contador} numero`}>{contador}</span>}
         </label>
@@ -26,8 +26,8 @@ export function Radio({ etiqueta, contador, ...resto }: PropsMarcable & { contad
 
 export function Interruptor({ etiqueta, ...resto }: PropsMarcable) {
     return (
-        <label className={estilos.opcion}>
-            <input {...resto} type="checkbox" role="switch" className={estilos.interruptor} />
+        <label className={`form-switch ${estilos.opcion}`}>
+            <input {...resto} type="checkbox" role="switch" className={`form-check-input ${estilos.interruptor}`} />
             {etiqueta}
         </label>
     );

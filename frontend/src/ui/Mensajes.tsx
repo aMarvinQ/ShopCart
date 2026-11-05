@@ -21,7 +21,7 @@ import estilos from './Mensajes.module.scss';
 export function Alerta({ tipo, titulo, children }: { tipo: TipoMensaje; titulo?: string; children: ReactNode }) {
     const Icono = ICONO_MENSAJE[tipo];
     return (
-        <div role={tipo === 'error' ? 'alert' : 'status'} className={`${estilos.alerta} ${estilos[tipo]}`}>
+        <div role={tipo === 'error' ? 'alert' : 'status'} className={`alert ${estilos.alerta} ${estilos[tipo]}`}>
             <Icono size={20} aria-hidden="true" />
             <div>
                 {titulo && <strong>{titulo}. </strong>}
@@ -53,7 +53,7 @@ export function EstadoPedido({ codigo }: { codigo: string }) {
         icono: Tag,
     };
     return (
-        <span className={`${estilos.insignia} ${clase ?? ''}`}>
+        <span className={`badge rounded-pill ${estilos.insignia} ${clase ?? ''}`}>
             <Icono size={16} aria-hidden="true" />
             {etiqueta}
         </span>
@@ -90,7 +90,6 @@ export function DialogoConfirmacion({
             keyboard={!cargando}
             aria-labelledby={idTitulo}
             contentClassName={estilos.dialogo}
-            dialogClassName={estilos.dialogoMarco}
         >
             <div className={estilos.dialogoCuerpo}>
                 <span className={estilos.dialogoIcono}>

@@ -16,31 +16,21 @@
     margin-left: auto;
 }
 
-.desplazable {
-    overflow-x: auto;
-}
-
+/* Sobre .table de Bootstrap: alturas de fila y encabezado del mockup. */
 .tabla {
-    width: 100%;
-    border-collapse: collapse;
     font-size: 0.875rem;
 
     th {
         height: $alto-control;
-        padding: 0 1rem;
-        border-bottom: 1px solid $borde;
+        border-bottom-color: $borde;
         background: $superficie-tenue;
         color: $texto-secundario;
         font-weight: 600;
-        text-align: left;
         white-space: nowrap;
     }
 
     td {
         height: 3.5rem;
-        padding: 0 1rem;
-        border-bottom: 1px solid $borde-suave;
-        vertical-align: middle;
     }
 
     tbody tr:last-child td {
@@ -82,18 +72,6 @@
 
     > * {
         flex: 1;
-    }
-}
-
-.soloEscritorio {
-    @media (max-width: ($corte-md - 1px)) {
-        display: none;
-    }
-}
-
-.soloMovil {
-    @media (min-width: $corte-md) {
-        display: none;
     }
 }
 

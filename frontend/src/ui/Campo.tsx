@@ -23,14 +23,14 @@ export function MarcoCampo({
 }: PropsMarcoCampo & { id: string; children: ReactNode }) {
     return (
         <div className={estilos.campo} style={ancho === undefined ? undefined : { width: ancho }}>
-            <label htmlFor={id} id={`${id}-etiqueta`} className={compacto ? 'visually-hidden' : estilos.etiqueta}>
+            <label htmlFor={id} id={`${id}-etiqueta`} className={compacto ? 'visually-hidden' : 'form-label mb-0'}>
                 {etiqueta}
             </label>
             {children}
             {!compacto && (
-                <div id={`${id}-pie`} className={estilos.pie}>
+                <div id={`${id}-pie`} className={`form-text ${estilos.pie}`}>
                     {error ? (
-                        <span className={estilos.error}>
+                        <span className={`invalid-feedback d-flex ${estilos.error}`}>
                             <CircleAlert size={16} aria-hidden="true" />
                             {error}
                         </span>
@@ -64,7 +64,8 @@ export function Campo({
     const idGenerado = useId();
     const idCampo = id ?? idGenerado;
     const clases = [
-        estilos.control,
+        'form-control',
+        error && 'is-invalid',
         error && estilos.controlError,
         Icono && estilos.conIcono,
         adornoFin && estilos.conAdorno,

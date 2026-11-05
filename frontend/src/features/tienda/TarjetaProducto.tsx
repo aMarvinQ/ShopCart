@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { Esqueleto } from '../../ui/Esqueleto';
 import { moneda } from '../../utils/formato';
-import type { TarjetaDeProducto } from './consultas';
+import type { TarjetaDeProducto } from './hooks/useCatalogo';
 import estilos from './tienda.module.scss';
 
 /** Imagen del producto; sin imagen, o si no carga, un icono en el mismo espacio. */
@@ -40,18 +40,24 @@ export function ImagenProducto({
 export function TarjetaProducto({ producto, prioridad = false }: { producto: TarjetaDeProducto; prioridad?: boolean }) {
     const agotado = !producto.disponible;
     return (
-        <article className={`${estilos.tarjeta} ${agotado ? estilos.agotado : ''}`}>
+        <article className={`card h-100 ${estilos.tarjeta} ${agotado ? estilos.agotado : ''}`}>
             <Link to={`/productos/${producto.slug}`} className={estilos.tarjetaImagen} tabIndex={-1} aria-hidden="true">
                 <ImagenProducto ruta={producto.imagenPrincipal} texto="" prioridad={prioridad} />
-                {agotado && <span className={estilos.etiquetaAgotado}>Agotado</span>}
+                {agotado && <span className={`badge ${estilos.etiquetaAgotado}`}>Agotado</span>}
             </Link>
-            <div className={estilos.tarjetaCuerpo}>
+            <div className={`card-body ${estilos.tarjetaCuerpo}`}>
                 <span className={`${estilos.precio} numero`}>{moneda(producto.precio)}</span>
                 <h3 className={estilos.tarjetaNombre}>
                     <Link to={`/productos/${producto.slug}`}>{producto.nombre}</Link>
                 </h3>
                 <p className={estilos.tarjetaMeta}>
-                    {producto.categoria} · {agotado ? 'Agotado' : 'En existencia'}
+                    {producto.categoria}
+                    {agotado && (
+                        <>
+                            {' · '}
+                            <span className={estilos.metaAgotado}>Agotado</span>
+                        </>
+                    )}
                 </p>
             </div>
         </article>
@@ -61,9 +67,9 @@ export function TarjetaProducto({ producto, prioridad = false }: { producto: Tar
 /** Misma forma y medidas que la tarjeta: al llegar los datos, nada se mueve. */
 export function EsqueletoTarjeta() {
     return (
-        <div className={estilos.tarjeta} aria-hidden="true">
+        <div className={`card h-100 ${estilos.tarjeta}`} aria-hidden="true">
             <Esqueleto ancho="100%" alto="auto" radio="0" style={{ aspectRatio: '1 / 1' }} />
-            <div className={estilos.tarjetaCuerpo}>
+            <div className={`card-body ${estilos.tarjetaCuerpo}`}>
                 <Esqueleto ancho="55%" alto="1.5rem" />
                 <div className={estilos.tarjetaNombre}>
                     <Esqueleto alto="0.875rem" />

@@ -36,7 +36,7 @@ ShopCart/
     src/sesion/        Sesión, renovación del token, guardas y tabla de permisos por rol
     src/app/           Rutas, layouts y páginas generales
     src/ui/            Sistema de diseño (componentes reutilizables)
-    src/features/      Pantallas por módulo
+    src/features/      Pantallas por módulo; su lógica vive en features/*/hooks
     tests/e2e/         Pruebas de extremo a extremo (Playwright, contra la API real)
   docs/                Diagrama entidad-relación, catálogo de errores y diagramas de apoyo
 ```
@@ -368,6 +368,7 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Una sola tabla de permisos** (`sesion/permisos.ts`) genera las guardas y los menús, así no pueden contradecirse. Es experiencia de usuario: quien autoriza es la API (403) y cada stored procedure.
 - **Seguridad**: redirección después del login solo a rutas internas; sin HTML inyectado (lo prohíbe el lint); la versión de producción se sirve con CSP (`script-src 'self'`), `X-Content-Type-Options` y `Referrer-Policy`, y las pruebas comprueban que no haya violaciones.
 - **Sin fugas ni consumo inútil**: cada consulta se cancela al salir de la pantalla y tiene tiempo máximo; el caché borra lo que no se usa a los 5 minutos; solo se reintentan lecturas con fallas pasajeras y con tope; los efectos limpian sus oyentes (el lint de hooks está en error). Cada layout se carga aparte: quien visita la tienda no descarga el panel.
+- **Componentes sin lógica de negocio**: las pantallas reciben datos de los hooks de su módulo (`features/*/hooks`) y solo dibujan; `ui/` no conoce la API ni la sesión. Bootstrap, ajustado con variables a los valores del diseño, es la base de botones, campos, tarjetas, tablas y rejilla.
 - **Accesibilidad**: enlace para saltar al contenido, foco visible, navegación por teclado y "reducir movimiento"; las pruebas de extremo a extremo pasan axe.
 
 ### Stored procedures: contrato con la API

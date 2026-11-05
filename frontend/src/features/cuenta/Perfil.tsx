@@ -1,64 +1,19 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { api, type DatosDe } from '../../api/cliente';
 import { esErrorApi } from '../../api/errores';
-import { useSesion } from '../../sesion/contexto';
-import { useAvisos } from '../../ui/avisos/contexto';
 import { Boton } from '../../ui/Boton';
 import { Campo, CampoContrasena } from '../../ui/Campo';
 import { Esqueleto } from '../../ui/Esqueleto';
 import { Alerta, EstadoError } from '../../ui/Mensajes';
 import { Tarjeta } from '../../ui/Navegacion';
-import { aplicarErroresApi } from '../../utils/formularios';
+import { AYUDA_CONTRASENA } from './esquemas';
+import { useFormularioContrasena, useFormularioPerfil, usePerfil, type DatosPerfil } from './hooks/usePerfil';
 import estilos from './cuenta.module.scss';
-import { AYUDA_CONTRASENA, esquemaApellido, esquemaContrasenaNueva, esquemaNombre, esquemaTelefono } from './esquemas';
 
-const esquemaDatos = z.object({ nombre: esquemaNombre, apellido: esquemaApellido, telefono: esquemaTelefono });
-type Datos = z.infer<typeof esquemaDatos>;
-
-const esquemaClave = z.object({
-    contrasenaActual: z.string().min(1, 'Escribe tu contraseña actual.'),
-    contrasenaNueva: esquemaContrasenaNueva,
-});
-type Clave = z.infer<typeof esquemaClave>;
-
-function FormularioDatos({ perfil }: { perfil: DatosDe<'get', '/perfil'> }) {
-    const { actualizarNombre } = useSesion();
-    const consultas = useQueryClient();
-    const avisar = useAvisos();
-    const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+function FormularioDatos({ perfil }: { perfil: DatosPerfil }) {
+    const { formulario, errorGeneral, guardando, enviar } = useFormularioPerfil(perfil);
     const {
         register,
-        handleSubmit,
-        setError,
         formState: { errors },
-    } = useForm<Datos>({
-        resolver: zodResolver(esquemaDatos),
-        defaultValues: { nombre: perfil.nombre, apellido: perfil.apellido, telefono: perfil.telefono ?? '' },
-    });
-    const guardar = useMutation({
-        mutationFn: ({ nombre, apellido, telefono }: Datos) =>
-            api.put('/perfil', { cuerpo: { nombre, apellido, telefono: telefono || null } }),
-        onSuccess: ({ data }) => {
-            setErrorGeneral(null);
-            consultas.setQueryData(['perfil'], { data });
-            actualizarNombre(data.nombre, data.apellido);
-            avisar({ tipo: 'exito', titulo: 'Perfil actualizado' });
-        },
-        onError: (error) => {
-            setErrorGeneral(
-                aplicarErroresApi(
-                    error,
-                    setError,
-                    ['nombre', 'apellido', 'telefono'],
-                    'No pudimos guardar los cambios; intenta de nuevo.',
-                ),
-            );
-        },
-    });
+    } = formulario;
 
     return (
         <Tarjeta className={estilos.bloque}>
@@ -70,44 +25,44 @@ function FormularioDatos({ perfil }: { perfil: DatosDe<'get', '/perfil'> }) {
                     <Alerta tipo="error">{errorGeneral}</Alerta>
                 </div>
             )}
-            <form
-                onSubmit={(e) =>
-                    void handleSubmit((datos) => {
-                        guardar.mutate(datos);
-                    })(e)
-                }
-                noValidate
-                className={estilos.formulario}
-            >
-                <div className={estilos.dosColumnas}>
-                    <Campo
-                        etiqueta="Nombre"
-                        autoComplete="given-name"
-                        error={errors.nombre?.message}
-                        {...register('nombre')}
-                    />
-                    <Campo
-                        etiqueta="Apellido"
-                        autoComplete="family-name"
-                        error={errors.apellido?.message}
-                        {...register('apellido')}
-                    />
-                    <Campo
-                        etiqueta="Correo electrónico"
-                        value={perfil.correo}
-                        disabled
-                        ayuda="El correo identifica tu cuenta y no se puede cambiar."
-                    />
-                    <Campo
-                        etiqueta="Teléfono (opcional)"
-                        type="tel"
-                        autoComplete="tel"
-                        error={errors.telefono?.message}
-                        {...register('telefono')}
-                    />
+            <form onSubmit={(e) => void enviar(e)} noValidate className={estilos.formulario}>
+                <div className="row gx-3">
+                    <div className="col-sm-6">
+                        <Campo
+                            etiqueta="Nombre"
+                            autoComplete="given-name"
+                            error={errors.nombre?.message}
+                            {...register('nombre')}
+                        />
+                    </div>
+                    <div className="col-sm-6">
+                        <Campo
+                            etiqueta="Apellido"
+                            autoComplete="family-name"
+                            error={errors.apellido?.message}
+                            {...register('apellido')}
+                        />
+                    </div>
+                    <div className="col-sm-6">
+                        <Campo
+                            etiqueta="Correo electrónico"
+                            value={perfil.correo}
+                            disabled
+                            ayuda="El correo identifica tu cuenta y no se puede cambiar."
+                        />
+                    </div>
+                    <div className="col-sm-6">
+                        <Campo
+                            etiqueta="Teléfono (opcional)"
+                            type="tel"
+                            autoComplete="tel"
+                            error={errors.telefono?.message}
+                            {...register('telefono')}
+                        />
+                    </div>
                 </div>
                 <div className={estilos.acciones}>
-                    <Boton type="submit" cargando={guardar.isPending}>
+                    <Boton type="submit" cargando={guardando}>
                         Guardar cambios
                     </Boton>
                 </div>
@@ -117,37 +72,11 @@ function FormularioDatos({ perfil }: { perfil: DatosDe<'get', '/perfil'> }) {
 }
 
 function FormularioContrasena() {
-    const avisar = useAvisos();
-    const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+    const { formulario, errorGeneral, cambiando, enviar } = useFormularioContrasena();
     const {
         register,
-        handleSubmit,
-        setError,
-        reset,
         formState: { errors },
-    } = useForm<Clave>({ resolver: zodResolver(esquemaClave) });
-    const cambiar = useMutation({
-        mutationFn: (datos: Clave) => api.post('/auth/cambiar-contrasena', { cuerpo: datos }),
-        onSuccess: ({ data }) => {
-            setErrorGeneral(null);
-            reset();
-            avisar({
-                tipo: 'exito',
-                titulo: 'Contraseña actualizada',
-                ...(data.sesionesCerradas > 0 && { detalle: 'Cerramos tu sesión en los demás dispositivos.' }),
-            });
-        },
-        onError: (error) => {
-            setErrorGeneral(
-                aplicarErroresApi(
-                    error,
-                    setError,
-                    ['contrasenaActual', 'contrasenaNueva'],
-                    'No pudimos cambiar la contraseña; intenta de nuevo.',
-                ),
-            );
-        },
-    });
+    } = formulario;
 
     return (
         <Tarjeta className={estilos.bloque}>
@@ -157,32 +86,28 @@ function FormularioContrasena() {
                     <Alerta tipo="error">{errorGeneral}</Alerta>
                 </div>
             )}
-            <form
-                onSubmit={(e) =>
-                    void handleSubmit((datos) => {
-                        cambiar.mutate(datos);
-                    })(e)
-                }
-                noValidate
-                className={estilos.formulario}
-            >
-                <div className={estilos.dosColumnas}>
-                    <CampoContrasena
-                        etiqueta="Contraseña actual"
-                        autoComplete="current-password"
-                        error={errors.contrasenaActual?.message}
-                        {...register('contrasenaActual')}
-                    />
-                    <CampoContrasena
-                        etiqueta="Contraseña nueva"
-                        autoComplete="new-password"
-                        ayuda={AYUDA_CONTRASENA}
-                        error={errors.contrasenaNueva?.message}
-                        {...register('contrasenaNueva')}
-                    />
+            <form onSubmit={(e) => void enviar(e)} noValidate className={estilos.formulario}>
+                <div className="row gx-3">
+                    <div className="col-sm-6">
+                        <CampoContrasena
+                            etiqueta="Contraseña actual"
+                            autoComplete="current-password"
+                            error={errors.contrasenaActual?.message}
+                            {...register('contrasenaActual')}
+                        />
+                    </div>
+                    <div className="col-sm-6">
+                        <CampoContrasena
+                            etiqueta="Contraseña nueva"
+                            autoComplete="new-password"
+                            ayuda={AYUDA_CONTRASENA}
+                            error={errors.contrasenaNueva?.message}
+                            {...register('contrasenaNueva')}
+                        />
+                    </div>
                 </div>
                 <div className={estilos.acciones}>
-                    <Boton type="submit" variante="secundario" cargando={cambiar.isPending}>
+                    <Boton type="submit" variante="secundario" cargando={cambiando}>
                         Cambiar contraseña
                     </Boton>
                 </div>
@@ -196,9 +121,11 @@ function EsqueletoPerfil() {
         <Tarjeta className={estilos.bloque}>
             <div role="status" aria-label="Cargando perfil">
                 <Esqueleto ancho="12rem" alto="1.5rem" />
-                <div className={estilos.dosColumnas} style={{ marginTop: '1.5rem' }}>
+                <div className="row g-3 mt-2">
                     {Array.from({ length: 4 }, (_, i) => (
-                        <Esqueleto key={i} alto="2.75rem" />
+                        <div key={i} className="col-sm-6">
+                            <Esqueleto alto="2.75rem" />
+                        </div>
                     ))}
                 </div>
             </div>
@@ -207,10 +134,7 @@ function EsqueletoPerfil() {
 }
 
 export default function Perfil() {
-    const consulta = useQuery({
-        queryKey: ['perfil'],
-        queryFn: ({ signal }) => api.get('/perfil', { signal }),
-    });
+    const consulta = usePerfil();
 
     return (
         <section className={estilos.perfil}>

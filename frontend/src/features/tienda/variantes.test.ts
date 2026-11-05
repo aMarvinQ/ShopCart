@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { VarianteDeProducto } from './consultas';
+import type { VarianteDeProducto } from './hooks/useCatalogo';
 import { gruposDeAtributos, varianteAlElegir } from './variantes';
 
 const atributo = (idAtributo: number, idAtributoValor: number, valor: string) => ({

@@ -2,14 +2,9 @@
 
 /* --- Tarjeta de producto ------------------------------------------------------------------ */
 
+/* Sobre .card de Bootstrap: imagen 1:1 y alturas fijas para que los esqueletos no provoquen saltos. */
 .tarjeta {
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
-    height: 100%;
-    border: 1px solid $borde;
-    border-radius: $radio-tarjeta;
-    background: $superficie;
     box-shadow: $sombra-1;
 }
 
@@ -57,15 +52,12 @@
     position: absolute;
     top: 0.75rem;
     left: 0.75rem;
-    display: inline-flex;
-    align-items: center;
-    height: 1.5rem;
-    padding: 0 0.5rem;
-    border-radius: $radio-control;
-    background: $texto-secundario;
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 700;
+    background: $peligro;
+}
+
+.metaAgotado {
+    color: $peligro;
+    font-weight: 600;
 }
 
 .tarjetaCuerpo {
@@ -134,17 +126,9 @@
     gap: 2.5rem;
 }
 
-.portada {
-    display: grid;
-    gap: 1.5rem;
-
-    @media (min-width: $corte-lg) {
-        grid-template-columns: 2fr 1fr;
-    }
-}
-
 .portadaPrincipal {
     display: flex;
+    height: 100%;
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
@@ -186,21 +170,13 @@
     }
 }
 
-.portadaLateral {
-    display: grid;
-    gap: 1.5rem;
-
-    @media (min-width: $corte-sm) and (max-width: ($corte-lg - 1px)) {
-        grid-template-columns: 1fr 1fr;
-    }
-}
-
 .portadaTarjeta,
 .portadaTarjetaSuave {
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 0.375rem;
+    height: 100%;
     min-height: 8rem;
     padding: 1.25rem 1.5rem;
     border-radius: $radio-tarjeta;
@@ -364,30 +340,6 @@
     gap: 0.75rem;
 }
 
-.soloMovil {
-    @media (min-width: $corte-lg) {
-        display: none;
-    }
-}
-
-.busquedaCuerpo {
-    display: grid;
-    gap: 1.5rem;
-    align-items: start;
-
-    @media (min-width: $corte-lg) {
-        grid-template-columns: 16rem minmax(0, 1fr);
-    }
-}
-
-.filtros {
-    display: none;
-
-    @media (min-width: $corte-lg) {
-        display: block;
-    }
-}
-
 .filtrosTarjeta {
     padding: 1rem;
 }
@@ -419,48 +371,12 @@
     gap: 0.25rem;
 }
 
-.filtroPrecioCampos {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-    width: 100%;
-}
-
-.resultados {
-    min-width: 0;
-}
-
 .chips {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 1rem;
-}
-
-.limpiar {
-    padding: 0 0.25rem;
-    border: 0;
-    background: none;
-    color: $primario;
-    font-size: 0.875rem;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-}
-
-.rejilla {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-
-    @media (min-width: $corte-md) {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1.5rem;
-    }
-
-    @media (min-width: $corte-xl) {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
 }
 
 .finalLista {
@@ -478,16 +394,6 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-}
-
-.detalle {
-    display: grid;
-    gap: 1.5rem;
-
-    @media (min-width: $corte-lg) {
-        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-        gap: 2.5rem;
-    }
 }
 
 .galeria {
@@ -584,18 +490,30 @@
     font-size: 0.875rem;
 }
 
-.quedan {
+/* Espacio reservado: al cambiar de variante, lo de abajo no se mueve aunque el aviso aparezca o no. */
+.existencia {
+    min-height: 1.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.avisoExistencia.avisoExistencia {
+    --bs-badge-padding-x: 0.625rem;
+    --bs-badge-padding-y: 0;
+    --bs-badge-font-size: 0.875rem;
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     height: 1.75rem;
-    margin: 0 0 0.75rem;
-    padding: 0 0.625rem;
-    border-radius: $radio-pildora;
+}
+
+.pocaExistencia.pocaExistencia {
+    --bs-badge-color: #{$aviso-texto};
     background: $aviso-fondo;
-    color: $aviso-texto;
-    font-size: 0.875rem;
-    font-weight: 600;
+}
+
+.sinExistencia.sinExistencia {
+    --bs-badge-color: #{$peligro-texto};
+    background: $peligro-fondo;
 }
 
 .atributo {
@@ -664,22 +582,9 @@
 }
 
 .metodos {
-    margin: 0;
-    padding: 0;
-    border: 1px solid $borde;
-    border-radius: $radio-tarjeta;
-    background: $superficie;
-    list-style: none;
-
     li {
         display: flex;
         gap: 0.75rem;
-        padding: 0.875rem 1rem;
-        border-bottom: 1px solid $borde-suave;
-
-        &:last-child {
-            border-bottom: 0;
-        }
     }
 
     svg {

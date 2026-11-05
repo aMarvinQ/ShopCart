@@ -5,17 +5,20 @@ import estilos from './Navegacion.module.scss';
 
 /** Tarjeta blanca con borde: el contenedor de casi todo el sistema. */
 export function Tarjeta({ className, children }: { className?: string | undefined; children: ReactNode }) {
-    return <div className={`${estilos.tarjeta} ${className ?? ''}`}>{children}</div>;
+    return <div className={`card ${estilos.tarjeta} ${className ?? ''}`}>{children}</div>;
 }
 
 export function MigaPan({ rutas }: { rutas: readonly { etiqueta: string; a?: string }[] }) {
     return (
         <nav aria-label="Ruta de navegación">
-            <ol className={estilos.miga}>
-                {rutas.map(({ etiqueta, a }, indice) => (
-                    <li key={etiqueta}>
-                        {indice > 0 && <ChevronRight size={16} aria-hidden="true" />}
-                        {a ? <Link to={a}>{etiqueta}</Link> : <span aria-current="page">{etiqueta}</span>}
+            <ol className="breadcrumb">
+                {rutas.map(({ etiqueta, a }) => (
+                    <li
+                        key={etiqueta}
+                        className={`breadcrumb-item ${a ? '' : 'active'}`}
+                        aria-current={a ? undefined : 'page'}
+                    >
+                        {a ? <Link to={a}>{etiqueta}</Link> : etiqueta}
                     </li>
                 ))}
             </ol>
@@ -53,7 +56,7 @@ export function Pestanas({
 
     return (
         <div>
-            <div ref={lista} role="tablist" aria-label={etiqueta} className={estilos.pestanas}>
+            <div ref={lista} role="tablist" aria-label={etiqueta} className={`nav nav-underline ${estilos.pestanas}`}>
                 {pestanas.map(({ id, etiqueta: texto }, indice) => (
                     <button
                         key={id}
@@ -64,7 +67,7 @@ export function Pestanas({
                         aria-controls={`${base}-${id}-panel`}
                         tabIndex={indice === activa ? 0 : -1}
                         onKeyDown={alTeclear}
-                        className={`${estilos.pestana} ${indice === activa ? estilos.pestanaActiva : ''}`}
+                        className={`nav-link ${indice === activa ? 'active' : ''}`}
                         onClick={() => {
                             setActiva(indice);
                         }}
@@ -126,47 +129,56 @@ export function Paginacion({
                 {desde}–{hasta} de {totalRegistros} {unidad}
             </span>
             {totalPaginas > 1 && (
-                <nav aria-label="Paginación" className={`${estilos.paginas} numero`}>
-                    <button
-                        type="button"
-                        aria-label="Página anterior"
-                        disabled={pagina <= 1}
-                        onClick={() => {
-                            alCambiar(pagina - 1);
-                        }}
-                    >
-                        <ChevronLeft size={20} aria-hidden="true" />
-                    </button>
-                    {paginasVisibles(pagina, totalPaginas).map((p) =>
-                        typeof p === 'number' ? (
+                <nav aria-label="Paginación">
+                    <ul className={`pagination numero ${estilos.paginas}`}>
+                        <li className={`page-item ${pagina <= 1 ? 'disabled' : ''}`}>
                             <button
-                                key={p}
                                 type="button"
-                                aria-label={`Página ${String(p)}`}
-                                aria-current={p === pagina ? 'page' : undefined}
-                                className={p === pagina ? estilos.paginaActual : estilos.paginaOtra}
+                                className="page-link"
+                                aria-label="Página anterior"
+                                disabled={pagina <= 1}
                                 onClick={() => {
-                                    alCambiar(p);
+                                    alCambiar(pagina - 1);
                                 }}
                             >
-                                {p}
+                                <ChevronLeft size={20} aria-hidden="true" />
                             </button>
-                        ) : (
-                            <span key={p} className={estilos.hueco} aria-hidden="true">
-                                …
-                            </span>
-                        ),
-                    )}
-                    <button
-                        type="button"
-                        aria-label="Página siguiente"
-                        disabled={pagina >= totalPaginas}
-                        onClick={() => {
-                            alCambiar(pagina + 1);
-                        }}
-                    >
-                        <ChevronRight size={20} aria-hidden="true" />
-                    </button>
+                        </li>
+                        {paginasVisibles(pagina, totalPaginas).map((p) =>
+                            typeof p === 'number' ? (
+                                <li key={p} className={`page-item ${p === pagina ? 'active' : estilos.soloAncho}`}>
+                                    <button
+                                        type="button"
+                                        className="page-link"
+                                        aria-label={`Página ${String(p)}`}
+                                        aria-current={p === pagina ? 'page' : undefined}
+                                        onClick={() => {
+                                            alCambiar(p);
+                                        }}
+                                    >
+                                        {p}
+                                    </button>
+                                </li>
+                            ) : (
+                                <li key={p} className={`page-item disabled ${estilos.soloAncho}`} aria-hidden="true">
+                                    <span className="page-link">…</span>
+                                </li>
+                            ),
+                        )}
+                        <li className={`page-item ${pagina >= totalPaginas ? 'disabled' : ''}`}>
+                            <button
+                                type="button"
+                                className="page-link"
+                                aria-label="Página siguiente"
+                                disabled={pagina >= totalPaginas}
+                                onClick={() => {
+                                    alCambiar(pagina + 1);
+                                }}
+                            >
+                                <ChevronRight size={20} aria-hidden="true" />
+                            </button>
+                        </li>
+                    </ul>
                 </nav>
             )}
         </div>

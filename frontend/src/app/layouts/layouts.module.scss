@@ -357,16 +357,6 @@
 
 /* --- Mi cuenta ---------------------------------------------------------------------------- */
 
-.cuenta {
-    display: grid;
-    gap: 1.5rem;
-    grid-template-columns: minmax(0, 1fr);
-
-    @media (min-width: $corte-lg) {
-        grid-template-columns: 14rem minmax(0, 1fr);
-    }
-}
-
 .cuentaMenu {
     display: flex;
     gap: 0.25rem;
@@ -401,10 +391,6 @@
     background: $primario-suave;
     color: $texto;
     font-weight: 600;
-}
-
-.cuentaContenido {
-    min-width: 0;
 }
 
 /* --- Panel -------------------------------------------------------------------------------- */

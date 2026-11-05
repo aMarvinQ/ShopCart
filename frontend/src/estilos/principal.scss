@@ -24,6 +24,109 @@ $border-radius: $radio-control;
 $border-radius-sm: $radio-control;
 $border-radius-lg: $radio-tarjeta;
 $enable-smooth-scroll: true;
+$enable-validation-icons: false;
+$color-contrast-dark: $texto;
+$color-contrast-light: #fff;
+/* Contraste de texto sobre colores: el umbral AA de WCAG. */
+$min-contrast-ratio: 4.5;
+
+/* Botones: 36, 44 y 52 px de alto, como en los mockups. */
+$btn-font-weight: 600;
+$btn-line-height: 1;
+$btn-padding-y: 0.8125rem;
+$btn-padding-x: 1.25rem;
+$btn-font-size: 1rem;
+$btn-padding-y-sm: 0.625rem;
+$btn-padding-x-sm: 0.875rem;
+$btn-font-size-sm: 0.875rem;
+$btn-padding-y-lg: 1rem;
+$btn-padding-x-lg: 1.75rem;
+$btn-font-size-lg: 1.125rem;
+$btn-border-radius: $radio-control;
+$btn-border-radius-sm: $radio-control;
+$btn-border-radius-lg: $radio-control;
+$btn-disabled-opacity: 1;
+$btn-focus-width: 0;
+$btn-link-disabled-color: $deshabilitado-texto;
+
+/* Campos: 44 px de alto. */
+$input-padding-y: 0.5625rem;
+$input-padding-x: 0.75rem;
+$input-bg: $superficie;
+$input-color: $texto;
+$input-border-color: $borde-control;
+$input-placeholder-color: $borde-control;
+$input-disabled-bg: $fondo;
+$input-disabled-border-color: $borde;
+$input-focus-border-color: $resaltado;
+$input-focus-box-shadow: none;
+$form-label-font-size: 0.875rem;
+$form-label-font-weight: 600;
+$form-label-margin-bottom: 0.375rem;
+$form-text-font-size: 0.875rem;
+$form-text-color: $texto-secundario;
+$form-text-margin-top: 0;
+$form-feedback-margin-top: 0;
+$form-feedback-font-size: 0.875rem;
+$form-feedback-invalid-color: $peligro;
+$form-check-input-border: 1px solid $borde-control;
+$form-check-input-focus-border: $resaltado;
+$form-check-input-focus-box-shadow: none;
+$form-switch-color: #fff;
+$form-switch-focus-color: #fff;
+$form-switch-checked-color: #fff;
+
+/* Tarjetas, listas, tablas y alertas. */
+$card-bg: $superficie;
+$card-border-color: $borde;
+$card-border-radius: $radio-tarjeta;
+$card-inner-border-radius: $radio-tarjeta;
+$card-spacer-x: 1rem;
+$card-spacer-y: 1rem;
+$list-group-bg: $superficie;
+$list-group-border-color: $borde-suave;
+$list-group-border-radius: $radio-tarjeta;
+$table-bg: transparent;
+$table-border-color: $borde-suave;
+$table-cell-padding-x: 1rem;
+$table-cell-padding-y: 0;
+$alert-margin-bottom: 0;
+$alert-padding-x: 1rem;
+$alert-padding-y: 0.75rem;
+$alert-border-radius: $radio-tarjeta;
+$badge-border-radius: $radio-control;
+$badge-font-weight: 600;
+
+/* Navegación. */
+$breadcrumb-margin-bottom: 0;
+$breadcrumb-font-size: 0.875rem;
+$breadcrumb-item-padding-x: 0.375rem;
+$breadcrumb-active-color: $texto-secundario;
+$breadcrumb-divider: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+$nav-link-font-weight: 600;
+$nav-link-color: $texto-secundario;
+$nav-link-hover-color: $primario;
+$nav-underline-gap: 0.25rem;
+$nav-underline-border-width: 3px;
+$nav-underline-link-active-color: $primario;
+$nav-link-padding-x: 1rem;
+$nav-link-padding-y: 0.625rem;
+$pagination-padding-x: 0.75rem;
+$pagination-padding-y: 0.625rem;
+$pagination-color: $texto;
+$pagination-bg: transparent;
+$pagination-border-width: 0;
+$pagination-border-radius: $radio-control;
+$pagination-margin-start: 0.25rem;
+$pagination-hover-color: $texto;
+$pagination-hover-bg: $deshabilitado-fondo;
+$pagination-focus-box-shadow: none;
+$pagination-active-color: #fff;
+$pagination-active-bg: $primario;
+$pagination-disabled-color: $deshabilitado-texto;
+$pagination-disabled-bg: transparent;
+
+/* Menús, diálogo y cajón. */
 $dropdown-border-color: $borde;
 $dropdown-border-radius: $radio-tarjeta;
 $dropdown-box-shadow: $sombra-2;
@@ -34,17 +137,30 @@ $dropdown-item-padding-y: 0.625rem;
 $dropdown-link-hover-bg: $resaltado-tenue;
 $dropdown-link-active-bg: $resaltado;
 $dropdown-link-active-color: $texto;
+$modal-content-bg: $superficie;
+$modal-content-border-width: 0;
+$modal-content-border-radius: $radio-modal;
+$modal-md: 27.5rem;
 $modal-backdrop-bg: $texto;
 $modal-backdrop-opacity: 0.55;
+$offcanvas-bg-color: $superficie;
+$offcanvas-horizontal-width: 30rem;
 $offcanvas-backdrop-bg: $texto;
 $offcanvas-backdrop-opacity: 0.55;
 $offcanvas-transition-duration: 0.25s;
-/* Contraste de texto sobre colores: el umbral AA de WCAG. */
-$min-contrast-ratio: 4.5;
 
 @import 'bootstrap/scss/functions';
 @import 'bootstrap/scss/variables';
 @import 'bootstrap/scss/variables-dark';
+
+/* Color de la marca para comprar: genera .btn-acento con texto oscuro. */
+$theme-colors: map-merge(
+    $theme-colors,
+    (
+        'acento': $acento,
+    )
+);
+
 @import 'bootstrap/scss/maps';
 @import 'bootstrap/scss/mixins';
 @import 'bootstrap/scss/utilities';
@@ -53,18 +169,34 @@ $min-contrast-ratio: 4.5;
 @import 'bootstrap/scss/type';
 @import 'bootstrap/scss/containers';
 @import 'bootstrap/scss/grid';
+@import 'bootstrap/scss/tables';
+@import 'bootstrap/scss/forms';
+@import 'bootstrap/scss/buttons';
 @import 'bootstrap/scss/transitions';
 @import 'bootstrap/scss/dropdown';
+@import 'bootstrap/scss/nav';
+@import 'bootstrap/scss/card';
+@import 'bootstrap/scss/breadcrumb';
+@import 'bootstrap/scss/pagination';
+@import 'bootstrap/scss/badge';
+@import 'bootstrap/scss/alert';
+@import 'bootstrap/scss/list-group';
 @import 'bootstrap/scss/close';
 @import 'bootstrap/scss/modal';
 @import 'bootstrap/scss/offcanvas';
 @import 'bootstrap/scss/helpers';
 @import 'bootstrap/scss/utilities/api';
 
-/* Foco visible en todo control, también sobre fondos oscuros. */
-:focus-visible {
+/* Foco visible en todo control, también sobre fondos oscuros; Bootstrap lo quita en sus controles. */
+:focus-visible,
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-check-input:focus-visible,
+.nav-link:focus-visible,
+.page-link:focus-visible {
     outline: 2px solid $resaltado;
     outline-offset: 2px;
+    box-shadow: none;
 }
 
 /* La barra de scroll siempre ocupa su lugar: el contenido no se corre entre páginas cortas y largas. */
@@ -76,6 +208,13 @@ body {
     font-variant-numeric: lining-nums;
     /* Bootstrap compensa una barra que aquí no desaparece: esa compensación sería el salto. */
     padding-right: 0 !important;
+}
+
+/* La flecha de las migas, centrada con el texto. */
+.breadcrumb-item + .breadcrumb-item::before {
+    display: flex;
+    align-items: center;
+    height: 1.3125rem;
 }
 
 /* Cifras alineadas en precios, cantidades y tablas. */

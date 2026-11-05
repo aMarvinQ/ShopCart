@@ -92,8 +92,12 @@ export function TablaDatos<T>({
                     {acciones && <div className={estilos.acciones}>{acciones}</div>}
                 </div>
             )}
-            <div className={`${estilos.desplazable} ${tarjeta ? estilos.soloEscritorio : ''}`}>
-                <table className={estilos.tabla} aria-label={etiqueta} aria-busy={cargando}>
+            <div className={`table-responsive ${tarjeta ? 'd-none d-md-block' : ''}`}>
+                <table
+                    className={`table align-middle mb-0 ${estilos.tabla}`}
+                    aria-label={etiqueta}
+                    aria-busy={cargando}
+                >
                     <thead>
                         {encabezados.map((grupo) => (
                             <tr key={grupo.id}>
@@ -171,7 +175,7 @@ export function TablaDatos<T>({
                 </table>
             </div>
             {tarjeta && (
-                <div className={estilos.soloMovil}>
+                <div className="d-md-none">
                     {cargando &&
                         Array.from({ length: Math.min(tamanoPagina, 5) }, (_, i) => (
                             <div key={i} className={estilos.tarjetaFila}>

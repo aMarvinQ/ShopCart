@@ -1,4 +1,4 @@
-import type { DetalleDeProducto, VarianteDeProducto } from './consultas';
+import type { DetalleDeProducto, VarianteDeProducto } from './hooks/useCatalogo';
 
 export interface ValorAtributo {
     idAtributoValor: number;

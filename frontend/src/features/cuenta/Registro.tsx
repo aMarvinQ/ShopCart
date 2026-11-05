@@ -1,56 +1,20 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Link, Navigate, useNavigate } from 'react-router';
-import { z } from 'zod';
-import { useSesion } from '../../sesion/contexto';
-import { inicioDe } from '../../sesion/permisos';
+import { Link, Navigate } from 'react-router';
 import { Boton } from '../../ui/Boton';
 import { Campo, CampoContrasena } from '../../ui/Campo';
 import { Alerta } from '../../ui/Mensajes';
-import { aplicarErroresApi } from '../../utils/formularios';
+import { AYUDA_CONTRASENA } from './esquemas';
+import { useRegistro } from './hooks/useAcceso';
 import { MarcoAcceso } from './MarcoAcceso';
 import estilos from './cuenta.module.scss';
-import { AYUDA_CONTRASENA, esquemaApellido, esquemaContrasenaNueva, esquemaNombre, esquemaTelefono } from './esquemas';
-
-const esquema = z.object({
-    nombre: esquemaNombre,
-    apellido: esquemaApellido,
-    correo: z.email('Escribe un correo válido.'),
-    telefono: esquemaTelefono,
-    contrasena: esquemaContrasenaNueva,
-});
-type Datos = z.infer<typeof esquema>;
 
 export default function Registro() {
-    const { usuario, registrarse } = useSesion();
-    const navegar = useNavigate();
-    const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+    const { formulario, enviando, errorGeneral, redirigirA, enviar } = useRegistro();
     const {
         register,
-        handleSubmit,
-        setError,
-        formState: { errors, isSubmitting },
-    } = useForm<Datos>({ resolver: zodResolver(esquema) });
+        formState: { errors },
+    } = formulario;
 
-    if (usuario && !isSubmitting) return <Navigate to={inicioDe(usuario.codigoRol)} replace />;
-
-    const enviar = async ({ telefono, ...datos }: Datos) => {
-        setErrorGeneral(null);
-        try {
-            const nuevo = await registrarse({ ...datos, ...(telefono && { telefono }) });
-            await navegar(inicioDe(nuevo.codigoRol), { replace: true });
-        } catch (error) {
-            setErrorGeneral(
-                aplicarErroresApi(
-                    error,
-                    setError,
-                    ['nombre', 'apellido', 'correo', 'telefono', 'contrasena'],
-                    'No pudimos crear tu cuenta; intenta de nuevo.',
-                ),
-            );
-        }
-    };
+    if (redirigirA) return <Navigate to={redirigirA} replace />;
 
     return (
         <MarcoAcceso
@@ -67,20 +31,24 @@ export default function Registro() {
                     <Alerta tipo="error">{errorGeneral}</Alerta>
                 </div>
             )}
-            <form onSubmit={(e) => void handleSubmit(enviar)(e)} noValidate className={estilos.formulario}>
-                <div className={estilos.dosColumnas}>
-                    <Campo
-                        etiqueta="Nombre"
-                        autoComplete="given-name"
-                        error={errors.nombre?.message}
-                        {...register('nombre')}
-                    />
-                    <Campo
-                        etiqueta="Apellido"
-                        autoComplete="family-name"
-                        error={errors.apellido?.message}
-                        {...register('apellido')}
-                    />
+            <form onSubmit={(e) => void enviar(e)} noValidate className={estilos.formulario}>
+                <div className="row gx-3">
+                    <div className="col-sm-6">
+                        <Campo
+                            etiqueta="Nombre"
+                            autoComplete="given-name"
+                            error={errors.nombre?.message}
+                            {...register('nombre')}
+                        />
+                    </div>
+                    <div className="col-sm-6">
+                        <Campo
+                            etiqueta="Apellido"
+                            autoComplete="family-name"
+                            error={errors.apellido?.message}
+                            {...register('apellido')}
+                        />
+                    </div>
                 </div>
                 <Campo
                     etiqueta="Correo electrónico"
@@ -103,7 +71,7 @@ export default function Registro() {
                     error={errors.contrasena?.message}
                     {...register('contrasena')}
                 />
-                <Boton type="submit" anchoCompleto cargando={isSubmitting}>
+                <Boton type="submit" anchoCompleto cargando={enviando}>
                     Crear cuenta
                 </Boton>
             </form>

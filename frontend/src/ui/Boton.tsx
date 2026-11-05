@@ -17,17 +17,29 @@ interface Apariencia {
 /** Con texto, o solo icono: en ese caso la etiqueta para lectores de pantalla es obligatoria. */
 type Contenido = { children: ReactNode } | { children?: undefined; icono: LucideIcon; 'aria-label': string };
 
+const CLASE_BOOTSTRAP: Record<VarianteBoton, string> = {
+    primario: 'btn-primary',
+    secundario: 'btn-outline-primary',
+    acento: 'btn-acento',
+    peligro: 'btn-danger',
+    fantasma: 'btn-link',
+    enlace: 'btn-link',
+};
+
 function clasesDe(
     { variante = 'primario', tamano = 'md', anchoCompleto = false }: Apariencia,
     soloIcono: boolean,
     extra: string | undefined,
 ) {
     return [
+        'btn',
+        CLASE_BOOTSTRAP[variante],
+        tamano === 'md' ? undefined : `btn-${tamano}`,
         estilos.boton,
         estilos[variante],
-        estilos[tamano],
         soloIcono && estilos.soloIcono,
-        anchoCompleto && estilos.anchoCompleto,
+        soloIcono && estilos[`soloIcono${tamano}`],
+        anchoCompleto && 'w-100',
         extra,
     ]
         .filter(Boolean)

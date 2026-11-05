@@ -1,11 +1,18 @@
-import { NavLink, Outlet } from 'react-router';
+import { LogOut } from 'lucide-react';
+import { NavLink, Outlet, useNavigate } from 'react-router';
 import { useSesion } from '../../sesion/contexto';
 import { MENU_CUENTA, menuPara } from '../../sesion/permisos';
 import estilos from './layouts.module.scss';
 
 /* Mi cuenta: menú lateral en escritorio, fila deslizable en móvil. */
 export default function LayoutCuenta() {
-    const { usuario } = useSesion();
+    const { usuario, cerrarSesion } = useSesion();
+    const navegar = useNavigate();
+    const salir = async () => {
+        // Primero sale de la página: si no, la guarda de la ruta pediría ingresar de nuevo.
+        await navegar('/');
+        await cerrarSesion();
+    };
     return (
         <div className={estilos.cuenta}>
             <nav aria-label="Mi cuenta" className={estilos.cuentaMenu}>
@@ -21,6 +28,10 @@ export default function LayoutCuenta() {
                         {etiqueta}
                     </NavLink>
                 ))}
+                <button type="button" className={estilos.cuentaEnlace} onClick={() => void salir()}>
+                    <LogOut size={18} aria-hidden="true" />
+                    Cerrar sesión
+                </button>
             </nav>
             <div className={estilos.cuentaContenido}>
                 <Outlet />

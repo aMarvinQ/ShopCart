@@ -25,7 +25,7 @@ export function ProveedorAvisos({ children }: { children: ReactNode }) {
         <ContextoAvisos value={mostrar}>
             {children}
             <div className={estilos.contenedor}>
-                {avisos.map(({ id, tipo, titulo, detalle }) => {
+                {avisos.map(({ id, tipo, titulo, detalle, accion }) => {
                     const Icono = ICONO_MENSAJE[tipo];
                     const cerrar = () => {
                         quitar(id);
@@ -43,6 +43,18 @@ export function ProveedorAvisos({ children }: { children: ReactNode }) {
                             <div className={estilos.texto}>
                                 <p className={estilos.titulo}>{titulo}</p>
                                 {detalle && <p className={estilos.detalle}>{detalle}</p>}
+                                {accion && (
+                                    <Boton
+                                        variante="enlace"
+                                        tamano="sm"
+                                        onClick={() => {
+                                            cerrar();
+                                            accion.alElegir();
+                                        }}
+                                    >
+                                        {accion.etiqueta}
+                                    </Boton>
+                                )}
                             </div>
                             <Boton
                                 variante="fantasma"

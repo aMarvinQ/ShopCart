@@ -89,7 +89,8 @@
     max-width: 27.5rem;
 }
 
-.dialogo {
+/* Selector doble: debe ganarle a Bootstrap sin importar el orden en que carguen los estilos. */
+.dialogo.dialogo {
     gap: 1rem;
     background: $superficie;
     padding: 1.5rem;
@@ -131,7 +132,7 @@
     gap: 0.75rem;
 }
 
-.cajon {
+.cajon.cajon {
     --bs-offcanvas-width: 30rem;
     --bs-offcanvas-bg: #{$superficie};
     border-radius: $radio-modal 0 0 $radio-modal;

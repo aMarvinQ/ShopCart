@@ -68,3 +68,53 @@
     display: flex;
     justify-content: flex-end;
 }
+
+.encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.direcciones {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.direccion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.25rem;
+
+    h2 {
+        margin: 0;
+    }
+
+    address {
+        margin: 0;
+        color: $texto-secundario;
+        font-size: 0.875rem;
+    }
+}
+
+.predeterminada {
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: $radio-pildora;
+    background: $info-fondo;
+    color: $info-texto;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.direccionAcciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}

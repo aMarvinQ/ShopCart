@@ -187,7 +187,7 @@ test.describe('rutas y menús por rol', () => {
     test('una ruta inexistente muestra la página 404 dentro del layout', async ({ page }) => {
         await page.goto('/no-existe');
         await expect(page.getByRole('heading', { name: 'No encontramos esta página' })).toBeVisible();
-        await expect(page.getByRole('link', { name: 'ShopCart, ir al inicio' })).toBeVisible();
+        await expect(page.getByRole('banner').getByRole('link', { name: 'ShopCart, ir al inicio' })).toBeVisible();
     });
 
     test('el menú contraído se recuerda (solo escritorio)', async ({ page, isMobile }) => {

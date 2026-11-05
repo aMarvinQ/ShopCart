@@ -37,10 +37,9 @@ export const rutas: RouteObject[] = [
                     {
                         errorElement: <ErrorRuta />,
                         children: [
-                            pendiente(undefined, 'Tienda'),
-                            pendiente('productos', 'Productos'),
-                            pendiente('productos/:slug', 'Detalle de producto'),
-                            pendiente('carrito', 'Carrito'),
+                            { index: true, ...carga(() => import('../features/tienda/Inicio')) },
+                            { path: 'productos', ...carga(() => import('../features/tienda/Productos')) },
+                            { path: 'productos/:slug', ...carga(() => import('../features/tienda/DetalleProducto')) },
                             pendiente('seguimiento/:token', 'Seguimiento del pedido'),
                             { path: 'registro', ...carga(() => import('../features/cuenta/Registro')) },
                             { path: 'ingresar', ...carga(() => import('../features/cuenta/Ingresar')) },
@@ -53,7 +52,10 @@ export const rutas: RouteObject[] = [
                                         children: [
                                             pendiente('pedidos', tituloDe('/cuenta/pedidos', MENU_CUENTA)),
                                             pendiente('pedidos/:id', 'Detalle del pedido'),
-                                            pendiente('direcciones', tituloDe('/cuenta/direcciones', MENU_CUENTA)),
+                                            {
+                                                path: 'direcciones',
+                                                ...carga(() => import('../features/cuenta/Direcciones')),
+                                            },
                                             { path: 'perfil', ...carga(() => import('../features/cuenta/Perfil')) },
                                         ],
                                     },
@@ -70,6 +72,7 @@ export const rutas: RouteObject[] = [
                     {
                         errorElement: <ErrorRuta />,
                         children: [
+                            { path: 'carrito', ...carga(() => import('../features/carrito/Carrito')) },
                             pendiente('checkout', 'Envío y pago'),
                             pendiente('checkout/confirmacion', 'Confirmación'),
                         ],

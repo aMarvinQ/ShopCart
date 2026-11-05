@@ -13,6 +13,17 @@ export function Casilla({ etiqueta, ...resto }: PropsMarcable) {
     );
 }
 
+/** Selección única; `contador` a la derecha, como los productos de una categoría. */
+export function Radio({ etiqueta, contador, ...resto }: PropsMarcable & { contador?: number }) {
+    return (
+        <label className={estilos.opcion}>
+            <input {...resto} type="radio" className={estilos.casilla} />
+            {etiqueta}
+            {contador !== undefined && <span className={`${estilos.contador} numero`}>{contador}</span>}
+        </label>
+    );
+}
+
 export function Interruptor({ etiqueta, ...resto }: PropsMarcable) {
     return (
         <label className={estilos.opcion}>

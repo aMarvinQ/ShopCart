@@ -7,6 +7,8 @@ export interface DatosAviso {
     tipo: TipoAviso;
     titulo: string;
     detalle?: string;
+    /** Enlace dentro del aviso, como "Ver carrito". */
+    accion?: { etiqueta: string; alElegir: () => void };
 }
 
 export type MostrarAviso = (aviso: DatosAviso) => void;

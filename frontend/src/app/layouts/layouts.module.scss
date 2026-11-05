@@ -350,6 +350,15 @@
         font-weight: 600;
     }
 
+    a {
+        color: inherit;
+        text-underline-offset: 3px;
+
+        &:hover {
+            color: #fff;
+        }
+    }
+
     @media (min-width: $corte-md) {
         display: flex;
     }

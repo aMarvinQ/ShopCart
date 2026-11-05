@@ -1,0 +1,304 @@
+@use '../../estilos/tokens' as *;
+
+.titulo {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+
+    p {
+        margin: 0;
+        color: $texto-secundario;
+        font-size: 0.875rem;
+    }
+}
+
+.pasos {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.seccion {
+    gap: 0.5rem;
+    padding: 1.25rem;
+}
+
+.seccionCabecera {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 0.5rem;
+
+    h2 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+}
+
+.seccionNumero.seccionNumero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    background: $primario;
+    font-size: 0.875rem;
+}
+
+.metodos {
+    margin-bottom: 0.75rem;
+}
+
+.metodo {
+    height: 100%;
+    padding: 0.25rem 1rem 0.75rem;
+    border: 1px solid $borde-control;
+    border-radius: $radio-tarjeta;
+
+    p {
+        margin: 0 0 0 2rem;
+        color: $texto-secundario;
+        font-size: 0.875rem;
+    }
+}
+
+.metodoElegido {
+    border: 2px solid $primario;
+    background: $primario-tenue;
+}
+
+.direccionCliente {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0 0.75rem;
+}
+
+.agregarDireccion.agregarDireccion {
+    margin-top: 1.65rem;
+}
+
+.cuenta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.625rem 1rem;
+    border: 1px solid $alerta-aviso-borde;
+    border-radius: $radio-tarjeta;
+    background: $alerta-aviso-fondo;
+    color: $aviso-texto;
+    font-size: 0.875rem;
+}
+
+.reservado {
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+
+    strong {
+        color: $texto;
+    }
+}
+
+/* --- Resumen ------------------------------------------------------------------------------- */
+
+.resumen {
+    gap: 0.75rem;
+    padding: 1.25rem;
+
+    h2 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+
+    @media (min-width: $corte-lg) {
+        position: sticky;
+        top: 1.5rem;
+    }
+}
+
+.lineas {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+    list-style: none;
+
+    li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+}
+
+.lineaImagen {
+    flex-shrink: 0;
+    overflow: hidden;
+    width: 3rem;
+    height: 3rem;
+    border-radius: $radio-control;
+    background: #e8eef4;
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.lineaDatos {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+
+    small {
+        color: $texto-secundario;
+    }
+}
+
+.editar {
+    font-size: 0.875rem;
+}
+
+.importes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding-top: 0.75rem;
+    border-top: 1px solid $borde-suave;
+
+    > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    dt {
+        font-weight: 400;
+    }
+
+    dd {
+        margin: 0;
+    }
+}
+
+.descuento dd {
+    color: $exito-texto;
+    font-weight: 600;
+}
+
+.total {
+    padding-top: 0.5rem;
+    border-top: 1px solid $borde-suave;
+
+    dt {
+        font-weight: 700;
+    }
+
+    dd {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+}
+
+.nota {
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+    text-align: right;
+}
+
+/* --- Confirmación --------------------------------------------------------------------------- */
+
+.confirmacion {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-inline: auto;
+    max-width: 48rem;
+}
+
+.gracias {
+    display: flex;
+    gap: 1rem;
+
+    h1 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    p {
+        margin: 0.25rem 0 0;
+        color: $texto-secundario;
+    }
+}
+
+.graciasIcono {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: $exito-fondo;
+    color: $exito;
+}
+
+.confirmacionTarjeta {
+    gap: 1rem;
+    padding: 1.25rem;
+
+    dt {
+        color: $texto-secundario;
+        font-size: 0.875rem;
+        font-weight: 400;
+    }
+
+    dd {
+        margin: 0;
+        font-weight: 600;
+    }
+}
+
+.confirmacionCabecera {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid $borde-suave;
+
+    small {
+        display: block;
+        color: $texto-secundario;
+    }
+
+    strong {
+        font-size: 1.5rem;
+    }
+}
+
+.confirmacionAcciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}

@@ -1,5 +1,5 @@
 import type { RouteObject } from 'react-router';
-import { MENU_CUENTA, MENU_PANEL, ROLES_CLIENTE, ROLES_PERSONAL, rolesDe } from '../sesion/permisos';
+import { MENU_PANEL, ROLES_CLIENTE, ROLES_PERSONAL, rolesDe } from '../sesion/permisos';
 import { RutaProtegida } from '../sesion/RutaProtegida';
 import { EsqueletoApp } from '../ui/Esqueleto';
 import { EnConstruccion } from './paginas/EnConstruccion';
@@ -22,8 +22,6 @@ const carga = <T extends { default: React.ComponentType }>(importar: () => Promi
 });
 
 const relativa = (ruta: string, base: string) => ruta.slice(base.length + 1);
-const tituloDe = (ruta: string, menu: typeof MENU_PANEL) =>
-    menu.find((entrada) => entrada.ruta === ruta)?.etiqueta ?? ruta;
 
 export const rutas: RouteObject[] = [
     {
@@ -40,7 +38,7 @@ export const rutas: RouteObject[] = [
                             { index: true, ...carga(() => import('../features/tienda/Inicio')) },
                             { path: 'productos', ...carga(() => import('../features/tienda/Productos')) },
                             { path: 'productos/:slug', ...carga(() => import('../features/tienda/DetalleProducto')) },
-                            pendiente('seguimiento/:token', 'Seguimiento del pedido'),
+                            { path: 'seguimiento/:token', ...carga(() => import('../features/pedidos/Seguimiento')) },
                             { path: 'registro', ...carga(() => import('../features/cuenta/Registro')) },
                             { path: 'ingresar', ...carga(() => import('../features/cuenta/Ingresar')) },
                             {
@@ -50,8 +48,14 @@ export const rutas: RouteObject[] = [
                                     {
                                         ...carga(() => import('./layouts/LayoutCuenta')),
                                         children: [
-                                            pendiente('pedidos', tituloDe('/cuenta/pedidos', MENU_CUENTA)),
-                                            pendiente('pedidos/:id', 'Detalle del pedido'),
+                                            {
+                                                path: 'pedidos',
+                                                ...carga(() => import('../features/pedidos/MisPedidos')),
+                                            },
+                                            {
+                                                path: 'pedidos/:id',
+                                                ...carga(() => import('../features/pedidos/MisPedidos')),
+                                            },
                                             {
                                                 path: 'direcciones',
                                                 ...carga(() => import('../features/cuenta/Direcciones')),
@@ -73,8 +77,11 @@ export const rutas: RouteObject[] = [
                         errorElement: <ErrorRuta />,
                         children: [
                             { path: 'carrito', ...carga(() => import('../features/carrito/Carrito')) },
-                            pendiente('checkout', 'Envío y pago'),
-                            pendiente('checkout/confirmacion', 'Confirmación'),
+                            { path: 'checkout', ...carga(() => import('../features/checkout/Checkout')) },
+                            {
+                                path: 'checkout/confirmacion',
+                                ...carga(() => import('../features/checkout/Confirmacion')),
+                            },
                         ],
                     },
                 ],

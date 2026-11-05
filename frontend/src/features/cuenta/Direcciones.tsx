@@ -1,101 +1,12 @@
 import { MapPin, Pencil, Plus, Star, Trash2 } from 'lucide-react';
 import { esErrorApi } from '../../api/errores';
 import { Boton } from '../../ui/Boton';
-import { Campo } from '../../ui/Campo';
-import { Casilla } from '../../ui/Controles';
 import { Esqueleto } from '../../ui/Esqueleto';
-import { Alerta, Cajon, DialogoConfirmacion, EstadoError, EstadoVacio } from '../../ui/Mensajes';
+import { Cajon, DialogoConfirmacion, EstadoError, EstadoVacio } from '../../ui/Mensajes';
 import { Tarjeta } from '../../ui/Navegacion';
-import { Selector } from '../../ui/Selector';
-import { useDirecciones, useFormularioDireccion, type Direccion } from './hooks/useDirecciones';
+import { FormularioDireccion } from './FormularioDireccion';
+import { useDirecciones } from './hooks/useDirecciones';
 import estilos from './cuenta.module.scss';
-
-function FormularioDireccion({ direccion, alTerminar }: { direccion: Direccion | null; alTerminar: () => void }) {
-    const { formulario, errorGeneral, guardando, departamento, municipio, enviar } = useFormularioDireccion(
-        direccion,
-        alTerminar,
-    );
-    const {
-        register,
-        formState: { errors },
-    } = formulario;
-
-    return (
-        <form className={estilos.formulario} noValidate onSubmit={(e) => void enviar(e)}>
-            {errorGeneral && (
-                <div className={estilos.mensajes}>
-                    <Alerta tipo="error">{errorGeneral}</Alerta>
-                </div>
-            )}
-            <Campo
-                etiqueta="Nombre de la dirección"
-                placeholder="Casa"
-                error={errors.alias?.message}
-                {...register('alias')}
-            />
-            <Campo
-                etiqueta="Quién recibe"
-                autoComplete="name"
-                error={errors.nombreDestinatario?.message}
-                {...register('nombreDestinatario')}
-            />
-            <Campo
-                etiqueta="Teléfono"
-                type="tel"
-                autoComplete="tel"
-                error={errors.telefono?.message}
-                {...register('telefono')}
-            />
-            <Campo
-                etiqueta="Dirección"
-                autoComplete="address-line1"
-                error={errors.linea1?.message}
-                {...register('linea1')}
-            />
-            <Campo
-                etiqueta="Complemento (opcional)"
-                autoComplete="address-line2"
-                error={errors.linea2?.message}
-                {...register('linea2')}
-            />
-            <div className="row gx-3">
-                <div className="col-sm-6">
-                    <Selector
-                        etiqueta="Departamento"
-                        valor={departamento.valor}
-                        error={errors.idDepartamento?.message}
-                        opciones={departamento.opciones}
-                        alCambiar={departamento.alCambiar}
-                        onBlur={departamento.onBlur}
-                    />
-                </div>
-                <div className="col-sm-6">
-                    <Selector
-                        etiqueta="Municipio"
-                        valor={municipio.valor}
-                        error={errors.idMunicipio?.message}
-                        disabled={departamento.valor === ''}
-                        opciones={municipio.opciones}
-                        alCambiar={municipio.alCambiar}
-                        onBlur={municipio.onBlur}
-                    />
-                </div>
-            </div>
-            <Campo
-                etiqueta="Código postal (opcional)"
-                inputMode="numeric"
-                autoComplete="postal-code"
-                error={errors.codigoPostal?.message}
-                {...register('codigoPostal')}
-            />
-            <Campo etiqueta="Referencias (opcional)" error={errors.referencias?.message} {...register('referencias')} />
-            {!direccion && <Casilla etiqueta="Usar como predeterminada" {...register('esPredeterminada')} />}
-            <Boton type="submit" anchoCompleto cargando={guardando}>
-                Guardar dirección
-            </Boton>
-        </form>
-    );
-}
 
 export default function Direcciones() {
     const libreta = useDirecciones();
@@ -222,7 +133,7 @@ export default function Direcciones() {
                     <FormularioDireccion
                         key={cajon.direccion?.idDireccion ?? 'nueva'}
                         direccion={cajon.direccion}
-                        alTerminar={libreta.cerrarCajon}
+                        alGuardar={libreta.cerrarCajon}
                     />
                 )}
             </Cajon>

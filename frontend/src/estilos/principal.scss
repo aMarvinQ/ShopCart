@@ -1,6 +1,6 @@
 @use 'tokens' as *;
 
-/* Bootstrap con la paleta del proyecto: solo los módulos que se usan. */
+/* Bootstrap con la paleta del proyecto: solo los módulos que se usan. Los componentes propios están en ui/. */
 $primary: $primario;
 $secondary: $texto-secundario;
 $success: $exito;
@@ -13,7 +13,7 @@ $body-bg: $fondo;
 $body-color: $texto;
 $border-color: $borde;
 $link-color: $primario;
-$link-hover-color: $primario-oscuro;
+$link-hover-color: $marca-oscura;
 $font-family-sans-serif:
     'Inter Variable',
     system-ui,
@@ -23,12 +23,22 @@ $font-family-sans-serif:
 $border-radius: $radio-control;
 $border-radius-sm: $radio-control;
 $border-radius-lg: $radio-tarjeta;
-$card-bg: $superficie;
-$input-bg: $superficie;
-$input-border-color: $borde-control;
-$input-btn-focus-color: rgba($resaltado, 0.5);
-$input-focus-border-color: $resaltado;
 $enable-smooth-scroll: true;
+$dropdown-border-color: $borde;
+$dropdown-border-radius: $radio-tarjeta;
+$dropdown-box-shadow: $sombra-2;
+$dropdown-padding-x: 0.375rem;
+$dropdown-padding-y: 0.375rem;
+$dropdown-item-padding-x: 0.625rem;
+$dropdown-item-padding-y: 0.625rem;
+$dropdown-link-hover-bg: $resaltado-tenue;
+$dropdown-link-active-bg: $resaltado;
+$dropdown-link-active-color: $texto;
+$modal-backdrop-bg: $texto;
+$modal-backdrop-opacity: 0.55;
+$offcanvas-backdrop-bg: $texto;
+$offcanvas-backdrop-opacity: 0.55;
+$offcanvas-transition-duration: 0.25s;
 /* Contraste de texto sobre colores: el umbral AA de WCAG. */
 $min-contrast-ratio: 4.5;
 
@@ -41,24 +51,12 @@ $min-contrast-ratio: 4.5;
 @import 'bootstrap/scss/root';
 @import 'bootstrap/scss/reboot';
 @import 'bootstrap/scss/type';
-@import 'bootstrap/scss/images';
 @import 'bootstrap/scss/containers';
 @import 'bootstrap/scss/grid';
-@import 'bootstrap/scss/tables';
-@import 'bootstrap/scss/forms';
-@import 'bootstrap/scss/buttons';
 @import 'bootstrap/scss/transitions';
 @import 'bootstrap/scss/dropdown';
-@import 'bootstrap/scss/nav';
-@import 'bootstrap/scss/card';
-@import 'bootstrap/scss/breadcrumb';
-@import 'bootstrap/scss/pagination';
-@import 'bootstrap/scss/badge';
-@import 'bootstrap/scss/alert';
 @import 'bootstrap/scss/close';
-@import 'bootstrap/scss/toasts';
 @import 'bootstrap/scss/modal';
-@import 'bootstrap/scss/tooltip';
 @import 'bootstrap/scss/offcanvas';
 @import 'bootstrap/scss/helpers';
 @import 'bootstrap/scss/utilities/api';
@@ -78,6 +76,11 @@ body {
     font-variant-numeric: lining-nums;
     /* Bootstrap compensa una barra que aquí no desaparece: esa compensación sería el salto. */
     padding-right: 0 !important;
+}
+
+/* Cifras alineadas en precios, cantidades y tablas. */
+.numero {
+    font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {

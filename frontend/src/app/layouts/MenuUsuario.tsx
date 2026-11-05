@@ -1,8 +1,8 @@
-import { LogOut, UserRound } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { Dropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router';
 import { useSesion } from '../../sesion/contexto';
-import { MENU_CUENTA, MENU_PANEL, menuPara } from '../../sesion/permisos';
+import { MENU_CUENTA, MENU_PANEL, menuPara, NOMBRE_ROL } from '../../sesion/permisos';
 import estilos from './layouts.module.scss';
 
 /** Menú del usuario: sus secciones según el rol y cerrar sesión. */
@@ -18,19 +18,19 @@ export function MenuUsuario() {
     };
     const secciones = menuPara(MENU_CUENTA, usuario.codigoRol);
     const irAlPanel = menuPara(MENU_PANEL, usuario.codigoRol)[0];
+    const nombreCompleto = `${usuario.nombre} ${usuario.apellido}`;
+    const iniciales = `${usuario.nombre.charAt(0)}${usuario.apellido.charAt(0)}`.toUpperCase();
 
     return (
         <Dropdown align="end">
-            <Dropdown.Toggle
-                as="button"
-                type="button"
-                id="menu-usuario"
-                bsPrefix={estilos.controlUsuario}
-                aria-label={`Menú de ${usuario.nombre}`}
-                title={usuario.nombre}
-            >
-                <span className={estilos.nombreUsuario}>{usuario.nombre}</span>
-                <UserRound size={20} aria-hidden="true" />
+            <Dropdown.Toggle as="button" type="button" id="menu-usuario" bsPrefix={estilos.controlUsuario}>
+                <span className={estilos.avatar}>{iniciales}</span>
+                <span className={estilos.datosUsuario}>
+                    <span className={estilos.nombreUsuario}>{nombreCompleto}</span>
+                    {usuario.codigoRol !== 'CLIENTE' && (
+                        <span className={estilos.rolUsuario}>{NOMBRE_ROL[usuario.codigoRol]}</span>
+                    )}
+                </span>
             </Dropdown.Toggle>
             <Dropdown.Menu>
                 {secciones.map(({ ruta, etiqueta, icono: Icono }) => (

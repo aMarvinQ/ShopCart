@@ -1,0 +1,70 @@
+@use '../../estilos/tokens' as *;
+
+.acceso {
+    margin-inline: auto;
+    padding-block: 1rem;
+    max-width: 27.5rem;
+}
+
+.accesoTarjeta {
+    padding: 1.5rem;
+}
+
+.accesoPie {
+    margin: 1rem 0 0;
+    text-align: center;
+}
+
+.titulo {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.subtitulo {
+    margin: 0.25rem 0 1.25rem;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+.formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.mensajes {
+    margin-bottom: 1rem;
+}
+
+.dosColumnas {
+    display: grid;
+    gap: 0.5rem 1rem;
+
+    @media (min-width: $corte-sm) {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.perfil {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 44rem;
+}
+
+.bloque {
+    padding: 1.5rem;
+}
+
+.bloqueTitulo {
+    margin: 0 0 1rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.acciones {
+    display: flex;
+    justify-content: flex-end;
+}

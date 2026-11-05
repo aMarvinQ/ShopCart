@@ -6,7 +6,12 @@ import { z } from 'zod';
 import { esErrorApi } from '../../api/errores';
 import { useSesion } from '../../sesion/contexto';
 import { inicioDe } from '../../sesion/permisos';
+import { Boton } from '../../ui/Boton';
+import { Campo, CampoContrasena } from '../../ui/Campo';
+import { Alerta } from '../../ui/Mensajes';
 import { rutaInternaSegura } from '../../utils/rutas';
+import { MarcoAcceso } from './MarcoAcceso';
+import estilos from './cuenta.module.scss';
 
 const esquema = z.object({
     correo: z.email('Escribe un correo válido.'),
@@ -23,7 +28,6 @@ function mensajeDe(error: unknown): string {
     return error.message;
 }
 
-/* Ingreso. Su aspecto final llega con los componentes del sistema de diseño. */
 export default function Ingresar() {
     const { usuario, sesionVencida, iniciarSesion } = useSesion();
     const navegar = useNavigate();
@@ -49,67 +53,42 @@ export default function Ingresar() {
     };
 
     return (
-        <section className="row justify-content-center">
-            <title>Ingresar · ShopCart</title>
-            <div className="col-12 col-sm-10 col-md-7 col-lg-5">
-                <h1 className="h3 mb-3">Ingresar</h1>
-                {sesionVencida && !errorGeneral && (
-                    <div className="alert alert-info" role="status">
-                        Tu sesión terminó; ingresa de nuevo.
-                    </div>
-                )}
-                {errorGeneral && (
-                    <div className="alert alert-danger" role="alert">
-                        {errorGeneral}
-                    </div>
-                )}
-                <form onSubmit={(e) => void handleSubmit(enviar)(e)} noValidate className="card card-body">
-                    <div className="mb-3">
-                        <label htmlFor="correo" className="form-label">
-                            Correo electrónico
-                        </label>
-                        <input
-                            id="correo"
-                            type="email"
-                            autoComplete="username"
-                            className={`form-control ${errors.correo ? 'is-invalid' : ''}`}
-                            aria-invalid={Boolean(errors.correo)}
-                            aria-describedby={errors.correo ? 'correo-error' : undefined}
-                            {...register('correo')}
-                        />
-                        {errors.correo && (
-                            <div id="correo-error" className="invalid-feedback">
-                                {errors.correo.message}
-                            </div>
-                        )}
-                    </div>
-                    <div className="mb-3">
-                        <label htmlFor="contrasena" className="form-label">
-                            Contraseña
-                        </label>
-                        <input
-                            id="contrasena"
-                            type="password"
-                            autoComplete="current-password"
-                            className={`form-control ${errors.contrasena ? 'is-invalid' : ''}`}
-                            aria-invalid={Boolean(errors.contrasena)}
-                            aria-describedby={errors.contrasena ? 'contrasena-error' : undefined}
-                            {...register('contrasena')}
-                        />
-                        {errors.contrasena && (
-                            <div id="contrasena-error" className="invalid-feedback">
-                                {errors.contrasena.message}
-                            </div>
-                        )}
-                    </div>
-                    <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                        {isSubmitting ? 'Ingresando…' : 'Ingresar'}
-                    </button>
-                </form>
-                <p className="mt-3 text-center">
+        <MarcoAcceso
+            titulo="Ingresar"
+            subtitulo="Entra con tu correo y contraseña."
+            pie={
+                <>
                     ¿No tienes cuenta? <Link to="/registro">Crear una cuenta</Link>
-                </p>
-            </div>
-        </section>
+                </>
+            }
+        >
+            {(errorGeneral ?? sesionVencida) && (
+                <div className={estilos.mensajes}>
+                    {errorGeneral ? (
+                        <Alerta tipo="error">{errorGeneral}</Alerta>
+                    ) : (
+                        <Alerta tipo="informacion">Tu sesión terminó; ingresa de nuevo.</Alerta>
+                    )}
+                </div>
+            )}
+            <form onSubmit={(e) => void handleSubmit(enviar)(e)} noValidate className={estilos.formulario}>
+                <Campo
+                    etiqueta="Correo electrónico"
+                    type="email"
+                    autoComplete="username"
+                    error={errors.correo?.message}
+                    {...register('correo')}
+                />
+                <CampoContrasena
+                    etiqueta="Contraseña"
+                    autoComplete="current-password"
+                    error={errors.contrasena?.message}
+                    {...register('contrasena')}
+                />
+                <Boton type="submit" anchoCompleto cargando={isSubmitting}>
+                    Ingresar
+                </Boton>
+            </form>
+        </MarcoAcceso>
     );
 }

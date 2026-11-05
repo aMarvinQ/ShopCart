@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
+import type { TipoMensaje } from '../iconosMensaje';
 
-export type TipoAviso = 'exito' | 'error' | 'aviso' | 'informacion';
+export type TipoAviso = TipoMensaje;
 
 export interface DatosAviso {
     tipo: TipoAviso;

@@ -1,0 +1,184 @@
+@use '../estilos/tokens' as *;
+
+.boton {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: $radio-control;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        background-color 150ms ease,
+        transform 150ms ease;
+
+    &:active {
+        transform: scale(0.97);
+    }
+
+    &:disabled {
+        border-color: $deshabilitado-fondo;
+        background: $deshabilitado-fondo;
+        color: $deshabilitado-texto;
+        cursor: not-allowed;
+        transform: none;
+    }
+}
+
+.sm {
+    height: 2.25rem;
+    padding: 0 0.875rem;
+    font-size: 0.875rem;
+
+    svg {
+        width: 1rem;
+        height: 1rem;
+    }
+}
+
+.md {
+    height: $alto-control;
+    padding: 0 1.25rem;
+    font-size: 1rem;
+}
+
+.lg {
+    height: 3.25rem;
+    padding: 0 1.75rem;
+    font-size: 1.125rem;
+}
+
+.soloIcono {
+    padding: 0;
+
+    &.sm {
+        width: 2.25rem;
+    }
+
+    &.md {
+        width: $alto-control;
+    }
+
+    &.lg {
+        width: 3.25rem;
+    }
+}
+
+.anchoCompleto {
+    width: 100%;
+}
+
+.primario {
+    background: $primario;
+    color: #fff;
+
+    &:hover {
+        background: $primario-oscuro;
+        color: #fff;
+    }
+}
+
+.secundario {
+    border-color: $primario;
+    background: $superficie;
+    color: $primario;
+
+    &:hover {
+        background: $primario-tenue;
+        color: $primario;
+    }
+}
+
+.acento {
+    background: $acento;
+    color: $texto;
+
+    &:hover {
+        background: $acento-oscuro;
+        color: $texto;
+    }
+}
+
+.peligro {
+    background: $peligro;
+    color: #fff;
+
+    &:hover {
+        background: $peligro-oscuro;
+        color: #fff;
+    }
+}
+
+.fantasma {
+    background: transparent;
+    color: $texto-secundario;
+
+    &:hover {
+        background: $deshabilitado-fondo;
+        color: $texto-secundario;
+    }
+}
+
+.enlace {
+    padding-inline: 0.25rem;
+    background: transparent;
+    color: $primario;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    &:hover {
+        color: $marca-oscura;
+    }
+}
+
+.cargando {
+    pointer-events: none;
+
+    > :not(.puntos) {
+        visibility: hidden;
+    }
+}
+
+.puntos {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentcolor;
+        animation: puntos 1s ease-in-out infinite;
+
+        &:nth-child(2) {
+            animation-delay: 150ms;
+        }
+
+        &:nth-child(3) {
+            animation-delay: 300ms;
+        }
+    }
+}
+
+@keyframes puntos {
+    0%,
+    80%,
+    100% {
+        opacity: 0.35;
+        transform: translateY(0);
+    }
+
+    40% {
+        opacity: 1;
+        transform: translateY(-3px);
+    }
+}

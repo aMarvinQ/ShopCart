@@ -1,6 +1,6 @@
 /*
-    Tokens del sistema de diseño: la única fuente de colores, radios y medidas. Cada color con su
-    uso permitido y el contraste medido (WCAG AA) está documentado en el catálogo de componentes.
+    Tokens del sistema de diseño: la única fuente de colores, radios y medidas, tomados del tablero
+    "Sistema visual y componentes" de los mockups.
 */
 
 /* Neutros */
@@ -8,18 +8,23 @@ $texto: #0f172a;
 $texto-secundario: #334155;
 $fondo: #f1f5f9;
 $superficie: #ffffff;
+$superficie-tenue: #f8fafc;
 $borde: #cbd5e1; // solo bordes y divisores: nunca como texto (1,5:1 sobre blanco)
+$borde-suave: #e2e8f0;
 $borde-control: #64748b; // bordes de campos: 3:1 sobre blanco (WCAG 1.4.11)
 
 /* Marca */
 $marca-oscura: #293241; // barra, menú lateral y pie; encima blanco o $primario-suave
 $primario: #3d5a80; // botones y enlaces; encima blanco
-$primario-oscuro: #2f4665;
+$primario-oscuro: #2f4766;
+$primario-tenue: #e6eef5;
 $primario-suave: #98c1d9; // encima solo texto oscuro
 $acento: #ee6c4d; // comprar y cupones; encima solo texto oscuro
-$acento-oscuro: #e0593a;
+$acento-oscuro: #e45a39;
 $acento-profundo: #b54a2f; // si hace falta texto blanco o precio destacado
-$resaltado: #38bdf8; // anillo de foco e indicador en vivo
+$resaltado: #38bdf8; // anillo de foco, opción elegida e indicador en vivo
+$resaltado-tenue: #e0f2fe; // opción al pasar el cursor o con teclado
+$sobre-oscuro: rgb(152 193 217 / 16%); // fondo al pasar el cursor sobre la marca oscura
 
 /* Estados */
 $exito: #15803d;
@@ -29,34 +34,62 @@ $aviso: #b45309;
 $aviso-fondo: #fef3c7;
 $aviso-texto: #78350f;
 $peligro: #b91c1c;
+$peligro-oscuro: #991b1b;
 $peligro-fondo: #fee2e2;
 $peligro-texto: #7f1d1d;
 $info: #1d4ed8;
 $info-fondo: #dbeafe;
 $info-texto: #1e3a8a;
 
-/* Carga */
+/* Alertas (más tenues que las insignias) */
+$alerta-exito-fondo: #f0fdf4;
+$alerta-exito-borde: #86efac;
+$alerta-aviso-fondo: #fffbeb;
+$alerta-aviso-borde: #fcd34d;
+$alerta-peligro-fondo: #fef2f2;
+$alerta-peligro-borde: #fca5a5;
+$alerta-info-fondo: #eff6ff;
+$alerta-info-borde: #93c5fd;
+
+/* Insignias de los demás estados del pedido */
+$enviado-fondo: #e0f2fe;
+$enviado-texto: #0c4a6e;
+$devuelto-parcial-fondo: #ede9fe;
+$devuelto-parcial-texto: #4c1d95;
+$devuelto-fondo: #e2e8f0;
+$devuelto-texto: #1e293b;
+
+/* Carga y deshabilitado */
 $esqueleto: #e2e8f0;
-$esqueleto-brillo: #f1f5f9;
+$esqueleto-brillo: rgb(255 255 255 / 75%);
+$deshabilitado-fondo: #e2e8f0;
+$deshabilitado-texto: #64748b;
 
 /* Forma */
 $radio-control: 6px;
 $radio-tarjeta: 12px;
 $radio-modal: 16px;
-$sombra-1: 0 1px 3px rgb(15 23 42 / 10%);
-$sombra-2: 0 8px 24px rgb(15 23 42 / 15%);
+$radio-pildora: 999px;
+$sombra-1:
+    0 1px 2px rgb(15 23 42 / 6%),
+    0 1px 3px rgb(15 23 42 / 10%);
+$sombra-2:
+    0 12px 32px rgb(15 23 42 / 16%),
+    0 2px 8px rgb(15 23 42 / 8%);
+
+/* Medidas de los controles */
+$alto-control: 2.75rem;
 
 /*
     Geometría de la estructura, compartida por tienda, compra, panel y esqueletos: el logo y los
-    iconos de la barra quedan en el mismo lugar en todas las pantallas. El logo (1.75rem) queda
-    centrado en el menú contraído, y el icono del extremo derecho (20px en un botón de 2.75rem) a
-    la misma distancia del borde que el logo del suyo.
+    controles de la barra quedan en el mismo lugar en todas las pantallas. El logo (1.75rem) queda
+    centrado en el menú contraído.
 */
-$alto-barra: 3.5rem;
-$ancho-lateral: 15rem;
+$alto-barra: 4rem;
+$ancho-lateral: 15.5rem;
 $ancho-lateral-contraido: 4.5rem;
 $margen-barra: 1.375rem;
-$margen-barra-derecho: 0.625rem;
+$margen-barra-derecho: 1.125rem;
 $ancho-control-usuario: 11rem;
 
 /* Puntos de corte (los de Bootstrap) */

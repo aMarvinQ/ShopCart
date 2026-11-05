@@ -1,18 +1,14 @@
-import { CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useCallback, useRef, useState, type ReactNode } from 'react';
-import { Toast, ToastContainer } from 'react-bootstrap';
-import { ContextoAvisos, type DatosAviso, type TipoAviso } from './contexto';
+import { Toast } from 'react-bootstrap';
+import { Boton } from '../Boton';
+import { ICONO_MENSAJE } from '../iconosMensaje';
+import estilos from './ProveedorAvisos.module.scss';
+import { ContextoAvisos, type DatosAviso } from './contexto';
 
 /* Avisos breves, sin bloquear la pantalla. Como máximo 4 a la vez: la lista no crece sin límite. */
 const MAXIMO = 4;
 const DURACION_MS = 4_000;
-
-const ICONOS: Record<TipoAviso, { icono: LucideIcon; clase: string }> = {
-    exito: { icono: CircleCheck, clase: 'text-success' },
-    error: { icono: CircleAlert, clase: 'text-danger' },
-    aviso: { icono: TriangleAlert, clase: 'text-warning' },
-    informacion: { icono: Info, clase: 'text-info' },
-};
 
 export function ProveedorAvisos({ children }: { children: ReactNode }) {
     const [avisos, setAvisos] = useState<(DatosAviso & { id: number })[]>([]);
@@ -28,28 +24,37 @@ export function ProveedorAvisos({ children }: { children: ReactNode }) {
     return (
         <ContextoAvisos value={mostrar}>
             {children}
-            <ToastContainer position="bottom-end" containerPosition="fixed" className="p-3" style={{ zIndex: 1090 }}>
+            <div className={estilos.contenedor}>
                 {avisos.map(({ id, tipo, titulo, detalle }) => {
-                    const { icono: Icono, clase } = ICONOS[tipo];
+                    const Icono = ICONO_MENSAJE[tipo];
+                    const cerrar = () => {
+                        quitar(id);
+                    };
                     return (
                         <Toast
                             key={id}
+                            bsPrefix={estilos.tarjeta ?? ''}
                             autohide
                             delay={DURACION_MS}
-                            onClose={() => {
-                                quitar(id);
-                            }}
-                            bg="light"
+                            onClose={cerrar}
+                            role={tipo === 'error' ? 'alert' : 'status'}
                         >
-                            <Toast.Header>
-                                <Icono size={18} className={`me-2 ${clase}`} aria-hidden="true" />
-                                <strong className="me-auto">{titulo}</strong>
-                            </Toast.Header>
-                            {detalle && <Toast.Body>{detalle}</Toast.Body>}
+                            <Icono size={20} className={estilos[tipo]} aria-hidden="true" />
+                            <div className={estilos.texto}>
+                                <p className={estilos.titulo}>{titulo}</p>
+                                {detalle && <p className={estilos.detalle}>{detalle}</p>}
+                            </div>
+                            <Boton
+                                variante="fantasma"
+                                tamano="sm"
+                                icono={X}
+                                aria-label="Cerrar aviso"
+                                onClick={cerrar}
+                            />
                         </Toast>
                     );
                 })}
-            </ToastContainer>
+            </div>
         </ContextoAvisos>
     );
 }

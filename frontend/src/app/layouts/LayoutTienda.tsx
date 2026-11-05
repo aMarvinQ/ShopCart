@@ -23,9 +23,13 @@ export default function LayoutTienda() {
                     {usuario ? (
                         <MenuUsuario />
                     ) : (
-                        <Link className={estilos.controlUsuario} to="/ingresar" aria-label="Ingresar">
-                            <span className={estilos.nombreUsuario}>Ingresar</span>
-                            <UserRound size={20} aria-hidden="true" />
+                        <Link className={estilos.controlUsuario} to="/ingresar">
+                            <span className={estilos.avatarRanura}>
+                                <UserRound size={20} aria-hidden="true" />
+                            </span>
+                            <span className={estilos.datosUsuario}>
+                                <span className={estilos.ingresar}>Ingresar</span>
+                            </span>
                         </Link>
                     )}
                 </div>

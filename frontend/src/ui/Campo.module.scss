@@ -1,0 +1,107 @@
+@use '../estilos/tokens' as *;
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.etiqueta {
+    color: $texto;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.pie {
+    min-height: 1.3125rem;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+.error {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: $peligro;
+    font-weight: 500;
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+.caja {
+    position: relative;
+}
+
+.control {
+    width: 100%;
+    height: $alto-control;
+    padding: 0 0.75rem;
+    border: 1px solid $borde-control;
+    border-radius: $radio-control;
+    background: $superficie;
+    color: $texto;
+    font-size: 1rem;
+
+    &::placeholder {
+        color: $borde-control;
+    }
+
+    &:disabled {
+        border-color: $borde;
+        background: $fondo;
+        color: $texto-secundario;
+        cursor: not-allowed;
+    }
+
+    &::-webkit-search-cancel-button {
+        display: none;
+    }
+}
+
+.controlError {
+    border-color: $peligro;
+    box-shadow: 0 0 0 1px $peligro;
+
+    &:focus-visible {
+        outline-color: $peligro;
+    }
+}
+
+.conIcono {
+    padding-left: 2.625rem;
+}
+
+.conAdorno {
+    padding-right: 3.25rem;
+}
+
+.icono {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    color: $texto-secundario;
+    pointer-events: none;
+}
+
+.adorno {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: $alto-control;
+    height: $alto-control;
+    border: 0;
+    border-radius: $radio-control;
+    background: transparent;
+    color: $texto-secundario;
+
+    &:hover {
+        background: $deshabilitado-fondo;
+    }
+}

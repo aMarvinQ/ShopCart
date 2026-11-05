@@ -14,12 +14,21 @@ export interface DatosIngreso {
     contrasena: string;
 }
 
+export interface DatosRegistro extends DatosIngreso {
+    nombre: string;
+    apellido: string;
+    telefono?: string;
+}
+
 export interface ValorSesion {
     estado: EstadoSesion;
     usuario: UsuarioSesion | null;
     /** true si la sesión terminó sola (venció o se revocó), para explicarlo en la pantalla de ingreso. */
     sesionVencida: boolean;
     iniciarSesion: (datos: DatosIngreso) => Promise<UsuarioSesion>;
+    registrarse: (datos: DatosRegistro) => Promise<UsuarioSesion>;
+    /** Refleja en la barra el nombre que el usuario acaba de cambiar en su perfil. */
+    actualizarNombre: (nombre: string, apellido: string) => void;
     cerrarSesion: () => Promise<void>;
     reintentar: () => void;
 }

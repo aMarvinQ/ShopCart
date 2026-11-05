@@ -1,0 +1,216 @@
+@use '../estilos/tokens' as *;
+
+.alerta {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid;
+    border-radius: $radio-tarjeta;
+    font-size: 0.875rem;
+
+    svg {
+        flex-shrink: 0;
+    }
+}
+
+.exito {
+    border-color: $alerta-exito-borde;
+    background: $alerta-exito-fondo;
+    color: $exito-texto;
+}
+
+.aviso {
+    border-color: $alerta-aviso-borde;
+    background: $alerta-aviso-fondo;
+    color: $aviso-texto;
+}
+
+.error {
+    border-color: $alerta-peligro-borde;
+    background: $alerta-peligro-fondo;
+    color: $peligro-texto;
+}
+
+.informacion {
+    border-color: $alerta-info-borde;
+    background: $alerta-info-fondo;
+    color: $info-texto;
+}
+
+.insignia {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding: 0 0.625rem;
+    border-radius: $radio-pildora;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.pagado {
+    background: $info-fondo;
+    color: $info-texto;
+}
+
+.enPreparacion {
+    background: $aviso-fondo;
+    color: $aviso-texto;
+}
+
+.enviado {
+    background: $enviado-fondo;
+    color: $enviado-texto;
+}
+
+.entregado {
+    background: $exito-fondo;
+    color: $exito-texto;
+}
+
+.cancelado {
+    background: $peligro-fondo;
+    color: $peligro-texto;
+}
+
+.devueltoParcial {
+    background: $devuelto-parcial-fondo;
+    color: $devuelto-parcial-texto;
+}
+
+.devuelto {
+    background: $devuelto-fondo;
+    color: $devuelto-texto;
+}
+
+.dialogoMarco {
+    max-width: 27.5rem;
+}
+
+.dialogo {
+    gap: 1rem;
+    background: $superficie;
+    padding: 1.5rem;
+    border: 0;
+    border-radius: $radio-modal;
+    box-shadow: $sombra-2;
+}
+
+.dialogoCuerpo {
+    display: flex;
+    gap: 1rem;
+}
+
+.dialogoIcono {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: $alto-control;
+    height: $alto-control;
+    border-radius: 50%;
+    background: $peligro-fondo;
+    color: $peligro;
+}
+
+.dialogoTitulo {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.dialogoTexto {
+    color: $texto-secundario;
+}
+
+.dialogoAcciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.cajon {
+    --bs-offcanvas-width: 30rem;
+    --bs-offcanvas-bg: #{$superficie};
+    border-radius: $radio-modal 0 0 $radio-modal;
+    box-shadow: $sombra-2;
+
+    @media (max-width: $corte-sm) {
+        --bs-offcanvas-width: 100%;
+        border-radius: 0;
+    }
+}
+
+.cajonCabecera {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid $borde;
+}
+
+.cajonTitulo {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.cajonSubtitulo {
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+.cajonCuerpo {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.625rem;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+}
+
+.cajonPie {
+    flex-shrink: 0;
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid $borde;
+}
+
+.estado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.estadoIcono {
+    color: $primario;
+}
+
+.estadoIconoError {
+    color: $peligro;
+}
+
+.estadoTitulo {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.estadoMensaje {
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+.estadoReferencia {
+    color: $texto-secundario;
+    font-size: 0.75rem;
+}

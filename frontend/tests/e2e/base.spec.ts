@@ -202,7 +202,10 @@ test.describe('rutas y menús por rol', () => {
 
 test.describe('sin saltos entre pantallas', () => {
     const logoVisible = (page: Page) =>
-        page.getByRole('link', { name: 'ShopCart, ir al inicio' }).filter({ visible: true }).first();
+        page
+            .getByRole('link', { name: /^ShopCart.*ir al inicio$/ })
+            .filter({ visible: true })
+            .first();
 
     async function posicion(ubicacion: Locator) {
         const caja = await ubicacion.boundingBox();
@@ -213,21 +216,21 @@ test.describe('sin saltos entre pantallas', () => {
     test('logo y perfil quedan en el mismo lugar en tienda, panel y sin sesión', async ({ page }) => {
         await page.goto('/');
         const logoInvitado = await posicion(logoVisible(page));
-        const iconoInvitado = await posicion(page.getByRole('link', { name: 'Ingresar' }).locator('svg'));
+        const usuarioInvitado = await posicion(page.getByRole('link', { name: 'Ingresar' }));
         const carritoInvitado = await posicion(page.getByRole('link', { name: 'Carrito' }));
 
         await ingresar(page, ADMIN);
         await expect(page).toHaveURL(/\/panel$/);
         await expect(page.locator('#menu-usuario')).toBeVisible();
         expect(await posicion(logoVisible(page))).toEqual(logoInvitado);
-        expect(await posicion(page.locator('#menu-usuario svg'))).toEqual(iconoInvitado);
+        expect(await posicion(page.locator('#menu-usuario'))).toEqual(usuarioInvitado);
 
         await logoVisible(page).click();
         await expect(page).toHaveURL(/:\d+\/$/);
         // El carrito solo existe en la tienda: confirma que ya se cambió de estructura antes de medir.
         await expect(page.getByRole('link', { name: 'Carrito' })).toBeVisible();
         expect(await posicion(logoVisible(page))).toEqual(logoInvitado);
-        expect(await posicion(page.locator('#menu-usuario svg'))).toEqual(iconoInvitado);
+        expect(await posicion(page.locator('#menu-usuario'))).toEqual(usuarioInvitado);
         expect(await posicion(page.getByRole('link', { name: 'Carrito' }))).toEqual(carritoInvitado);
     });
 

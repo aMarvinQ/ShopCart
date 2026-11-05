@@ -2,10 +2,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api } from '../api/cliente';
 import { esErrorApi } from '../api/errores';
-import { EstadoError } from '../ui/EstadoError';
+import { EstadoError } from '../ui/Mensajes';
 import { EsqueletoApp } from '../ui/Esqueleto';
-import { ContextoSesion, type DatosIngreso, type EstadoSesion, type ValorSesion } from './contexto';
-import { renovarSesion, type UsuarioSesion } from './renovacion';
+import { ContextoSesion, type DatosIngreso, type DatosRegistro, type EstadoSesion, type ValorSesion } from './contexto';
+import { renovarSesion, type Sesion, type UsuarioSesion } from './renovacion';
 import { alTerminarSesion, fijarToken, huboSesion, marcarSesion } from './token';
 
 /*
@@ -79,21 +79,34 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
         };
     }, [consultas, limpiar, recuperar]);
 
-    const iniciarSesion = useCallback(
-        async ({ correo, contrasena }: DatosIngreso) => {
-            const { data } = await api.post('/auth/login', { cuerpo: { correo, contrasena } });
-            fijarToken(data.accessToken);
+    const entrar = useCallback(
+        (sesion: Sesion) => {
+            fijarToken(sesion.accessToken);
             marcarSesion(true);
             // Lo que estaba en caché era del invitado (p. ej. su carrito, que ahora se fusionó).
             consultas.clear();
-            setUsuario(data.usuario);
+            setUsuario(sesion.usuario);
             setSesionVencida(false);
             setEstado('autenticado');
             canal.current?.postMessage('inicio' satisfies Mensaje);
-            return data.usuario;
+            return sesion.usuario;
         },
         [consultas],
     );
+
+    const iniciarSesion = useCallback(
+        async (datos: DatosIngreso) => entrar((await api.post('/auth/login', { cuerpo: datos })).data),
+        [entrar],
+    );
+
+    const registrarse = useCallback(
+        async (datos: DatosRegistro) => entrar((await api.post('/auth/registro', { cuerpo: datos })).data),
+        [entrar],
+    );
+
+    const actualizarNombre = useCallback((nombre: string, apellido: string) => {
+        setUsuario((actual) => actual && { ...actual, nombre, apellido });
+    }, []);
 
     const cerrarSesion = useCallback(async () => {
         try {
@@ -114,10 +127,12 @@ export function ProveedorSesion({ children }: { children: ReactNode }) {
             usuario,
             sesionVencida,
             iniciarSesion,
+            registrarse,
+            actualizarNombre,
             cerrarSesion,
             reintentar: () => void recuperar(),
         }),
-        [estado, usuario, sesionVencida, iniciarSesion, cerrarSesion, recuperar],
+        [estado, usuario, sesionVencida, iniciarSesion, registrarse, actualizarNombre, cerrarSesion, recuperar],
     );
 
     let contenido = children;

@@ -54,6 +54,12 @@ export const MENU_CUENTA: readonly EntradaMenu[] = [
     { ruta: '/cuenta/perfil', etiqueta: 'Perfil y contraseña', icono: UserRound, roles: CLIENTE },
 ];
 
+export const NOMBRE_ROL: Record<Rol, string> = {
+    ADMIN: 'Administrador',
+    OPERADOR: 'Operador',
+    CLIENTE: 'Cliente',
+};
+
 export const ROLES_PERSONAL = PERSONAL;
 export const ROLES_CLIENTE = CLIENTE;
 

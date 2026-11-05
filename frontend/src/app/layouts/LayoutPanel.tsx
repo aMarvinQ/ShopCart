@@ -67,7 +67,7 @@ export default function LayoutPanel() {
             </a>
             <aside className={estilos.lateral}>
                 <div className={estilos.lateralCabecera}>
-                    <Logo a="/" soloIcono={contraido} />
+                    <Logo a="/" soloIcono={contraido} etiqueta="Panel" />
                 </div>
                 <div className={estilos.lateralMenu}>
                     <MenuLateral contraido={contraido} />

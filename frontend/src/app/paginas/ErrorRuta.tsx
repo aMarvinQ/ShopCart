@@ -1,6 +1,6 @@
 import { isRouteErrorResponse, useRouteError } from 'react-router';
 import { esErrorApi } from '../../api/errores';
-import { EstadoError } from '../../ui/EstadoError';
+import { EstadoError } from '../../ui/Mensajes';
 import { NoEncontrada } from './NoEncontrada';
 
 /*

@@ -3,17 +3,20 @@
 .esqueleto {
     display: block;
     border-radius: $radio-control;
-    background: linear-gradient(90deg, $esqueleto 25%, $esqueleto-brillo 50%, $esqueleto 75%);
-    background-size: 200% 100%;
-    animation: brillo 1.4s ease-in-out infinite;
+    background-color: $esqueleto;
+    background-image: linear-gradient(90deg, transparent 0%, $esqueleto-brillo 50%, transparent 100%);
+    background-repeat: no-repeat;
+    background-size: 50% 100%;
+    animation: brillo 1.5s linear infinite;
 }
 
 @keyframes brillo {
     from {
-        background-position: 200% 0;
+        background-position: -150% 0;
     }
+
     to {
-        background-position: -200% 0;
+        background-position: 250% 0;
     }
 }
 
@@ -50,20 +53,16 @@
 .ranuraUsuario {
     display: inline-flex;
     align-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
-}
-
-.ranura {
     justify-content: center;
+    width: $alto-control;
+    height: $alto-control;
 }
 
 .ranuraUsuario {
-    justify-content: flex-end;
-    padding-right: 0.75rem;
-
     @media (min-width: $corte-sm) {
+        justify-content: flex-start;
         width: $ancho-control-usuario;
+        padding-left: 0.25rem;
     }
 }
 
@@ -117,7 +116,7 @@
 .lateralOpcion {
     display: flex;
     align-items: center;
-    min-height: 2.75rem;
+    min-height: $alto-control;
     margin-inline: 0.75rem;
     padding-inline: 0.875rem;
 }

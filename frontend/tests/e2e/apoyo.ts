@@ -7,7 +7,7 @@ export const CLIENTE = { correo: 'cliente@shopcart.test', contrasena: 'Cliente#2
 
 export async function escribirCredenciales(page: Page, { correo, contrasena }: { correo: string; contrasena: string }) {
     await page.getByLabel('Correo electrónico').fill(correo);
-    await page.getByLabel('Contraseña').fill(contrasena);
+    await page.getByLabel('Contraseña', { exact: true }).fill(contrasena);
     await page.getByRole('button', { name: 'Ingresar' }).click();
 }
 

@@ -38,7 +38,7 @@ function BarraEsqueleto({ conLogo }: { conLogo: boolean }) {
                 <Esqueleto ancho="1.25rem" alto="1.25rem" />
             </span>
             <span className={estilos.ranuraUsuario}>
-                <Esqueleto ancho="1.25rem" alto="1.25rem" />
+                <Esqueleto ancho="2.25rem" alto="2.25rem" radio="50%" />
             </span>
         </div>
     );

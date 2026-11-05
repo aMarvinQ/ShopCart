@@ -42,7 +42,7 @@ export const rutas: RouteObject[] = [
                             pendiente('productos/:slug', 'Detalle de producto'),
                             pendiente('carrito', 'Carrito'),
                             pendiente('seguimiento/:token', 'Seguimiento del pedido'),
-                            pendiente('registro', 'Crear cuenta'),
+                            { path: 'registro', ...carga(() => import('../features/cuenta/Registro')) },
                             { path: 'ingresar', ...carga(() => import('../features/cuenta/Ingresar')) },
                             {
                                 path: 'cuenta',

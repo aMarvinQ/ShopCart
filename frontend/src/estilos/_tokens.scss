@@ -46,6 +46,19 @@ $radio-modal: 16px;
 $sombra-1: 0 1px 3px rgb(15 23 42 / 10%);
 $sombra-2: 0 8px 24px rgb(15 23 42 / 15%);
 
+/*
+    Geometría de la estructura, compartida por tienda, compra, panel y esqueletos: el logo y los
+    iconos de la barra quedan en el mismo lugar en todas las pantallas. El logo (1.75rem) queda
+    centrado en el menú contraído, y el icono del extremo derecho (20px en un botón de 2.75rem) a
+    la misma distancia del borde que el logo del suyo.
+*/
+$alto-barra: 3.5rem;
+$ancho-lateral: 15rem;
+$ancho-lateral-contraido: 4.5rem;
+$margen-barra: 1.375rem;
+$margen-barra-derecho: 0.625rem;
+$ancho-control-usuario: 11rem;
+
 /* Puntos de corte (los de Bootstrap) */
 $corte-sm: 576px;
 $corte-md: 768px;

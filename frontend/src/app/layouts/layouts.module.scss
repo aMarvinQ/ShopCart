@@ -1,5 +1,13 @@
 @use '../../estilos/tokens' as *;
 
+@mixin geometria-barra {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    height: $alto-barra;
+    padding-inline: $margen-barra $margen-barra-derecho;
+}
+
 /* --- Tienda y compra --------------------------------------------------------------------- */
 
 .pagina {
@@ -17,10 +25,7 @@
 }
 
 .barraInterior {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 3.5rem;
+    @include geometria-barra;
 }
 
 .espacio {
@@ -52,18 +57,50 @@
     color: $texto;
 }
 
-.enlaceBarra {
+/*
+    Perfil o "Ingresar": mismo ancho y mismo icono con y sin sesión, en tienda y panel. El texto crece
+    hacia la izquierda; el icono y lo que hay a su lado no se mueven. En móvil queda solo el icono.
+*/
+.controlUsuario {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    min-height: 2.75rem;
-    min-width: 2.75rem;
-    justify-content: center;
-    color: #fff;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0 0.75rem 0 0;
+    border: 0;
+    border-radius: $radio-control;
+    background: transparent;
+    color: inherit;
+    font-size: 0.875rem;
     text-decoration: none;
 
-    &:hover {
-        color: $primario-suave;
+    svg {
+        flex-shrink: 0;
+    }
+
+    &:hover,
+    &:global(.show) {
+        background: color-mix(in srgb, currentcolor 10%, transparent);
+        color: inherit;
+    }
+
+    @media (min-width: $corte-sm) {
+        width: $ancho-control-usuario;
+    }
+}
+
+.nombreUsuario {
+    display: none;
+    overflow: hidden;
+    min-width: 0;
+    padding-left: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    @media (min-width: $corte-sm) {
+        display: block;
     }
 }
 
@@ -71,6 +108,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
+    margin-right: 0.75rem;
     color: $primario-suave;
     font-size: 0.875rem;
 }
@@ -140,24 +178,25 @@
 /* --- Panel -------------------------------------------------------------------------------- */
 
 .panel {
-    --ancho-lateral: 15rem;
+    --ancho-lateral: #{$ancho-lateral};
     display: flex;
     min-height: 100vh;
 }
 
 .panelContraido {
-    --ancho-lateral: 4.5rem;
+    --ancho-lateral: #{$ancho-lateral-contraido};
 }
 
+/* Logo arriba, opciones al centro (con scroll propio si no caben) y contraer abajo. */
 .lateral {
     display: none;
+    flex-direction: column;
     position: sticky;
     top: 0;
     flex: 0 0 var(--ancho-lateral);
     width: var(--ancho-lateral);
     height: 100vh;
-    overflow-y: auto;
-    padding: 0.75rem;
+    overflow: hidden;
     background: $marca-oscura;
     color: #fff;
     transition:
@@ -165,7 +204,7 @@
         width 150ms ease;
 
     @media (min-width: $corte-lg) {
-        display: block;
+        display: flex;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -175,15 +214,30 @@
 
 .lateralCabecera {
     display: flex;
-    flex-wrap: wrap;
+    flex-shrink: 0;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.25rem;
-    margin-bottom: 0.75rem;
+    height: $alto-barra;
+    padding-left: $margen-barra;
+    white-space: nowrap;
+}
+
+.lateralMenu {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    // Sin barra visible: en 4.5rem correría los iconos. Sigue desplazándose con rueda, táctil y teclado.
+    scrollbar-width: none;
+}
+
+.lateralPie {
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid rgb(255 255 255 / 20%);
 }
 
 .botonIcono {
     display: inline-flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
     width: 2.75rem;
@@ -194,17 +248,12 @@
     color: inherit;
 
     &:hover {
-        background: rgb(255 255 255 / 10%);
+        background: color-mix(in srgb, currentcolor 10%, transparent);
+        color: inherit;
     }
 }
 
 .soloMovil {
-    color: $texto;
-
-    &:hover {
-        background: $fondo;
-    }
-
     @media (min-width: $corte-lg) {
         display: none;
     }
@@ -214,35 +263,52 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    padding-inline: 0.75rem;
 }
 
+/* Misma altura con el título o con la línea: al contraer, las opciones no suben ni bajan. */
 .menuGrupo {
-    margin: 0.75rem 0 0.25rem;
-    padding-inline: 0.75rem;
+    display: flex;
+    align-items: center;
+    height: 2rem;
+    padding-inline: 0.875rem;
     color: $primario-suave;
     font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .menuSeparador {
-    margin-block: 0.5rem;
+    flex: 1;
+    margin: 0;
     border-color: rgb(255 255 255 / 30%);
+    opacity: 1;
 }
 
+/* 0.75rem del menú + 0.875rem: el icono de 20px queda centrado en los 4.5rem del menú contraído. */
 .menuEnlace {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    width: 100%;
     min-height: 2.75rem;
     margin-bottom: 0.125rem;
-    padding-inline: 0.75rem;
+    padding-inline: 0.875rem;
+    border: 0;
     border-radius: $radio-control;
+    background: transparent;
     color: #fff;
     font-size: 0.875rem;
     font-weight: 500;
+    text-align: left;
     text-decoration: none;
+    white-space: nowrap;
+
+    svg {
+        flex-shrink: 0;
+    }
 
     &:hover {
         background: rgb(255 255 255 / 10%);
@@ -255,10 +321,23 @@
     background: $primario;
 }
 
+.lateralPie .menuEnlace {
+    margin-bottom: 0;
+}
+
 .cajon {
     background: $marca-oscura !important;
     color: #fff;
     max-width: 18rem;
+
+    :global(.offcanvas-header) {
+        height: $alto-barra;
+        padding: 0 1rem 0 $margen-barra;
+    }
+
+    :global(.offcanvas-body) {
+        padding: 0;
+    }
 }
 
 .panelCuerpo {
@@ -268,17 +347,22 @@
     min-width: 0;
 }
 
+/* Móvil: la misma barra oscura de la tienda. Escritorio: blanca, junto al menú lateral. */
 .panelBarra {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    @include geometria-barra;
     position: sticky;
     top: 0;
     z-index: 1010;
-    min-height: 3.5rem;
-    padding-inline: 1rem;
-    background: $superficie;
-    border-bottom: 1px solid $borde;
+    flex-shrink: 0;
+    background: $marca-oscura;
+    color: #fff;
+
+    @media (min-width: $corte-lg) {
+        background: $superficie;
+        // Línea sin borde: no le quita altura a la barra ni mueve sus iconos.
+        box-shadow: inset 0 -1px 0 $borde;
+        color: $texto;
+    }
 }
 
 .panelContenido {

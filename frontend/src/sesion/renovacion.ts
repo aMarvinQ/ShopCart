@@ -19,6 +19,7 @@ const RUTA = '/api/v1/auth/refresh';
 const BLOQUEO = 'shopcart-renovacion';
 const LIMITE_MS = 15_000;
 const ESPERA_ROTACION_MS = 400;
+const REINTENTOS_ROTACION = 3;
 
 const origen = () => globalThis.location.origin;
 
@@ -27,6 +28,9 @@ async function pedir(): Promise<Response> {
         return await fetch(`${origen()}${RUTA}`, {
             method: 'POST',
             credentials: 'include',
+            // Sigue aunque la página se recargue: si se cortara, la API ya habría rotado el token y
+            // la cookie nueva se perdería, con lo que la sesión terminaría al recargar.
+            keepalive: true,
             signal: AbortSignal.timeout(LIMITE_MS),
         });
     } catch (error) {
@@ -39,7 +43,7 @@ async function pedir(): Promise<Response> {
     }
 }
 
-async function renovar(reintento = false): Promise<Sesion | null> {
+async function renovar(reintentos = REINTENTOS_ROTACION): Promise<Sesion | null> {
     const respuesta = await pedir();
     if (respuesta.ok) {
         const { data } = (await respuesta.json()) as { data: Sesion };
@@ -50,9 +54,9 @@ async function renovar(reintento = false): Promise<Sesion | null> {
     const error = await errorDeRespuesta(respuesta);
     if (respuesta.status !== 401) throw error; // 429 o 5xx: pasajero, la sesión sigue
     // Otra petición con la misma cookie (otra pestaña) acaba de rotar: se reintenta con la nueva.
-    if (error.codigo === 'ROTACION_CONCURRENTE' && !reintento) {
+    if (error.codigo === 'ROTACION_CONCURRENTE' && reintentos > 0) {
         await new Promise((resolver) => setTimeout(resolver, ESPERA_ROTACION_MS));
-        return renovar(true);
+        return renovar(reintentos - 1);
     }
     fijarToken(null);
     marcarSesion(false);

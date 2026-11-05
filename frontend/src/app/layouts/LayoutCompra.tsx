@@ -11,7 +11,7 @@ export default function LayoutCompra() {
                 Saltar al contenido
             </a>
             <header className={estilos.barra}>
-                <div className={`container ${estilos.barraInterior}`}>
+                <div className={estilos.barraInterior}>
                     <Logo />
                     <div className={estilos.espacio} />
                     <span className={estilos.compraSegura}>

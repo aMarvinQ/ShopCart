@@ -4,29 +4,12 @@ import { Offcanvas } from 'react-bootstrap';
 import { NavLink, Outlet } from 'react-router';
 import { useSesion } from '../../sesion/contexto';
 import { MENU_PANEL, menuPara, type EntradaMenu } from '../../sesion/permisos';
+import { guardarContraido, leerContraido } from '../../utils/menuContraido';
 import { Logo } from './Logo';
 import { MenuUsuario } from './MenuUsuario';
 import estilos from './layouts.module.scss';
 
 /* Panel interno: menú lateral contraíble en escritorio y cajón en móvil. El menú sale de la tabla de permisos. */
-const CLAVE_CONTRAIDO = 'shopcart_menu_contraido';
-
-function leerContraido(): boolean {
-    try {
-        return localStorage.getItem(CLAVE_CONTRAIDO) === '1';
-    } catch {
-        return false;
-    }
-}
-
-function guardarContraido(valor: boolean): void {
-    try {
-        localStorage.setItem(CLAVE_CONTRAIDO, valor ? '1' : '0');
-    } catch {
-        /* preferencia sin guardar: no afecta el uso */
-    }
-}
-
 function agrupar(entradas: EntradaMenu[]): [string | undefined, EntradaMenu[]][] {
     const grupos = new Map<string | undefined, EntradaMenu[]>();
     for (const entrada of entradas) grupos.set(entrada.grupo, [...(grupos.get(entrada.grupo) ?? []), entrada]);
@@ -39,8 +22,11 @@ function MenuLateral({ contraido, alElegir }: { contraido: boolean; alElegir?: (
         <nav aria-label="Panel" className={estilos.menu}>
             {agrupar(menuPara(MENU_PANEL, usuario?.codigoRol)).map(([grupo, entradas]) => (
                 <div key={grupo ?? 'principal'}>
-                    {grupo && !contraido && <div className={estilos.menuGrupo}>{grupo}</div>}
-                    {grupo && contraido && <hr className={estilos.menuSeparador} />}
+                    {grupo && (
+                        <div className={estilos.menuGrupo}>
+                            {contraido ? <hr className={estilos.menuSeparador} /> : grupo}
+                        </div>
+                    )}
                     {entradas.map(({ ruta, etiqueta, icono: Icono }) => (
                         <NavLink
                             key={ruta}
@@ -82,17 +68,23 @@ export default function LayoutPanel() {
             <aside className={estilos.lateral}>
                 <div className={estilos.lateralCabecera}>
                     <Logo a="/" soloIcono={contraido} />
+                </div>
+                <div className={estilos.lateralMenu}>
+                    <MenuLateral contraido={contraido} />
+                </div>
+                <div className={estilos.lateralPie}>
                     <button
                         type="button"
-                        className={estilos.botonIcono}
+                        className={estilos.menuEnlace}
                         onClick={alternar}
+                        title={contraido ? 'Expandir menú' : undefined}
                         aria-label={contraido ? 'Expandir menú' : 'Contraer menú'}
                         aria-expanded={!contraido}
                     >
                         <Flecha size={20} aria-hidden="true" />
+                        {!contraido && <span>Contraer menú</span>}
                     </button>
                 </div>
-                <MenuLateral contraido={contraido} />
             </aside>
 
             <Offcanvas
@@ -118,6 +110,10 @@ export default function LayoutPanel() {
 
             <div className={estilos.panelCuerpo}>
                 <header className={estilos.panelBarra}>
+                    <div className={estilos.soloMovil}>
+                        <Logo a="/" />
+                    </div>
+                    <div className={estilos.espacio} />
                     <button
                         type="button"
                         className={`${estilos.botonIcono} ${estilos.soloMovil}`}
@@ -126,10 +122,9 @@ export default function LayoutPanel() {
                         }}
                         aria-label="Abrir menú"
                     >
-                        <Menu size={22} aria-hidden="true" />
+                        <Menu size={20} aria-hidden="true" />
                     </button>
-                    <div className={estilos.espacio} />
-                    <MenuUsuario variante="clara" />
+                    <MenuUsuario />
                 </header>
                 <main id="contenido" className={estilos.panelContenido}>
                     <Outlet />

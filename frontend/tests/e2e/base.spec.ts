@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { ADMIN, CLIENTE, escribirCredenciales, ingresar, menuPanel, OPERADOR, salir, vigilarCsp } from './apoyo';
 
 test.describe('sesión', () => {
@@ -114,6 +114,18 @@ test.describe('sesión', () => {
         await otra.close();
     });
 
+    test('recargar justo mientras se renueva la sesión no la cierra', async ({ page }) => {
+        await ingresar(page, CLIENTE);
+        await page.goto('/cuenta/perfil');
+        for (let vuelta = 0; vuelta < 5; vuelta += 1) {
+            const renovacion = page.waitForRequest('**/api/v1/auth/refresh');
+            await page.reload({ waitUntil: 'commit' });
+            await renovacion;
+        }
+        await page.reload();
+        await expect(page.getByTestId('perfil-nombre')).toBeVisible();
+    });
+
     test('dos pestañas que recargan a la vez conservan la sesión', async ({ page, context }) => {
         await ingresar(page, CLIENTE);
         const otra = await context.newPage();
@@ -185,6 +197,90 @@ test.describe('rutas y menús por rol', () => {
         await page.reload();
         await expect(page.getByRole('button', { name: 'Expandir menú' })).toBeVisible();
         await page.getByRole('button', { name: 'Expandir menú' }).click();
+    });
+});
+
+test.describe('sin saltos entre pantallas', () => {
+    const logoVisible = (page: Page) =>
+        page.getByRole('link', { name: 'ShopCart, ir al inicio' }).filter({ visible: true }).first();
+
+    async function posicion(ubicacion: Locator) {
+        const caja = await ubicacion.boundingBox();
+        if (!caja) throw new Error('El elemento no está visible.');
+        return { x: Math.round(caja.x), y: Math.round(caja.y) };
+    }
+
+    test('logo y perfil quedan en el mismo lugar en tienda, panel y sin sesión', async ({ page }) => {
+        await page.goto('/');
+        const logoInvitado = await posicion(logoVisible(page));
+        const iconoInvitado = await posicion(page.getByRole('link', { name: 'Ingresar' }).locator('svg'));
+        const carritoInvitado = await posicion(page.getByRole('link', { name: 'Carrito' }));
+
+        await ingresar(page, ADMIN);
+        await expect(page).toHaveURL(/\/panel$/);
+        await expect(page.locator('#menu-usuario')).toBeVisible();
+        expect(await posicion(logoVisible(page))).toEqual(logoInvitado);
+        expect(await posicion(page.locator('#menu-usuario svg'))).toEqual(iconoInvitado);
+
+        await logoVisible(page).click();
+        await expect(page).toHaveURL(/:\d+\/$/);
+        // El carrito solo existe en la tienda: confirma que ya se cambió de estructura antes de medir.
+        await expect(page.getByRole('link', { name: 'Carrito' })).toBeVisible();
+        expect(await posicion(logoVisible(page))).toEqual(logoInvitado);
+        expect(await posicion(page.locator('#menu-usuario svg'))).toEqual(iconoInvitado);
+        expect(await posicion(page.getByRole('link', { name: 'Carrito' }))).toEqual(carritoInvitado);
+    });
+
+    test('contraer el menú no mueve las opciones; la flecha queda abajo y centrada', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'En móvil el menú es un cajón.');
+        await ingresar(page, ADMIN);
+        const menu = await menuPanel(page);
+        const iconos = menu.locator('a svg');
+        const flecha = page.getByRole('button', { name: 'Contraer menú' }).locator('svg');
+        const leer = () =>
+            iconos.evaluateAll((lista) => lista.map((i) => i.getBoundingClientRect().toJSON() as DOMRect));
+
+        const antes = await leer();
+        const flechaAntes = await posicion(flecha);
+        const logoAntes = await posicion(logoVisible(page));
+        await page.getByRole('button', { name: 'Contraer menú' }).click();
+        await expect(page.locator('aside')).toHaveCSS('width', '72px');
+
+        const despues = await leer();
+        expect(despues.map((i) => [i.x, i.y])).toEqual(antes.map((i) => [i.x, i.y]));
+        expect(await posicion(logoVisible(page))).toEqual(logoAntes);
+        const flechaDespues = page.getByRole('button', { name: 'Expandir menú' }).locator('svg');
+        expect(await posicion(flechaDespues)).toEqual(flechaAntes);
+
+        // Iconos, logo y flecha centrados en los 72px; la flecha, debajo de todas las opciones.
+        const caja = await flechaDespues.boundingBox();
+        expect((caja?.x ?? 0) + (caja?.width ?? 0) / 2).toBeCloseTo(36, 0);
+        for (const icono of despues) expect(icono.x + icono.width / 2).toBeCloseTo(36, 0);
+        const logo = await logoVisible(page).boundingBox();
+        expect((logo?.x ?? 0) + (logo?.width ?? 0) / 2).toBeCloseTo(36, 0);
+        expect(caja?.y ?? 0).toBeGreaterThan(Math.max(...despues.map((i) => i.y)));
+    });
+
+    test('al recargar el panel, el esqueleto ya tiene el ancho del menú contraído', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'En móvil el menú es un cajón.');
+        await ingresar(page, ADMIN);
+        await page.getByRole('button', { name: 'Contraer menú' }).click();
+
+        let soltar = () => {};
+        const espera = new Promise<void>((resolver) => {
+            soltar = resolver;
+        });
+        await page.route('**/api/v1/auth/refresh', async (ruta) => {
+            await espera;
+            await ruta.continue();
+        });
+        const recarga = page.reload({ waitUntil: 'commit' });
+        const lateral = page.getByTestId('esqueleto-lateral');
+        await expect(lateral).toBeVisible();
+        expect((await lateral.boundingBox())?.width).toBe(72);
+        soltar();
+        await recarga;
+        await expect(page.getByRole('button', { name: 'Expandir menú' })).toBeVisible();
     });
 });
 

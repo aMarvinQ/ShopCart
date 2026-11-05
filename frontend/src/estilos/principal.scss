@@ -69,8 +69,15 @@ $min-contrast-ratio: 4.5;
     outline-offset: 2px;
 }
 
+/* La barra de scroll siempre ocupa su lugar: el contenido no se corre entre páginas cortas y largas. */
+html {
+    overflow-y: scroll;
+}
+
 body {
     font-variant-numeric: lining-nums;
+    /* Bootstrap compensa una barra que aquí no desaparece: esa compensación sería el salto. */
+    padding-right: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -14,20 +14,20 @@ export default function LayoutTienda() {
                 Saltar al contenido
             </a>
             <header className={estilos.barra}>
-                <div className={`container ${estilos.barraInterior}`}>
+                <div className={estilos.barraInterior}>
                     <Logo />
                     <div className={estilos.espacio} />
-                    {usuario ? (
-                        <MenuUsuario variante="oscura" />
-                    ) : (
-                        <Link className={estilos.enlaceBarra} to="/ingresar">
-                            <UserRound size={20} aria-hidden="true" />
-                            <span>Ingresar</span>
-                        </Link>
-                    )}
-                    <Link className={estilos.enlaceBarra} to="/carrito" aria-label="Carrito">
+                    <Link className={estilos.botonIcono} to="/carrito" aria-label="Carrito">
                         <ShoppingCart size={20} aria-hidden="true" />
                     </Link>
+                    {usuario ? (
+                        <MenuUsuario />
+                    ) : (
+                        <Link className={estilos.controlUsuario} to="/ingresar" aria-label="Ingresar">
+                            <span className={estilos.nombreUsuario}>Ingresar</span>
+                            <UserRound size={20} aria-hidden="true" />
+                        </Link>
+                    )}
                 </div>
             </header>
             <main id="contenido" className={`container ${estilos.contenido}`}>

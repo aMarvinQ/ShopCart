@@ -3,9 +3,10 @@ import { Dropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router';
 import { useSesion } from '../../sesion/contexto';
 import { MENU_CUENTA, MENU_PANEL, menuPara } from '../../sesion/permisos';
+import estilos from './layouts.module.scss';
 
 /** Menú del usuario: sus secciones según el rol y cerrar sesión. */
-export function MenuUsuario({ variante }: { variante: 'clara' | 'oscura' }) {
+export function MenuUsuario() {
     const { usuario, cerrarSesion } = useSesion();
     const navegar = useNavigate();
     if (!usuario) return null;
@@ -21,13 +22,15 @@ export function MenuUsuario({ variante }: { variante: 'clara' | 'oscura' }) {
     return (
         <Dropdown align="end">
             <Dropdown.Toggle
+                as="button"
+                type="button"
                 id="menu-usuario"
-                variant="link"
-                className={`text-decoration-none ${variante === 'oscura' ? 'text-white' : 'text-body'}`}
+                bsPrefix={estilos.controlUsuario}
+                aria-label={`Menú de ${usuario.nombre}`}
+                title={usuario.nombre}
             >
-                <UserRound size={20} className="me-1" aria-hidden="true" />
-                <span className="d-none d-sm-inline">{usuario.nombre}</span>
-                <span className="visually-hidden d-sm-none">Menú de {usuario.nombre}</span>
+                <span className={estilos.nombreUsuario}>{usuario.nombre}</span>
+                <UserRound size={20} aria-hidden="true" />
             </Dropdown.Toggle>
             <Dropdown.Menu>
                 {secciones.map(({ ruta, etiqueta, icono: Icono }) => (

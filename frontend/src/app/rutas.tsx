@@ -111,6 +111,23 @@ export const rutas: RouteObject[] = [
                             {
                                 errorElement: <ErrorRuta />,
                                 children: [
+                                    {
+                                        element: <RutaProtegida roles={rolesDe('/panel/catalogo')} />,
+                                        children: [
+                                            {
+                                                path: 'catalogo/productos/nuevo',
+                                                ...carga(
+                                                    () => import('../features/panel/catalogo/productos/NuevoProducto'),
+                                                ),
+                                            },
+                                            {
+                                                path: 'catalogo/productos/:id',
+                                                ...carga(
+                                                    () => import('../features/panel/catalogo/productos/EditarProducto'),
+                                                ),
+                                            },
+                                        ],
+                                    },
                                     ...MENU_PANEL.map(({ ruta, etiqueta }) => ({
                                         // Cada sección exige los roles de la tabla, aunque se escriba la URL a mano.
                                         element: <RutaProtegida roles={rolesDe(ruta)} />,

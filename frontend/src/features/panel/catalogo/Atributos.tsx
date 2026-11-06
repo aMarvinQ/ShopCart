@@ -1,117 +1,16 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { ArrowDown, ArrowUp, Check, Pencil, Plus, Tags, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Pencil, Plus, Tags } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { esErrorApi } from '../../../api/errores';
 import { Boton } from '../../../ui/Boton';
 import { Campo, CampoBusqueda } from '../../../ui/Campo';
-import { Casilla, Interruptor } from '../../../ui/Controles';
+import { Interruptor } from '../../../ui/Controles';
 import { Esqueleto } from '../../../ui/Esqueleto';
 import { Alerta, Cajon, DialogoConfirmacion, EstadoError, EstadoVacio } from '../../../ui/Mensajes';
 import { TablaCompleta } from '../../../ui/TablaDatos';
-import { useAtributosPanel, useEdicionAtributo, type Atributo, type ValorAtributo } from './hooks/useAtributosPanel';
+import { DatosValor, Muestra } from './DatosValor';
+import { useAtributosPanel, useEdicionAtributo, type Atributo } from './hooks/useAtributosPanel';
 import estilos from './catalogo.module.scss';
-
-const COLOR_INICIAL = '#3d5a80';
-
-function Muestra({ color }: { color: string | null }) {
-    if (!color) return null;
-    return <span className={estilos.muestra} style={{ backgroundColor: color }} aria-hidden="true" />;
-}
-
-/** Texto y color de un valor, para agregarlo o editarlo. */
-function DatosValor({
-    inicial,
-    textoBoton,
-    ocupado,
-    alGuardar,
-    alCancelar,
-}: {
-    inicial?: ValorAtributo;
-    textoBoton: string;
-    ocupado: boolean;
-    alGuardar: (texto: string, color: string | null) => Promise<unknown>;
-    alCancelar?: () => void;
-}) {
-    const [texto, setTexto] = useState(inicial?.valor ?? '');
-    const [conColor, setConColor] = useState(Boolean(inicial?.codigoHex));
-    const [color, setColor] = useState(inicial?.codigoHex ?? COLOR_INICIAL);
-    const [error, setError] = useState<string | undefined>();
-
-    const guardar = () => {
-        const limpio = texto.trim();
-        if (!limpio) {
-            setError('Escribe el valor.');
-            return;
-        }
-        setError(undefined);
-        alGuardar(limpio, conColor ? color : null).then(
-            () => {
-                if (!inicial) {
-                    setTexto('');
-                    setConColor(false);
-                }
-                alCancelar?.();
-            },
-            () => undefined,
-        );
-    };
-
-    return (
-        <div className={estilos.datosValor}>
-            <Campo
-                etiqueta="Valor"
-                maxLength={50}
-                value={texto}
-                error={error}
-                onChange={({ target }) => {
-                    setTexto(target.value);
-                }}
-                onKeyDown={(evento) => {
-                    if (evento.key === 'Enter') {
-                        evento.preventDefault();
-                        guardar();
-                    }
-                }}
-            />
-            <div className={estilos.color}>
-                <Casilla
-                    etiqueta="Con color"
-                    checked={conColor}
-                    onChange={({ target }) => {
-                        setConColor(target.checked);
-                    }}
-                />
-                {conColor && (
-                    <input
-                        type="color"
-                        aria-label="Color del valor"
-                        className="form-control form-control-color"
-                        value={color}
-                        onChange={({ target }) => {
-                            setColor(target.value);
-                        }}
-                    />
-                )}
-            </div>
-            <div className={estilos.datosValorBotones}>
-                <Boton
-                    variante="secundario"
-                    tamano="sm"
-                    icono={inicial ? Check : Plus}
-                    cargando={ocupado}
-                    onClick={guardar}
-                >
-                    {textoBoton}
-                </Boton>
-                {alCancelar && (
-                    <Boton variante="fantasma" tamano="sm" icono={X} onClick={alCancelar}>
-                        Cancelar
-                    </Boton>
-                )}
-            </div>
-        </div>
-    );
-}
 
 function EdicionAtributo({ idInicial }: { idInicial: number | null }) {
     const [id, setId] = useState(idInicial);

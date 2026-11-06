@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { api } from '../../../../api/cliente';
 import { useAvisos } from '../../../../ui/avisos/contexto';
+import { CLAVE_PRODUCTOS } from '../../catalogo/productos/hooks/useProductosPanel';
 import { CLAVE_INVENTARIO } from '../../pedidos/hooks/useGestionPedido';
 import type { FilaExistencia } from './useExistencias';
 
@@ -25,7 +26,10 @@ const MAXIMO_LINEAS = 200;
 const MAXIMO_CANTIDAD = 100_000;
 const RESULTADOS = 20;
 
-const lineaDe = (fila: FilaExistencia): LineaMovimiento => ({
+/** Lo que el movimiento necesita saber de una variante. */
+export type VarianteMovimiento = Pick<FilaExistencia, 'idVariante' | 'sku' | 'producto' | 'descripcion' | 'disponible'>;
+
+const lineaDe = (fila: VarianteMovimiento): LineaMovimiento => ({
     idVariante: fila.idVariante,
     sku: fila.sku,
     producto: fila.producto,
@@ -53,18 +57,29 @@ export function useBuscarVariantes(texto: string) {
     });
 }
 
-/** Entrada o ajuste de una o varias variantes: la API lo registra todo en una sola transacción. */
-export function useMovimiento(inicial: FilaExistencia | null, alTerminar: () => void) {
+/**
+ * Entrada o ajuste de una o varias variantes: la API lo registra todo en una sola transacción.
+ * Con `fijas` las líneas ya están puestas, sin cantidad, y solo se registran las que la lleven.
+ */
+export function useMovimiento(
+    inicial: FilaExistencia | null,
+    alTerminar: () => void,
+    fijas?: readonly VarianteMovimiento[],
+) {
     const consultas = useQueryClient();
     const avisar = useAvisos();
     const [tipo, setTipo] = useState<TipoManual>('ENTRADA_COMPRA');
-    const [lineas, setLineas] = useState<LineaMovimiento[]>(inicial ? [lineaDe(inicial)] : []);
+    const [lineas, setLineas] = useState<LineaMovimiento[]>(() => {
+        if (fijas) return fijas.map((v) => ({ ...lineaDe(v), cantidad: '' }));
+        return inicial ? [lineaDe(inicial)] : [];
+    });
     const [motivo, setMotivo] = useState('');
     const [errorMotivo, setErrorMotivo] = useState<string | undefined>();
     const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
     const [mostrarErrores, setMostrarErrores] = useState(false);
 
     const esAjuste = tipo !== 'ENTRADA_COMPRA';
+    const porRegistrar = fijas ? lineas.filter((l) => l.cantidad.trim() !== '') : lineas;
 
     const registrar = useMutation({
         mutationFn: () =>
@@ -72,7 +87,7 @@ export function useMovimiento(inicial: FilaExistencia | null, alTerminar: () => 
                 cuerpo: {
                     tipo,
                     ...(motivo.trim() && { motivo: motivo.trim() }),
-                    lineas: lineas.map((l) => ({ idVariante: l.idVariante, cantidad: Number(l.cantidad) })),
+                    lineas: porRegistrar.map((l) => ({ idVariante: l.idVariante, cantidad: Number(l.cantidad) })),
                 },
             }),
         onSuccess: async ({ data }) => {
@@ -86,7 +101,11 @@ export function useMovimiento(inicial: FilaExistencia | null, alTerminar: () => 
                         : `${String(data.length)} variantes actualizadas`,
             });
             alTerminar();
-            await consultas.invalidateQueries({ queryKey: CLAVE_INVENTARIO });
+            await Promise.all([
+                consultas.invalidateQueries({ queryKey: CLAVE_INVENTARIO }),
+                // La existencia también se ve en el catálogo.
+                consultas.invalidateQueries({ queryKey: CLAVE_PRODUCTOS }),
+            ]);
         },
         onError: (error) => {
             setErrorGeneral(error.message);
@@ -103,7 +122,8 @@ export function useMovimiento(inicial: FilaExistencia | null, alTerminar: () => 
         errorGeneral,
         mostrarErrores,
         registrando: registrar.isPending,
-        cantidadValida,
+        fijas: fijas !== undefined,
+        cantidadValida: (texto: string) => (fijas !== undefined && texto.trim() === '') || cantidadValida(texto),
         escribirMotivo: (texto: string) => {
             setMotivo(texto);
             setErrorMotivo(undefined);
@@ -127,11 +147,13 @@ export function useMovimiento(inicial: FilaExistencia | null, alTerminar: () => 
             setMostrarErrores(true);
             const sinMotivo = esAjuste && !motivo.trim();
             if (sinMotivo) setErrorMotivo('El motivo es obligatorio en los ajustes.');
-            if (lineas.length === 0) {
-                setErrorGeneral('Agrega al menos una variante.');
+            if (porRegistrar.length === 0) {
+                setErrorGeneral(
+                    fijas ? 'Escribe la cantidad de al menos una variante.' : 'Agrega al menos una variante.',
+                );
                 return;
             }
-            if (!sinMotivo && lineas.every((l) => cantidadValida(l.cantidad))) registrar.mutate();
+            if (!sinMotivo && porRegistrar.every((l) => cantidadValida(l.cantidad))) registrar.mutate();
         },
     };
 }

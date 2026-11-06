@@ -56,6 +56,7 @@ export function TablaDatos<T>({
     filtros,
     acciones,
     tarjeta,
+    sinPie = false,
     ordenesMovil,
     alElegirOrdenMovil,
     etiqueta,
@@ -79,6 +80,7 @@ export function TablaDatos<T>({
     filtros?: ReactNode;
     acciones?: ReactNode;
     tarjeta?: (fila: T) => ReactNode;
+    sinPie?: boolean;
     /** Sin encabezados que tocar, en pantallas angostas el orden se elige en un selector. */
     ordenesMovil?: readonly OrdenMovil[];
     alElegirOrdenMovil?: (orden: OrdenTabla) => void;
@@ -234,17 +236,19 @@ export function TablaDatos<T>({
                     {(sinFilas || error) && <div className={estilos.mensaje}>{error ?? vacio}</div>}
                 </div>
             )}
-            <div className={estilos.pie}>
-                {conFilas && (
-                    <Paginacion
-                        pagina={pagina}
-                        tamanoPagina={tamanoPagina}
-                        totalRegistros={totalRegistros}
-                        alCambiar={alCambiarPagina}
-                        {...(unidad !== undefined && { unidad })}
-                    />
-                )}
-            </div>
+            {!sinPie && (
+                <div className={estilos.pie}>
+                    {conFilas && (
+                        <Paginacion
+                            pagina={pagina}
+                            tamanoPagina={tamanoPagina}
+                            totalRegistros={totalRegistros}
+                            alCambiar={alCambiarPagina}
+                            {...(unidad !== undefined && { unidad })}
+                        />
+                    )}
+                </div>
+            )}
         </Tarjeta>
     );
 }
@@ -264,6 +268,7 @@ export function TablaCompleta<T>({
     filtros,
     acciones,
     tarjeta,
+    sinPie,
     etiqueta,
 }: {
     columnas: ColumnDef<T>[];
@@ -276,6 +281,8 @@ export function TablaCompleta<T>({
     filtros?: ReactNode;
     acciones?: ReactNode;
     tarjeta?: (fila: T) => ReactNode;
+    /** Sin el conteo de abajo: para tablas dentro de un contenedor que ya lo muestra. */
+    sinPie?: boolean;
     etiqueta: string;
 }) {
     const total = filas?.length ?? 0;
@@ -298,6 +305,7 @@ export function TablaCompleta<T>({
             {...(filtros !== undefined && { filtros })}
             {...(acciones !== undefined && { acciones })}
             {...(tarjeta !== undefined && { tarjeta })}
+            {...(sinPie !== undefined && { sinPie })}
         />
     );
 }

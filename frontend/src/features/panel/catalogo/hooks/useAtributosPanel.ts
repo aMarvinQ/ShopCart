@@ -65,6 +65,23 @@ export function useAtributosPanel() {
     };
 }
 
+/** Crea un valor; termina cuando la lista de atributos ya lo incluye. */
+export function useNuevoValor() {
+    const consultas = useQueryClient();
+    return useMutation({
+        mutationFn: ({
+            idAtributo,
+            valor,
+            codigoHex,
+        }: {
+            idAtributo: number;
+            valor: string;
+            codigoHex: string | null;
+        }) => api.post('/atributos/{id}/valores', { params: { id: idAtributo }, cuerpo: { valor, codigoHex } }),
+        onSuccess: () => consultas.invalidateQueries({ queryKey: CLAVE }),
+    });
+}
+
 /** Datos de un atributo y sus valores. Cada cambio de valor se guarda de inmediato y recarga la lista. */
 export function useEdicionAtributo(idInicial: number | null, alCrear: (id: number) => void) {
     const consultas = useQueryClient();
@@ -113,7 +130,6 @@ export function useEdicionAtributo(idInicial: number | null, alCrear: (id: numbe
         mutationFn: ({ valor, codigoHex }: { valor: string; codigoHex: string | null }) =>
             api.post('/atributos/{id}/valores', { params: { id: id ?? 0 }, cuerpo: { valor, codigoHex } }),
         onSuccess: refrescar,
-        onError: alFallar('No se pudo agregar el valor'),
     });
 
     const editarValor = useMutation({
@@ -123,7 +139,6 @@ export function useEdicionAtributo(idInicial: number | null, alCrear: (id: numbe
                 cuerpo: { valor: cuerpo.texto, codigoHex: cuerpo.codigoHex, orden: valor.orden },
             }),
         onSuccess: refrescar,
-        onError: alFallar('No se pudo editar el valor'),
     });
 
     const estadoValor = useMutation({

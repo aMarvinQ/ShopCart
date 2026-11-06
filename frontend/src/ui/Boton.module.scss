@@ -67,6 +67,8 @@
     --bs-btn-hover-bg: #{$deshabilitado-fondo};
     --bs-btn-active-color: #{$texto-secundario};
     --bs-btn-active-bg: #{$deshabilitado-fondo};
+    --bs-btn-disabled-bg: transparent;
+    --bs-btn-disabled-border-color: transparent;
     text-decoration: none;
 }
 

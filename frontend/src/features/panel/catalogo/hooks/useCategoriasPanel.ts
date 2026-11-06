@@ -179,7 +179,8 @@ export function useFormularioCategoria(categoria: Categoria | null, alTerminar: 
         },
         /** La dirección sigue al nombre hasta que alguien la edita a mano. */
         alEscribirNombre: (nombre: string) => {
-            if (!slugEditado) formulario.setValue('slug', aSlug(nombre));
+            if (!slugEditado)
+                formulario.setValue('slug', aSlug(nombre), { shouldValidate: formulario.formState.isSubmitted });
         },
         alEditarSlug: () => {
             setSlugEditado(true);

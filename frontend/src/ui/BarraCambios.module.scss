@@ -1,0 +1,31 @@
+@use '../estilos/tokens' as *;
+
+.barra {
+    position: sticky;
+    bottom: 0;
+    z-index: 900;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: $radio-tarjeta;
+    background: $marca-oscura;
+    color: #fff;
+}
+
+.mensaje {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.descartar.descartar {
+    --bs-btn-color: #fff;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: #{$sobre-oscuro};
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #{$sobre-oscuro};
+}

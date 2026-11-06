@@ -5,17 +5,19 @@ import { Alerta } from '../../../ui/Mensajes';
 import { Selector } from '../../../ui/Selector';
 import { BuscadorVariantes } from './BuscadorVariantes';
 import type { FilaExistencia } from './hooks/useExistencias';
-import { TIPOS_MOVIMIENTO, useMovimiento } from './hooks/useMovimiento';
+import { TIPOS_MOVIMIENTO, useMovimiento, type VarianteMovimiento } from './hooks/useMovimiento';
 import estilos from './inventario.module.scss';
 
 export function FormularioMovimiento({
     inicial,
+    fijas,
     alTerminar,
 }: {
     inicial: FilaExistencia | null;
+    fijas?: readonly VarianteMovimiento[];
     alTerminar: () => void;
 }) {
-    const movimiento = useMovimiento(inicial, alTerminar);
+    const movimiento = useMovimiento(inicial, alTerminar, fijas);
 
     return (
         <form
@@ -33,20 +35,23 @@ export function FormularioMovimiento({
                 opciones={TIPOS_MOVIMIENTO}
                 alCambiar={movimiento.elegirTipo}
             />
-            <BuscadorVariantes
-                alElegir={movimiento.agregar}
-                yaElegidas={new Set(movimiento.lineas.map((l) => l.idVariante))}
-                alQuitar={movimiento.quitar}
-            />
+            {!movimiento.fijas && (
+                <BuscadorVariantes
+                    alElegir={movimiento.agregar}
+                    yaElegidas={new Set(movimiento.lineas.map((l) => l.idVariante))}
+                    alQuitar={movimiento.quitar}
+                />
+            )}
             {movimiento.lineas.length > 0 && (
                 <ul className={estilos.lineas}>
                     {movimiento.lineas.map((l) => (
                         <li key={l.idVariante} className="card">
                             <div className={estilos.lineaDatos}>
-                                <strong>{l.producto}</strong>
+                                <strong>{movimiento.fijas ? l.descripcion : l.producto}</strong>
                                 <small className={`${estilos.detalle} numero`}>
                                     {l.sku}
-                                    {l.descripcion && ` · ${l.descripcion}`} · disponible {l.disponible}
+                                    {!movimiento.fijas && l.descripcion && ` · ${l.descripcion}`} · disponible{' '}
+                                    {l.disponible}
                                 </small>
                             </div>
                             <div className={estilos.lineaCantidad}>
@@ -64,15 +69,17 @@ export function FormularioMovimiento({
                                     }}
                                 />
                             </div>
-                            <Boton
-                                variante="fantasma"
-                                tamano="sm"
-                                icono={X}
-                                aria-label={`Quitar ${l.sku}`}
-                                onClick={() => {
-                                    movimiento.quitar(l.idVariante);
-                                }}
-                            />
+                            {!movimiento.fijas && (
+                                <Boton
+                                    variante="fantasma"
+                                    tamano="sm"
+                                    icono={X}
+                                    aria-label={`Quitar ${l.sku}`}
+                                    onClick={() => {
+                                        movimiento.quitar(l.idVariante);
+                                    }}
+                                />
+                            )}
                         </li>
                     ))}
                 </ul>

@@ -1,10 +1,13 @@
 import type { PedidoCliente } from './hooks/usePedidos';
 
+export type DatosLinea = Pick<PedidoCliente, 'historial' | 'codigoEstado'>;
+
 export interface PasoLinea {
     codigo: string;
     titulo: string;
     fecha: string | null;
     comentario: string | undefined;
+    usuario: string | undefined;
     hecho: boolean;
 }
 
@@ -24,7 +27,8 @@ export function pasosDeLinea({
         codigo: h.codigoEstado,
         titulo: h.estado,
         fecha: h.fecha,
-        comentario: h.comentario,
+        comentario: h.comentario?.trim() || undefined,
+        usuario: h.usuario?.trim() || undefined,
         hecho: true,
     }));
     if (!FLUJO_NORMAL.some((p) => p.codigo === codigoEstado)) return hechos;
@@ -32,6 +36,7 @@ export function pasosDeLinea({
         ...p,
         fecha: null,
         comentario: undefined,
+        usuario: undefined,
         hecho: false,
     }));
     return [...hechos, ...pendientes];

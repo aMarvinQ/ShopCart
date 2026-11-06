@@ -1,5 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { PackageSearch } from 'lucide-react';
+import { useMemo } from 'react';
 import { esErrorApi } from '../../../api/errores';
 import { Boton } from '../../../ui/Boton';
 import { Chip } from '../../../ui/Controles';
@@ -7,55 +8,106 @@ import { EstadoError, EstadoPedido, EstadoVacio } from '../../../ui/Mensajes';
 import { PestanasFiltro } from '../../../ui/Navegacion';
 import { Selector } from '../../../ui/Selector';
 import { SelectorFechas } from '../../../ui/SelectorFechas';
-import { BuscadorTabla, TablaDatos } from '../../../ui/TablaDatos';
+import { BuscadorTabla, MenuAcciones, TablaDatos } from '../../../ui/TablaDatos';
 import { fechaHora, moneda } from '../../../utils/formato';
+import { DetallePedidoPanel } from './DetallePedidoPanel';
+import { avanceDe, useAvanzarEstado, usePedidoAbierto } from './hooks/useGestionPedido';
 import { ORDENES_MOVIL, usePedidosPanel, type FilaPedido } from './hooks/usePedidosPanel';
 import estilos from './pedidos.module.scss';
 
-const COLUMNAS: ColumnDef<FilaPedido>[] = [
-    {
-        header: 'Pedido',
-        accessorKey: 'numeroPedido',
-        meta: { ordenarPor: 'NUMERO' },
-        cell: ({ row }) => <strong className="numero">{row.original.numeroPedido}</strong>,
-    },
-    {
-        header: 'Fecha',
-        accessorKey: 'fechaPedido',
-        meta: { ordenarPor: 'FECHA' },
-        cell: ({ row }) => <span className="numero text-nowrap">{fechaHora(row.original.fechaPedido)}</span>,
-    },
-    {
-        header: 'Cliente',
-        accessorKey: 'nombreContacto',
-        meta: { ordenarPor: 'CLIENTE' },
-        cell: ({ row }) => (
-            <>
-                {row.original.nombreContacto}
-                <small className={estilos.detalleCliente}>
-                    {row.original.correoContacto}
-                    {row.original.esInvitado && ' · Invitado'}
-                </small>
-            </>
-        ),
-    },
-    {
-        header: 'Estado',
-        accessorKey: 'codigoEstado',
-        meta: { ordenarPor: 'ESTADO' },
-        cell: ({ row }) => <EstadoPedido codigo={row.original.codigoEstado} />,
-    },
-    {
-        header: 'Total',
-        accessorKey: 'total',
-        meta: { ordenarPor: 'TOTAL', derecha: true },
-        cell: ({ row }) => <strong>{moneda(row.original.total)}</strong>,
-    },
-];
+interface AccionesFila {
+    abrir: (id: number) => void;
+    avanzar: (id: number, codigoEstado: string) => void;
+}
 
-function TarjetaPedido({ pedido }: { pedido: FilaPedido }) {
+function crearColumnas({ abrir, avanzar }: AccionesFila): ColumnDef<FilaPedido>[] {
+    return [
+        {
+            header: 'Pedido',
+            accessorKey: 'numeroPedido',
+            meta: { ordenarPor: 'NUMERO' },
+            cell: ({ row }) => (
+                <Boton
+                    variante="enlace"
+                    tamano="sm"
+                    onClick={() => {
+                        abrir(row.original.idPedido);
+                    }}
+                >
+                    <span className="numero">{row.original.numeroPedido}</span>
+                </Boton>
+            ),
+        },
+        {
+            header: 'Fecha',
+            accessorKey: 'fechaPedido',
+            meta: { ordenarPor: 'FECHA' },
+            cell: ({ row }) => <span className="numero text-nowrap">{fechaHora(row.original.fechaPedido)}</span>,
+        },
+        {
+            header: 'Cliente',
+            accessorKey: 'nombreContacto',
+            meta: { ordenarPor: 'CLIENTE' },
+            cell: ({ row }) => (
+                <>
+                    {row.original.nombreContacto}
+                    <small className={estilos.detalleCliente}>
+                        {row.original.correoContacto}
+                        {row.original.esInvitado && ' · Invitado'}
+                    </small>
+                </>
+            ),
+        },
+        {
+            header: 'Estado',
+            accessorKey: 'codigoEstado',
+            meta: { ordenarPor: 'ESTADO' },
+            cell: ({ row }) => <EstadoPedido codigo={row.original.codigoEstado} />,
+        },
+        {
+            header: 'Total',
+            accessorKey: 'total',
+            meta: { ordenarPor: 'TOTAL', derecha: true },
+            cell: ({ row }) => <strong>{moneda(row.original.total)}</strong>,
+        },
+        {
+            id: 'acciones',
+            header: () => <span className="visually-hidden">Acciones</span>,
+            meta: { derecha: true },
+            cell: ({ row }) => {
+                const { idPedido, numeroPedido, codigoEstado } = row.original;
+                const avance = avanceDe(codigoEstado);
+                return (
+                    <MenuAcciones
+                        etiqueta={`Acciones de ${numeroPedido}`}
+                        opciones={[
+                            {
+                                etiqueta: 'Ver detalle',
+                                alElegir: () => {
+                                    abrir(idPedido);
+                                },
+                            },
+                            ...(avance
+                                ? [
+                                      {
+                                          etiqueta: avance.accion,
+                                          alElegir: () => {
+                                              avanzar(idPedido, codigoEstado);
+                                          },
+                                      },
+                                  ]
+                                : []),
+                        ]}
+                    />
+                );
+            },
+        },
+    ];
+}
+
+function TarjetaPedido({ pedido, alAbrir }: { pedido: FilaPedido; alAbrir: () => void }) {
     return (
-        <div className={estilos.tarjetaPedido}>
+        <button type="button" className={`${estilos.tarjetaBoton} ${estilos.tarjetaPedido}`} onClick={alAbrir}>
             <strong className="numero">{pedido.numeroPedido}</strong>
             <strong className="numero text-end">{moneda(pedido.total)}</strong>
             <small>
@@ -64,13 +116,17 @@ function TarjetaPedido({ pedido }: { pedido: FilaPedido }) {
                 <span className="numero">{fechaHora(pedido.fechaPedido)}</span>
             </small>
             <EstadoPedido codigo={pedido.codigoEstado} />
-        </div>
+        </button>
     );
 }
 
 export default function Pedidos() {
     const lista = usePedidosPanel();
     const { consulta } = lista;
+    const { idAbierto, abrir, cerrar } = usePedidoAbierto();
+    const { avanzar } = useAvanzarEstado();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- avanzar solo dispara la mutación: no cambia lo que se dibuja
+    const columnas = useMemo(() => crearColumnas({ abrir, avanzar }), [abrir]);
 
     return (
         <section className={estilos.pagina}>
@@ -86,7 +142,7 @@ export default function Pedidos() {
             </div>
             <TablaDatos
                 etiqueta="Pedidos"
-                columnas={COLUMNAS}
+                columnas={columnas}
                 filas={consulta.data?.data}
                 idFila={(p) => String(p.idPedido)}
                 cargando={consulta.isPending}
@@ -121,7 +177,14 @@ export default function Pedidos() {
                 totalRegistros={consulta.data?.meta.totalRegistros ?? 0}
                 unidad="pedidos"
                 alCambiarPagina={lista.irAPagina}
-                tarjeta={(p) => <TarjetaPedido pedido={p} />}
+                tarjeta={(p) => (
+                    <TarjetaPedido
+                        pedido={p}
+                        alAbrir={() => {
+                            abrir(p.idPedido);
+                        }}
+                    />
+                )}
                 ordenesMovil={ORDENES_MOVIL}
                 alElegirOrdenMovil={({ ordenarPor, direccion }) => {
                     lista.fijarOrden(ordenarPor, direccion);
@@ -154,6 +217,7 @@ export default function Pedidos() {
                     </div>
                 }
             />
+            <DetallePedidoPanel id={idAbierto} alCerrar={cerrar} />
         </section>
     );
 }

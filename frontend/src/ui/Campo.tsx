@@ -94,6 +94,31 @@ export function Campo({
     );
 }
 
+/** Texto de varias líneas, como un motivo o un comentario. */
+export function AreaTexto({
+    etiqueta,
+    ayuda,
+    error,
+    filas = 3,
+    ...resto
+}: PropsMarcoCampo & Omit<ComponentProps<'textarea'>, 'className' | 'style' | 'rows' | 'id'> & { filas?: number }) {
+    const id = useId();
+    return (
+        <MarcoCampo id={id} etiqueta={etiqueta} ayuda={ayuda} error={error}>
+            <textarea
+                {...resto}
+                id={id}
+                rows={filas}
+                aria-invalid={Boolean(error)}
+                aria-describedby={`${id}-pie`}
+                className={['form-control', error && 'is-invalid', error && estilos.controlError]
+                    .filter(Boolean)
+                    .join(' ')}
+            />
+        </MarcoCampo>
+    );
+}
+
 export function CampoBusqueda(props: Omit<PropsCampo, 'iconoInicio' | 'adornoFin' | 'type'>) {
     return <Campo {...props} type="search" iconoInicio={Search} />;
 }

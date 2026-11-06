@@ -1,9 +1,9 @@
-import { Check, Circle, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { EstadoPedido } from '../../ui/Mensajes';
 import { fechaHora, moneda } from '../../utils/formato';
 import type { PedidoCliente } from './hooks/usePedidos';
-import { pasosDeLinea } from './lineaTiempo';
+import { LineaTiempo } from './LineaTiempo';
 import estilos from './pedidos.module.scss';
 
 /** Detalle de un pedido: lo comparten Mis pedidos y el seguimiento sin sesión. */
@@ -31,29 +31,7 @@ export function DetallePedido({
                 <EstadoPedido codigo={pedido.codigoEstado} />
             </div>
 
-            <ol className={estilos.linea}>
-                {pasosDeLinea(pedido).map((paso, indice) => (
-                    <li
-                        key={`${paso.codigo}-${String(indice)}`}
-                        className={paso.hecho ? estilos.pasoHecho : estilos.pasoPendiente}
-                    >
-                        <span className={estilos.pasoIcono}>
-                            {paso.hecho ? (
-                                <Check size={16} aria-hidden="true" />
-                            ) : (
-                                <Circle size={12} aria-hidden="true" />
-                            )}
-                        </span>
-                        <div>
-                            <strong>{paso.titulo}</strong>
-                            <small className="numero">
-                                {paso.fecha ? fechaHora(paso.fecha) : 'Pendiente'}
-                                {paso.comentario && ` · ${paso.comentario}`}
-                            </small>
-                        </div>
-                    </li>
-                ))}
-            </ol>
+            <LineaTiempo pedido={pedido} />
 
             <ul className={estilos.productos}>
                 {pedido.lineas.map((l) => (

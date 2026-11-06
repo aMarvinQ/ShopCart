@@ -314,7 +314,7 @@ export function MenuAcciones({
                 aria-label={etiqueta}
             />
             {/* "fixed": la tabla se desplaza a lo ancho y no debe recortar el menú. */}
-            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }}>
+            <Dropdown.Menu renderOnMount popperConfig={{ strategy: 'fixed' }}>
                 {opciones.map(({ etiqueta: texto, icono: Icono, alElegir }) => (
                     <Dropdown.Item as="button" type="button" key={texto} onClick={alElegir}>
                         {Icono && <Icono size={18} className="me-2" aria-hidden="true" />}

@@ -54,7 +54,7 @@ export function useParametrosTabla<F extends string = never>({
                     actuales.delete('pagina');
                     return actuales;
                 },
-                { replace: true },
+                { replace: true, preventScrollReset: true },
             );
         },
         [setParametros, ordenarPor, direccion],
@@ -72,7 +72,7 @@ export function useParametrosTabla<F extends string = never>({
                     actuales.delete('pagina');
                     return actuales;
                 },
-                { replace: true },
+                { replace: true, preventScrollReset: true },
             );
         },
         [setParametros],
@@ -95,7 +95,7 @@ export function useParametrosTabla<F extends string = never>({
                     actuales.delete('pagina');
                     return actuales;
                 },
-                { replace: true },
+                { replace: true, preventScrollReset: true },
             );
         },
         [setParametros],
@@ -109,7 +109,7 @@ export function useParametrosTabla<F extends string = never>({
                 actuales.delete('pagina');
                 return actuales;
             },
-            { replace: true },
+            { replace: true, preventScrollReset: true },
         );
     }, [setParametros, filtros]);
 

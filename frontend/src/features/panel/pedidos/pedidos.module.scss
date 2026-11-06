@@ -49,3 +49,115 @@
         flex: 0 0 17.5rem;
     }
 }
+
+/* --- Cajón del pedido ------------------------------------------------------------------------ */
+
+.rotulo {
+    margin: 0.5rem 0 0.375rem;
+    color: $texto-secundario;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.dato {
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+
+    strong {
+        color: $texto;
+    }
+}
+
+.productos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+    list-style: none;
+
+    li {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-bottom: 0.625rem;
+        border-bottom: 1px solid $borde-suave;
+    }
+
+    strong {
+        display: block;
+        font-weight: 500;
+    }
+
+    small {
+        color: $texto-secundario;
+    }
+}
+
+.importes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin: 0.625rem 0 0;
+    font-size: 0.875rem;
+
+    > div {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    dt {
+        font-weight: 400;
+    }
+
+    dd {
+        margin: 0;
+    }
+}
+
+.total {
+    dt {
+        font-weight: 700;
+    }
+
+    dd {
+        font-size: 1.125rem;
+        font-weight: 700;
+    }
+}
+
+.acciones {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.accionesBotones {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cancelar.cancelar {
+    --bs-btn-color: #{$peligro};
+    --bs-btn-hover-color: #{$peligro};
+    --bs-btn-hover-bg: #{$peligro-fondo};
+    --bs-btn-active-color: #{$peligro};
+    --bs-btn-active-bg: #{$peligro-fondo};
+    flex-shrink: 0;
+}
+
+.tarjetaBoton {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+}

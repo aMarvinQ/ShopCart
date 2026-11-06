@@ -209,6 +209,14 @@ body {
     font-variant-numeric: lining-nums;
     /* Bootstrap compensa una barra que aquí no desaparece: esa compensación sería el salto. */
     padding-right: 0 !important;
+    /* Con el modal abierto bloquea el scroll en body, y eso rompe los elementos sticky (barra y menú). */
+    overflow: visible !important;
+}
+
+/* El scroll se bloquea en la raíz: los sticky siguen fijos y la barra de scroll conserva su lugar. */
+html:has(body[data-rr-ui-modal-open]) {
+    overflow-y: hidden;
+    scrollbar-gutter: stable;
 }
 
 /* La flecha de las migas, centrada con el texto. */

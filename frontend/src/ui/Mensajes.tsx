@@ -41,6 +41,31 @@ const ESTADOS_PEDIDO: Partial<Record<string, { etiqueta: string; clase: string |
     DEVUELTO: { etiqueta: 'Devuelto', clase: estilos.devuelto, icono: Undo2 },
 };
 
+const TONOS_INSIGNIA = {
+    exito: estilos.entregado,
+    aviso: estilos.enPreparacion,
+    peligro: estilos.cancelado,
+    neutro: estilos.devuelto,
+};
+
+/** Etiqueta de estado: color, icono y texto; nunca solo color. */
+export function Insignia({
+    tono,
+    icono: Icono,
+    children,
+}: {
+    tono: keyof typeof TONOS_INSIGNIA;
+    icono: LucideIcon;
+    children: ReactNode;
+}) {
+    return (
+        <span className={`badge rounded-pill ${estilos.insignia} ${TONOS_INSIGNIA[tono] ?? ''}`}>
+            <Icono size={16} aria-hidden="true" />
+            {children}
+        </span>
+    );
+}
+
 /** Estado del pedido: color, icono y texto; nunca solo color. Un estado desconocido se muestra neutro. */
 export function EstadoPedido({ codigo }: { codigo: string }) {
     const {

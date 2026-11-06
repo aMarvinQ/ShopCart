@@ -9,6 +9,7 @@ type EstadoDestino = 'EN_PREPARACION' | 'ENVIADO' | 'ENTREGADO';
 
 const CLAVE_LISTAS = ['panel', 'pedidos'];
 export const CLAVE_DEVOLUCIONES = ['panel', 'devoluciones'];
+export const CLAVE_INVENTARIO = ['panel', 'inventario'];
 const claveDetalle = (id: number) => ['panel', 'pedido', id];
 
 const AVANCES: Partial<Record<string, { estado: EstadoDestino; accion: string; hecho: string }>> = {
@@ -66,6 +67,8 @@ export function useTrasAccion() {
         Promise.all([
             consultas.invalidateQueries({ queryKey: CLAVE_LISTAS }),
             consultas.invalidateQueries({ queryKey: CLAVE_DEVOLUCIONES }),
+            // Cancelar y devolver mueven existencia: existencias y kardex también cambian.
+            consultas.invalidateQueries({ queryKey: CLAVE_INVENTARIO }),
         ]);
     return {
         alCompletar: async (respuesta: { data: PedidoPanel }, titulo: string) => {

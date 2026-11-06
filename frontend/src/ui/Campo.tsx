@@ -119,7 +119,28 @@ export function AreaTexto({
     );
 }
 
-export function CampoBusqueda(props: Omit<PropsCampo, 'iconoInicio' | 'adornoFin' | 'type'>) {
+/** Botón dentro de un campo. No le quita el foco al campo al tocarlo. */
+export function BotonAdorno({
+    icono: Icono,
+    etiqueta,
+    ...resto
+}: { icono: LucideIcon; etiqueta: string } & Omit<ComponentProps<'button'>, 'className' | 'type' | 'aria-label'>) {
+    return (
+        <button
+            {...resto}
+            type="button"
+            className={estilos.adorno}
+            aria-label={etiqueta}
+            onMouseDown={(evento) => {
+                evento.preventDefault();
+            }}
+        >
+            <Icono size={20} aria-hidden="true" />
+        </button>
+    );
+}
+
+export function CampoBusqueda(props: Omit<PropsCampo, 'iconoInicio' | 'type'>) {
     return <Campo {...props} type="search" iconoInicio={Search} />;
 }
 
@@ -132,17 +153,14 @@ export function CampoContrasena(props: Omit<PropsCampo, 'iconoInicio' | 'adornoF
             {...props}
             type={visible ? 'text' : 'password'}
             adornoFin={
-                <button
-                    type="button"
-                    className={estilos.adorno}
-                    aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                <BotonAdorno
+                    icono={Icono}
+                    etiqueta={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     aria-pressed={visible}
                     onClick={() => {
                         setVisible((actual) => !actual);
                     }}
-                >
-                    <Icono size={20} aria-hidden="true" />
-                </button>
+                />
             }
         />
     );

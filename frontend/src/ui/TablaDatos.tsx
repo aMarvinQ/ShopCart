@@ -107,7 +107,9 @@ export function TablaDatos<T>({
                     {acciones && <div className={estilos.acciones}>{acciones}</div>}
                 </div>
             )}
-            <div className={`table-responsive ${tarjeta ? 'd-none d-lg-block' : ''}`}>
+            <div
+                className={`table-responsive ${tarjeta ? 'd-none d-lg-block' : ''} ${(filtros ?? acciones) ? '' : estilos.sinBarra}`}
+            >
                 <table
                     className={`table align-middle mb-0 ${estilos.tabla}`}
                     aria-label={etiqueta}

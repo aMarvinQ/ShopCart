@@ -44,6 +44,11 @@
     }
 }
 
+/* Sin barra de filtros, el encabezado es lo primero: respeta las esquinas redondeadas de la tarjeta. */
+.sinBarra {
+    border-radius: $radio-tarjeta $radio-tarjeta 0 0;
+}
+
 .actualizando {
     opacity: 0.55;
 }

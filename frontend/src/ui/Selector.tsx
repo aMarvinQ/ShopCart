@@ -1,5 +1,5 @@
 import { Check, ChevronDown } from 'lucide-react';
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 import { MarcoCampo, type PropsMarcoCampo } from './Campo';
 import estilos from './Selector.module.scss';
 
@@ -7,6 +7,77 @@ export interface OpcionSelector<T extends string = string> {
     valor: T;
     etiqueta: string;
     detalle?: string;
+}
+
+/**
+ * Lista desplegable del sistema: la usan el selector y los buscadores con opciones, para que se vean y
+ * se comporten igual. El foco se queda en el control que la abre y la opción activa se anuncia con
+ * aria-activedescendant; `id-opcion-N` es el id de cada opción.
+ */
+export function ListaOpciones<T extends string>({
+    ref,
+    id,
+    etiquetadaPor,
+    oculta = false,
+    haciaArriba = false,
+    opciones,
+    esElegida,
+    activa,
+    alPasar,
+    alElegir,
+}: {
+    ref?: Ref<HTMLUListElement>;
+    id: string;
+    etiquetadaPor: string;
+    oculta?: boolean;
+    haciaArriba?: boolean;
+    opciones: readonly OpcionSelector<T>[];
+    esElegida: (opcion: OpcionSelector<T>, indice: number) => boolean;
+    activa: number;
+    alPasar: (indice: number) => void;
+    alElegir: (opcion: OpcionSelector<T>, indice: number) => void;
+}) {
+    return (
+        <ul
+            ref={ref}
+            id={id}
+            role="listbox"
+            aria-labelledby={etiquetadaPor}
+            hidden={oculta}
+            className={`${estilos.lista} ${haciaArriba ? estilos.haciaArriba : ''}`}
+            // El foco se queda en el control: tocar la lista o su barra de scroll no la cierra.
+            onMouseDown={(evento) => {
+                evento.preventDefault();
+            }}
+        >
+            {opciones.map((opcion, indice) => {
+                const elegida = esElegida(opcion, indice);
+                return (
+                    // El teclado lo atiende el control que abre la lista.
+                    // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+                    <li
+                        key={opcion.valor}
+                        id={`${id}-opcion-${String(indice)}`}
+                        role="option"
+                        aria-selected={elegida}
+                        className={`${estilos.opcion} ${indice === activa ? estilos.opcionActiva : ''}`}
+                        onMouseEnter={() => {
+                            alPasar(indice);
+                        }}
+                        onClick={() => {
+                            alElegir(opcion, indice);
+                        }}
+                    >
+                        <span>
+                            {opcion.etiqueta}
+                            {opcion.detalle && <small>{opcion.detalle}</small>}
+                        </span>
+                        {elegida && <Check size={20} className={estilos.marca} aria-hidden="true" />}
+                    </li>
+                );
+            })}
+        </ul>
+    );
 }
 
 /** Espacio que necesita la lista (2 líneas de margen incluidas): si no cabe abajo, se abre hacia arriba. */
@@ -152,7 +223,7 @@ export function Selector<T extends string>({
                     aria-expanded={abierto}
                     aria-controls={`${id}-lista`}
                     aria-labelledby={`${id}-etiqueta`}
-                    aria-activedescendant={abierto ? `${id}-opcion-${String(activa)}` : undefined}
+                    aria-activedescendant={abierto ? `${id}-lista-opcion-${String(activa)}` : undefined}
                     aria-invalid={Boolean(error)}
                     aria-describedby={compacto ? undefined : `${id}-pie`}
                     className={`${estilos.boton} ${error ? estilos.botonError : ''}`}
@@ -171,42 +242,20 @@ export function Selector<T extends string>({
                     </span>
                     <ChevronDown size={20} className={estilos.flecha} aria-hidden="true" />
                 </button>
-                <ul
+                <ListaOpciones
                     ref={lista}
                     id={`${id}-lista`}
-                    role="listbox"
-                    aria-labelledby={`${id}-etiqueta`}
-                    hidden={!abierto}
-                    className={`${estilos.lista} ${haciaArriba ? estilos.haciaArriba : ''}`}
-                    // El foco se queda en el botón: tocar la lista o su barra de scroll no la cierra.
-                    onMouseDown={(evento) => {
-                        evento.preventDefault();
+                    etiquetadaPor={`${id}-etiqueta`}
+                    oculta={!abierto}
+                    haciaArriba={haciaArriba}
+                    opciones={opciones}
+                    esElegida={(_, indice) => indice === elegida}
+                    activa={activa}
+                    alPasar={setActiva}
+                    alElegir={(_, indice) => {
+                        elegir(indice);
                     }}
-                >
-                    {opciones.map((opcion, indice) => (
-                        // El teclado lo atiende el botón, que conserva el foco (aria-activedescendant).
-                        // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-                        <li
-                            key={opcion.valor}
-                            id={`${id}-opcion-${String(indice)}`}
-                            role="option"
-                            aria-selected={indice === elegida}
-                            className={`${estilos.opcion} ${indice === activa ? estilos.opcionActiva : ''}`}
-                            onMouseEnter={() => {
-                                setActiva(indice);
-                            }}
-                            onClick={() => {
-                                elegir(indice);
-                            }}
-                        >
-                            <span>
-                                {opcion.etiqueta}
-                                {opcion.detalle && <small>{opcion.detalle}</small>}
-                            </span>
-                            {indice === elegida && <Check size={20} className={estilos.marca} aria-hidden="true" />}
-                        </li>
-                    ))}
-                </ul>
+                />
             </div>
         </MarcoCampo>
     );

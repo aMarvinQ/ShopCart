@@ -27,6 +27,7 @@ const relativa = (ruta: string, base: string) => ruta.slice(base.length + 1);
 const PANTALLAS_PANEL: Partial<Record<string, () => Promise<{ default: React.ComponentType }>>> = {
     '/panel/pedidos': () => import('../features/panel/pedidos/Pedidos'),
     '/panel/devoluciones': () => import('../features/panel/devoluciones/Devoluciones'),
+    '/panel/inventario': () => import('../features/panel/inventario/Inventario'),
 };
 
 function pantallaPanel(ruta: string, etiqueta: string): RouteObject {

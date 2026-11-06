@@ -1,4 +1,4 @@
-import { ChevronRight, CircleX } from 'lucide-react';
+import { ChevronRight, CircleX, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { esErrorApi } from '../../../api/errores';
 import { Boton } from '../../../ui/Boton';
@@ -7,6 +7,8 @@ import { Esqueleto } from '../../../ui/Esqueleto';
 import { Cajon, DialogoConfirmacion, EstadoError, EstadoPedido } from '../../../ui/Mensajes';
 import { fechaHora, moneda } from '../../../utils/formato';
 import { LineaTiempo } from '../../pedidos/LineaTiempo';
+import { FormularioDevolucion } from '../devoluciones/FormularioDevolucion';
+import { lineasDevolvibles } from '../devoluciones/hooks/useRegistrarDevolucion';
 import {
     avanceDe,
     useAvanzarEstado,
@@ -53,7 +55,7 @@ function Contenido({ pedido }: { pedido: PedidoPanel }) {
                                 <small className="numero">
                                     {l.descripcionVariante && `${l.descripcionVariante} · `}
                                     {l.sku}
-                                    {l.cantidadDevuelta > 0 && ` · ${String(l.cantidadDevuelta)} devueltas`}
+                                    {l.cantidadDevuelta > 0 && ` · devueltas: ${String(l.cantidadDevuelta)}`}
                                 </small>
                             </div>
                             <span className="numero">{moneda(l.totalLinea)}</span>
@@ -77,17 +79,44 @@ function Contenido({ pedido }: { pedido: PedidoPanel }) {
                     </div>
                 </dl>
             </section>
+            {pedido.devoluciones.length > 0 && (
+                <section>
+                    <h3 className={estilos.rotulo}>Devoluciones</h3>
+                    <ul className={estilos.productos}>
+                        {pedido.devoluciones.map((d) => (
+                            <li key={d.idDevolucion}>
+                                <div>
+                                    <strong>{d.motivo}</strong>
+                                    <small className="numero">
+                                        {fechaHora(d.fecha)}
+                                        {d.usuario && ` · ${d.usuario}`}
+                                    </small>
+                                    {d.lineas.map((l) => (
+                                        <small key={l.sku} className="d-block numero">
+                                            {l.cantidad} × {l.nombreProducto} ·{' '}
+                                            {l.reingresa ? 'volvió al inventario' : 'dañado, no reingresó'}
+                                        </small>
+                                    ))}
+                                </div>
+                                <span className="numero">{moneda(d.montoReembolso)}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
         </>
     );
 }
 
-function Acciones({ pedido }: { pedido: PedidoPanel }) {
+function Acciones({ pedido, alDevolver }: { pedido: PedidoPanel; alDevolver: () => void }) {
     const avance = avanceDe(pedido.codigoEstado);
     const [comentario, setComentario] = useState('');
     const { avanzar, avanzando } = useAvanzarEstado();
     const cancelar = useCancelarPedidoPanel(pedido.idPedido);
 
-    if (!avance && !pedido.puedeCancelar) return null;
+    const puedeDevolver = lineasDevolvibles(pedido).length > 0;
+
+    if (!avance && !pedido.puedeCancelar && !puedeDevolver) return null;
 
     return (
         <div className={estilos.acciones}>
@@ -104,6 +133,11 @@ function Acciones({ pedido }: { pedido: PedidoPanel }) {
                 />
             )}
             <div className={estilos.accionesBotones}>
+                {puedeDevolver && (
+                    <Boton variante="secundario" anchoCompleto icono={Undo2} onClick={alDevolver}>
+                        Registrar devolución
+                    </Boton>
+                )}
                 {avance && (
                     <Boton
                         anchoCompleto
@@ -162,16 +196,36 @@ export function DetallePedidoPanel({ id, alCerrar }: { id: number | null; alCerr
     const consulta = useDetallePedidoPanel(id);
     const pedido = consulta.data?.data;
     const pago = pedido?.pagos.find((p) => p.estado === 'APROBADO') ?? pedido?.pagos[0];
+    // Se guarda de qué pedido es: al abrir otro, o cerrar con Atrás, vuelve solo al detalle.
+    const [devolviendoId, setDevolviendoId] = useState<number | null>(null);
+    const devolviendo = pedido !== undefined && devolviendoId === pedido.idPedido;
+    const volver = () => {
+        setDevolviendoId(null);
+    };
 
     return (
         <Cajon
             mostrar={id !== null}
-            titulo={pedido?.numeroPedido ?? 'Pedido'}
+            titulo={devolviendo ? `Devolución de ${pedido.numeroPedido}` : (pedido?.numeroPedido ?? 'Pedido')}
             subtitulo={
                 pedido && `${fechaHora(pedido.fechaPedido)}${pago ? ` · ${pago.marca} •••• ${pago.ultimos4}` : ''}`
             }
-            alCerrar={alCerrar}
-            pie={pedido && <Acciones key={pedido.idPedido} pedido={pedido} />}
+            alCerrar={() => {
+                volver();
+                alCerrar();
+            }}
+            pie={
+                pedido &&
+                !devolviendo && (
+                    <Acciones
+                        key={pedido.idPedido}
+                        pedido={pedido}
+                        alDevolver={() => {
+                            setDevolviendoId(pedido.idPedido);
+                        }}
+                    />
+                )
+            }
         >
             {consulta.isPending && (
                 <div role="status" aria-label="Cargando pedido">
@@ -187,7 +241,12 @@ export function DetallePedidoPanel({ id, alCerrar }: { id: number | null; alCerr
                     alReintentar={() => void consulta.refetch()}
                 />
             )}
-            {pedido && <Contenido pedido={pedido} />}
+            {pedido &&
+                (devolviendo ? (
+                    <FormularioDevolucion key={pedido.idPedido} pedido={pedido} alVolver={volver} />
+                ) : (
+                    <Contenido pedido={pedido} />
+                ))}
         </Cajon>
     );
 }

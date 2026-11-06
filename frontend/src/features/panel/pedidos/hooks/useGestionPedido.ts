@@ -8,6 +8,7 @@ export type PedidoPanel = DatosDe<'get', '/pedidos/{id}'>;
 type EstadoDestino = 'EN_PREPARACION' | 'ENVIADO' | 'ENTREGADO';
 
 const CLAVE_LISTAS = ['panel', 'pedidos'];
+export const CLAVE_DEVOLUCIONES = ['panel', 'devoluciones'];
 const claveDetalle = (id: number) => ['panel', 'pedido', id];
 
 const AVANCES: Partial<Record<string, { estado: EstadoDestino; accion: string; hecho: string }>> = {
@@ -58,10 +59,14 @@ export function useDetallePedidoPanel(id: number | null) {
  * Tras cada acción, el detalle se actualiza con la respuesta y las listas se vuelven a pedir. Si la
  * API la rechaza (por ejemplo, otra persona ya lo cambió), se avisa y se recarga lo que se ve.
  */
-function useTrasAccion() {
+export function useTrasAccion() {
     const consultas = useQueryClient();
     const avisar = useAvisos();
-    const refrescarListas = () => consultas.invalidateQueries({ queryKey: CLAVE_LISTAS });
+    const refrescarListas = () =>
+        Promise.all([
+            consultas.invalidateQueries({ queryKey: CLAVE_LISTAS }),
+            consultas.invalidateQueries({ queryKey: CLAVE_DEVOLUCIONES }),
+        ]);
     return {
         alCompletar: async (respuesta: { data: PedidoPanel }, titulo: string) => {
             consultas.setQueryData(claveDetalle(respuesta.data.idPedido), respuesta);

@@ -37,3 +37,15 @@ export const inicioDelDia = (dia: string): string => new Date(inicioEnGuatemala(
 
 /** Inicio del día siguiente: la API toma "hasta" como límite excluido. */
 export const finDelDia = (dia: string): string => new Date(inicioEnGuatemala(dia) + UN_DIA_MS).toISOString();
+
+/** Rango para la API. Con las fechas al revés se ordenan: quien las escribió quiso ese rango, no un error. */
+export function rangoParaApi(desde: string, hasta: string) {
+    const [inicio, fin] = [leerDia(desde), leerDia(hasta)];
+    const invertido = inicio !== null && fin !== null && inicio > fin;
+    const primero = invertido ? fin : inicio;
+    const ultimo = invertido ? inicio : fin;
+    return {
+        ...(primero && { fechaDesde: inicioDelDia(primero) }),
+        ...(ultimo && { fechaHasta: finDelDia(ultimo) }),
+    };
+}

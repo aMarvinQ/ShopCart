@@ -1,7 +1,7 @@
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query';
 import { api, type DatosDe } from '../../../../api/cliente';
 import { textoRango } from '../../../../utils/calendario';
-import { finDelDia, inicioDelDia, leerDia } from '../../../../utils/formato';
+import { leerDia, rangoParaApi } from '../../../../utils/formato';
 import { useParametrosTabla } from '../../../../ui/useParametrosTabla';
 
 export type FilaPedido = DatosDe<'get', '/pedidos'>[number];
@@ -40,18 +40,6 @@ const estadoValido = (valor: string): CodigoEstado | undefined =>
         (p): p is { valor: CodigoEstado; etiqueta: string } => p.valor === valor && valor !== TODOS_LOS_ESTADOS,
     )?.valor;
 
-/** Con las fechas al revés se ordenan: quien las escribió quiso ese rango, no un error. */
-function rangoDeFechas(desde: string, hasta: string) {
-    const [inicio, fin] = [leerDia(desde), leerDia(hasta)];
-    const invertido = inicio !== null && fin !== null && inicio > fin;
-    const primero = invertido ? fin : inicio;
-    const ultimo = invertido ? inicio : fin;
-    return {
-        ...(primero && { fechaDesde: inicioDelDia(primero) }),
-        ...(ultimo && { fechaHasta: finDelDia(ultimo) }),
-    };
-}
-
 /**
  * Cuántos pedidos hay en cada estado con los filtros actuales. La API no tiene un conteo por estado:
  * se pide cada lista con un solo registro y se lee su total. Se guarda 30 s para no repetir consultas.
@@ -67,7 +55,7 @@ function useConteosPorEstado(busqueda: string, desde: string, hasta: string) {
                         tamanoPagina: 1,
                         ...(valor !== TODOS_LOS_ESTADOS && { estado: valor }),
                         ...(busqueda && { busqueda }),
-                        ...rangoDeFechas(desde, hasta),
+                        ...rangoParaApi(desde, hasta),
                     },
                     signal,
                 }),
@@ -103,7 +91,7 @@ export function usePedidosPanel() {
                     direccion: orden.direccion,
                     ...(estado && { estado }),
                     ...(busqueda && { busqueda }),
-                    ...rangoDeFechas(filtros.desde, filtros.hasta),
+                    ...rangoParaApi(filtros.desde, filtros.hasta),
                 },
                 signal,
             }),

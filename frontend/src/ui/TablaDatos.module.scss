@@ -43,6 +43,10 @@
     }
 }
 
+.actualizando {
+    opacity: 0.55;
+}
+
 .orden {
     display: inline-flex;
     align-items: center;
@@ -76,11 +80,73 @@
 }
 
 .tarjetaFila {
+    margin-bottom: 0.75rem;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid $borde-suave;
+    box-shadow: $sombra-1;
 
     &:last-child {
-        border-bottom: 0;
+        margin-bottom: 0;
+    }
+}
+
+.ordenMovil {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+/* Barra fina arriba de las filas mientras llega otra página: no ocupa espacio, nada se mueve. */
+.conBarraCarga {
+    position: relative;
+
+    &::after {
+        position: absolute;
+        top: 4.25rem;
+        left: 0;
+        width: 35%;
+        height: 2px;
+        background: $resaltado;
+        content: '';
+        animation: barra 1.2s ease-in-out infinite;
+    }
+}
+
+@keyframes barra {
+    from {
+        left: 0;
+    }
+
+    to {
+        left: 65%;
+    }
+}
+
+/* En pantallas angostas: sin marco, cada fila es su propia tarjeta sobre el fondo, como en el mockup. */
+.conTarjetas.conTarjetas {
+    @media (max-width: ($corte-lg - 1px)) {
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+
+        .barra {
+            min-height: 0;
+            padding: 0 0 0.75rem;
+            border-bottom: 0;
+        }
+
+        .pie {
+            min-height: 0;
+            padding: 0.75rem 0 0;
+            border-top: 0;
+        }
+
+        &.conBarraCarga::after {
+            display: none;
+        }
     }
 }
 

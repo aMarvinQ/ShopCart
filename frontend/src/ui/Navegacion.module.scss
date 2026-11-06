@@ -5,7 +5,8 @@
     box-shadow: $sombra-1;
 }
 
-.pestanas {
+.pestanas.pestanas {
+    --bs-nav-underline-gap: 0.25rem;
     flex-wrap: nowrap;
     overflow-x: auto;
     border-bottom: 1px solid $borde;
@@ -45,4 +46,27 @@
     @media (max-width: $corte-sm) {
         display: none;
     }
+}
+
+.conteo.conteo {
+    --bs-badge-padding-x: 0.5rem;
+    --bs-badge-padding-y: 0.125rem;
+    --bs-badge-color: #{$texto-secundario};
+    margin-left: 0.5rem;
+    background: $deshabilitado-fondo;
+}
+
+:global(.active) > .conteo.conteo {
+    --bs-badge-color: #{$texto};
+    background: $primario-suave;
+}
+
+/* .nav-underline quita el espacio lateral de sus enlaces; el mockup lo tiene. */
+.pestanas :global(.nav-link) {
+    flex-shrink: 0;
+    padding-inline: 0.875rem;
+}
+
+.conteoCargando.conteoCargando {
+    min-width: 2rem;
 }

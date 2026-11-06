@@ -6,6 +6,7 @@ import { Boton } from './Boton';
 import { CampoBusqueda } from './Campo';
 import { Esqueleto } from './Esqueleto';
 import { Paginacion, Tarjeta } from './Navegacion';
+import { Selector } from './Selector';
 import estilos from './TablaDatos.module.scss';
 
 declare module '@tanstack/react-table' {
@@ -24,6 +25,12 @@ export interface OrdenTabla {
     direccion: DireccionOrden;
 }
 
+export interface OrdenMovil {
+    etiqueta: string;
+    ordenarPor: string;
+    direccion: DireccionOrden;
+}
+
 const ESPERA_BUSQUEDA_MS = 300;
 
 /*
@@ -36,6 +43,7 @@ export function TablaDatos<T>({
     filas,
     idFila,
     cargando,
+    actualizando = false,
     error,
     vacio,
     orden,
@@ -48,12 +56,16 @@ export function TablaDatos<T>({
     filtros,
     acciones,
     tarjeta,
+    ordenesMovil,
+    alElegirOrdenMovil,
     etiqueta,
 }: {
     columnas: ColumnDef<T>[];
     filas: readonly T[] | undefined;
     idFila: (fila: T) => string;
     cargando: boolean;
+    /** Llega otra página o filtro: las filas actuales se atenúan en lugar de saltar a los esqueletos. */
+    actualizando?: boolean;
     /** Se muestra en lugar de las filas (normalmente un EstadoError). */
     error?: ReactNode;
     vacio: ReactNode;
@@ -67,6 +79,9 @@ export function TablaDatos<T>({
     filtros?: ReactNode;
     acciones?: ReactNode;
     tarjeta?: (fila: T) => ReactNode;
+    /** Sin encabezados que tocar, en pantallas angostas el orden se elige en un selector. */
+    ordenesMovil?: readonly OrdenMovil[];
+    alElegirOrdenMovil?: (orden: OrdenTabla) => void;
     etiqueta: string;
 }) {
     // Referencia estable: la tabla recalcula sus filas cada vez que cambia.
@@ -85,18 +100,18 @@ export function TablaDatos<T>({
     const sinFilas = !cargando && !error && filas?.length === 0;
 
     return (
-        <Tarjeta>
+        <Tarjeta className={`${tarjeta ? estilos.conTarjetas : ''} ${actualizando ? estilos.conBarraCarga : ''}`}>
             {(filtros ?? acciones) && (
                 <div className={estilos.barra}>
                     {filtros}
                     {acciones && <div className={estilos.acciones}>{acciones}</div>}
                 </div>
             )}
-            <div className={`table-responsive ${tarjeta ? 'd-none d-md-block' : ''}`}>
+            <div className={`table-responsive ${tarjeta ? 'd-none d-lg-block' : ''}`}>
                 <table
                     className={`table align-middle mb-0 ${estilos.tabla}`}
                     aria-label={etiqueta}
-                    aria-busy={cargando}
+                    aria-busy={cargando || actualizando}
                 >
                     <thead>
                         {encabezados.map((grupo) => (
@@ -138,7 +153,7 @@ export function TablaDatos<T>({
                             </tr>
                         ))}
                     </thead>
-                    <tbody>
+                    <tbody className={actualizando ? estilos.actualizando : undefined}>
                         {cargando &&
                             Array.from({ length: tamanoPagina }, (_, fila) => (
                                 <tr key={fila} data-testid="fila-esqueleto">
@@ -175,20 +190,45 @@ export function TablaDatos<T>({
                 </table>
             </div>
             {tarjeta && (
-                <div className="d-md-none">
-                    {cargando &&
-                        Array.from({ length: Math.min(tamanoPagina, 5) }, (_, i) => (
-                            <div key={i} className={estilos.tarjetaFila}>
-                                <Esqueleto ancho="60%" />
-                                <Esqueleto ancho="40%" style={{ marginTop: '0.5rem' }} />
-                            </div>
-                        ))}
-                    {conFilas &&
-                        filas?.map((fila) => (
-                            <div key={idFila(fila)} className={estilos.tarjetaFila}>
-                                {tarjeta(fila)}
-                            </div>
-                        ))}
+                <div className={`d-lg-none ${estilos.movil}`}>
+                    {ordenesMovil && alElegirOrdenMovil && (
+                        <div className={estilos.ordenMovil}>
+                            <span className="numero">
+                                {cargando ? '\u00a0' : `${String(totalRegistros)} ${unidad ?? 'registros'}`}
+                            </span>
+                            <Selector
+                                etiqueta="Ordenar por"
+                                compacto
+                                ancho="12rem"
+                                valor={`${orden.ordenarPor}-${orden.direccion}`}
+                                opciones={ordenesMovil.map((o) => ({
+                                    valor: `${o.ordenarPor}-${o.direccion}`,
+                                    etiqueta: o.etiqueta,
+                                }))}
+                                alCambiar={(valor) => {
+                                    const elegido = ordenesMovil.find(
+                                        (o) => `${o.ordenarPor}-${o.direccion}` === valor,
+                                    );
+                                    if (elegido) alElegirOrdenMovil(elegido);
+                                }}
+                            />
+                        </div>
+                    )}
+                    <div className={actualizando ? estilos.actualizando : undefined}>
+                        {cargando &&
+                            Array.from({ length: Math.min(tamanoPagina, 6) }, (_, i) => (
+                                <div key={i} className={`card ${estilos.tarjetaFila}`}>
+                                    <Esqueleto ancho="60%" />
+                                    <Esqueleto ancho="40%" style={{ marginTop: '0.5rem' }} />
+                                </div>
+                            ))}
+                        {conFilas &&
+                            filas?.map((fila) => (
+                                <div key={idFila(fila)} className={`card ${estilos.tarjetaFila}`}>
+                                    {tarjeta(fila)}
+                                </div>
+                            ))}
+                    </div>
                     {(sinFilas || error) && <div className={estilos.mensaje}>{error ?? vacio}</div>}
                 </div>
             )}
@@ -243,7 +283,6 @@ export function BuscadorTabla({
         <CampoBusqueda
             etiqueta={etiqueta}
             compacto
-            ancho="17.5rem"
             placeholder={etiqueta}
             value={texto}
             onChange={({ target }) => {

@@ -92,6 +92,45 @@ export function Pestanas({
     );
 }
 
+/** Pestañas que filtran una lista: no tienen panel propio, solo cambian el filtro. */
+export function PestanasFiltro<T extends string>({
+    etiqueta,
+    opciones,
+    valor,
+    alCambiar,
+}: {
+    etiqueta: string;
+    opciones: readonly { valor: T; etiqueta: string; conteo?: number | null }[];
+    valor: T;
+    alCambiar: (valor: T) => void;
+}) {
+    return (
+        <nav aria-label={etiqueta} className={`nav nav-underline ${estilos.pestanas}`}>
+            {opciones.map((opcion) => (
+                <button
+                    key={opcion.valor}
+                    type="button"
+                    aria-current={opcion.valor === valor ? 'true' : undefined}
+                    className={`nav-link text-nowrap ${opcion.valor === valor ? 'active' : ''}`}
+                    onClick={() => {
+                        alCambiar(opcion.valor);
+                    }}
+                >
+                    {opcion.etiqueta}
+                    {/* null: aún no llega; el espacio queda reservado para que las pestañas no se muevan. */}
+                    {opcion.conteo !== undefined && (
+                        <span
+                            className={`badge rounded-pill numero ${estilos.conteo} ${opcion.conteo === null ? estilos.conteoCargando : ''}`}
+                        >
+                            {opcion.conteo ?? ' '}
+                        </span>
+                    )}
+                </button>
+            ))}
+        </nav>
+    );
+}
+
 /** Siempre la primera, la última y las vecinas de la actual; un hueco de una sola página se muestra. */
 function paginasVisibles(actual: number, total: number): (number | 'hueco-1' | 'hueco-2')[] {
     const elegidas = [1, total, actual - 1, actual, actual + 1, ...(actual <= 2 ? [3] : [])];

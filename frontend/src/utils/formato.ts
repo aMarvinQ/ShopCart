@@ -23,3 +23,17 @@ export function minutosYSegundos(segundos: number): string {
     const minutos = Math.floor(segundos / 60);
     return `${String(minutos)}:${String(segundos % 60).padStart(2, '0')}`;
 }
+
+const UN_DIA_MS = 86_400_000;
+const inicioEnGuatemala = (dia: string) => new Date(`${dia}T00:00:00-06:00`).getTime();
+
+/** Lee un día AAAA-MM-DD de la URL; si no es una fecha real, null. */
+export function leerDia(valor: string): string | null {
+    return /^\d{4}-\d{2}-\d{2}$/.test(valor) && !Number.isNaN(inicioEnGuatemala(valor)) ? valor : null;
+}
+
+/** Inicio de un día de Guatemala, en UTC como lo espera la API. Guatemala no cambia de horario. */
+export const inicioDelDia = (dia: string): string => new Date(inicioEnGuatemala(dia)).toISOString();
+
+/** Inicio del día siguiente: la API toma "hasta" como límite excluido. */
+export const finDelDia = (dia: string): string => new Date(inicioEnGuatemala(dia) + UN_DIA_MS).toISOString();

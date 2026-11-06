@@ -23,6 +23,18 @@ const carga = <T extends { default: React.ComponentType }>(importar: () => Promi
 
 const relativa = (ruta: string, base: string) => ruta.slice(base.length + 1);
 
+/* Pantallas del panel ya implementadas; las demás siguen con EnConstruccion y sus permisos activos. */
+const PANTALLAS_PANEL: Partial<Record<string, () => Promise<{ default: React.ComponentType }>>> = {
+    '/panel/pedidos': () => import('../features/panel/pedidos/Pedidos'),
+};
+
+function pantallaPanel(ruta: string, etiqueta: string): RouteObject {
+    const importar = PANTALLAS_PANEL[ruta];
+    const camino = ruta === '/panel' ? undefined : relativa(ruta, '/panel');
+    if (!importar) return pendiente(camino, etiqueta);
+    return camino === undefined ? { index: true, ...carga(importar) } : { path: camino, ...carga(importar) };
+}
+
 export const rutas: RouteObject[] = [
     {
         element: <Raiz />,
@@ -99,12 +111,7 @@ export const rutas: RouteObject[] = [
                                     ...MENU_PANEL.map(({ ruta, etiqueta }) => ({
                                         // Cada sección exige los roles de la tabla, aunque se escriba la URL a mano.
                                         element: <RutaProtegida roles={rolesDe(ruta)} />,
-                                        children: [
-                                            pendiente(
-                                                ruta === '/panel' ? undefined : relativa(ruta, '/panel'),
-                                                etiqueta,
-                                            ),
-                                        ],
+                                        children: [pantallaPanel(ruta, etiqueta)],
                                     })),
                                     { path: '*', element: <NoEncontrada /> },
                                 ],

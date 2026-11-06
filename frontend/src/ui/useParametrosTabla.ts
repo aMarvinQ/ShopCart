@@ -60,12 +60,15 @@ export function useParametrosTabla<F extends string = never>({
         [setParametros, ordenarPor, direccion],
     );
 
-    const filtrar = useCallback(
-        (nombre: F, valor: string) => {
+    /* Varios a la vez: dos llamadas seguidas a setParametros se pisarían, porque parten de la misma URL. */
+    const filtrarVarios = useCallback(
+        (cambios: Partial<Record<F, string>>) => {
             setParametros(
                 (actuales) => {
-                    if (valor) actuales.set(nombre, valor);
-                    else actuales.delete(nombre);
+                    for (const [nombre, valor] of Object.entries<string | undefined>(cambios)) {
+                        if (valor) actuales.set(nombre, valor);
+                        else actuales.delete(nombre);
+                    }
                     actuales.delete('pagina');
                     return actuales;
                 },
@@ -75,5 +78,50 @@ export function useParametrosTabla<F extends string = never>({
         [setParametros],
     );
 
-    return { pagina, orden: { ordenarPor, direccion }, filtros: valores, irAPagina, ordenar, filtrar };
+    const filtrar = useCallback(
+        (nombre: F, valor: string) => {
+            filtrarVarios({ [nombre]: valor } as Partial<Record<F, string>>);
+        },
+        [filtrarVarios],
+    );
+
+    /** Fija columna y dirección de una vez: lo usa el selector de orden en pantallas angostas. */
+    const fijarOrden = useCallback(
+        (columnaNueva: string, direccionNueva: DireccionOrden) => {
+            setParametros(
+                (actuales) => {
+                    actuales.set('ordenarPor', columnaNueva);
+                    actuales.set('direccion', direccionNueva);
+                    actuales.delete('pagina');
+                    return actuales;
+                },
+                { replace: true },
+            );
+        },
+        [setParametros],
+    );
+
+    /** Quita los filtros; conserva el orden, que no es un filtro. */
+    const limpiarFiltros = useCallback(() => {
+        setParametros(
+            (actuales) => {
+                for (const nombre of filtros) actuales.delete(nombre);
+                actuales.delete('pagina');
+                return actuales;
+            },
+            { replace: true },
+        );
+    }, [setParametros, filtros]);
+
+    return {
+        pagina,
+        orden: { ordenarPor, direccion },
+        filtros: valores,
+        irAPagina,
+        ordenar,
+        fijarOrden,
+        filtrar,
+        filtrarVarios,
+        limpiarFiltros,
+    };
 }

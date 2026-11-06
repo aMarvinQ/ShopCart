@@ -1,0 +1,161 @@
+@use '../estilos/tokens' as *;
+
+.boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: $alto-control;
+    padding: 0 0.75rem;
+    border: 1px solid $borde-control;
+    border-radius: $radio-control;
+    background: $superficie;
+    color: $texto;
+    white-space: nowrap;
+
+    svg {
+        color: $texto-secundario;
+    }
+
+    &[aria-expanded='true'] {
+        border-color: $resaltado;
+        outline: 2px solid $resaltado;
+        outline-offset: 2px;
+    }
+}
+
+.menu.menu {
+    display: none;
+    gap: 0.75rem;
+    padding: 0.75rem;
+
+    &:global(.show) {
+        display: flex;
+    }
+
+    @media (max-width: ($corte-sm - 1px)) {
+        flex-direction: column;
+    }
+}
+
+.atajos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 9rem;
+
+    button {
+        min-height: $alto-control;
+        padding: 0 0.625rem;
+        border: 0;
+        border-radius: $radio-control;
+        background: transparent;
+        color: $texto;
+        text-align: left;
+        white-space: nowrap;
+
+        &:hover {
+            background: $resaltado-tenue;
+        }
+    }
+
+    @media (max-width: ($corte-sm - 1px)) {
+        flex-flow: row wrap;
+    }
+}
+
+.mes {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+
+    span {
+        font-size: 0.875rem;
+        font-weight: 600;
+        white-space: nowrap;
+
+        &::first-letter {
+            text-transform: uppercase;
+        }
+    }
+
+    button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border: 0;
+        border-radius: $radio-control;
+        background: transparent;
+        color: $texto;
+
+        &:hover:not(:disabled) {
+            background: $deshabilitado-fondo;
+        }
+
+        &:disabled {
+            color: $deshabilitado-texto;
+            cursor: not-allowed;
+        }
+    }
+}
+
+.dias {
+    border-collapse: collapse;
+
+    th {
+        width: 2.25rem;
+        height: 2rem;
+        color: $texto-secundario;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    td {
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+    }
+
+    button {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: $radio-control;
+        background: transparent;
+        color: $texto;
+        font-size: 0.875rem;
+        font-variant-numeric: tabular-nums;
+
+        &:hover:not(:disabled) {
+            background: $resaltado-tenue;
+        }
+
+        &:disabled {
+            color: $borde;
+            cursor: not-allowed;
+        }
+
+        &[aria-pressed='true'] {
+            background: $primario;
+            color: #fff;
+        }
+    }
+
+    button.enRango {
+        background: $primario-tenue;
+    }
+
+    button.hoy {
+        font-weight: 700;
+        text-decoration: underline;
+    }
+}
+
+.ayuda {
+    margin: 0.5rem 0 0;
+    color: $texto-secundario;
+    font-size: 0.75rem;
+}

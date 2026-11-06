@@ -24,11 +24,16 @@ export function Radio({ etiqueta, contador, ...resto }: PropsMarcable & { contad
     );
 }
 
-export function Interruptor({ etiqueta, ...resto }: PropsMarcable) {
+/** Con `etiquetaOculta`, el texto solo lo leen los lectores de pantalla: para filas de una tabla. */
+export function Interruptor({
+    etiqueta,
+    etiquetaOculta = false,
+    ...resto
+}: PropsMarcable & { etiquetaOculta?: boolean }) {
     return (
         <label className={`form-switch ${estilos.opcion}`}>
             <input {...resto} type="checkbox" role="switch" className={`form-check-input ${estilos.interruptor}`} />
-            {etiqueta}
+            {etiquetaOculta ? <span className="visually-hidden">{etiqueta}</span> : etiqueta}
         </label>
     );
 }

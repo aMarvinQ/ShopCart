@@ -249,6 +249,59 @@ export function TablaDatos<T>({
     );
 }
 
+const SIN_ORDEN: OrdenTabla = { ordenarPor: '', direccion: 'ASC' };
+const sinAccion = () => undefined;
+
+/** Para listas que la API entrega completas: una sola página y sin orden del servidor. */
+export function TablaCompleta<T>({
+    columnas,
+    filas,
+    idFila,
+    cargando,
+    error,
+    vacio,
+    unidad,
+    filtros,
+    acciones,
+    tarjeta,
+    etiqueta,
+}: {
+    columnas: ColumnDef<T>[];
+    filas: readonly T[] | undefined;
+    idFila: (fila: T) => string;
+    cargando: boolean;
+    error?: ReactNode;
+    vacio: ReactNode;
+    unidad: string;
+    filtros?: ReactNode;
+    acciones?: ReactNode;
+    tarjeta?: (fila: T) => ReactNode;
+    etiqueta: string;
+}) {
+    const total = filas?.length ?? 0;
+    return (
+        <TablaDatos
+            etiqueta={etiqueta}
+            columnas={columnas}
+            filas={filas}
+            idFila={idFila}
+            cargando={cargando}
+            error={error}
+            vacio={vacio}
+            orden={SIN_ORDEN}
+            alOrdenar={sinAccion}
+            pagina={1}
+            tamanoPagina={Math.max(total, 5)}
+            totalRegistros={total}
+            unidad={unidad}
+            alCambiarPagina={sinAccion}
+            {...(filtros !== undefined && { filtros })}
+            {...(acciones !== undefined && { acciones })}
+            {...(tarjeta !== undefined && { tarjeta })}
+        />
+    );
+}
+
 function IconoOrden({ activa, direccion }: { activa: boolean; direccion: DireccionOrden }) {
     const Icono = activa ? (direccion === 'ASC' ? ArrowUp : ArrowDown) : ArrowUpDown;
     return <Icono size={16} aria-hidden="true" />;

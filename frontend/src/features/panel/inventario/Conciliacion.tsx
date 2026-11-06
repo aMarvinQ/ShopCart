@@ -2,7 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { CircleCheck, TriangleAlert } from 'lucide-react';
 import { esErrorApi } from '../../../api/errores';
 import { Alerta, EstadoError, EstadoVacio } from '../../../ui/Mensajes';
-import { TablaDatos } from '../../../ui/TablaDatos';
+import { TablaCompleta } from '../../../ui/TablaDatos';
 import { useConciliacion, type FilaConciliacion } from './hooks/useConciliacion';
 import estilos from './inventario.module.scss';
 
@@ -32,9 +32,6 @@ const COLUMNAS: ColumnDef<FilaConciliacion>[] = [
     { header: 'Saltos', accessorKey: 'saltos', meta: { derecha: true } },
 ];
 
-const SIN_ORDEN = { ordenarPor: '', direccion: 'ASC' } as const;
-const sinAccion = () => undefined;
-
 /** Compara cada existencia con su kardex: una diferencia significa que algo se movió sin dejar rastro. */
 export function Conciliacion() {
     const consulta = useConciliacion();
@@ -52,7 +49,7 @@ export function Conciliacion() {
                 </Alerta>
             )}
             {/* La API la entrega completa y sin orden: una sola página, sin encabezados que ordenar. */}
-            <TablaDatos
+            <TablaCompleta
                 etiqueta="Variantes que no cuadran"
                 columnas={COLUMNAS}
                 filas={filas}
@@ -75,13 +72,7 @@ export function Conciliacion() {
                         mensaje="Cada existencia coincide con la suma de sus movimientos en el kardex."
                     />
                 }
-                orden={SIN_ORDEN}
-                alOrdenar={sinAccion}
-                pagina={1}
-                tamanoPagina={Math.max(total, 5)}
-                totalRegistros={total}
                 unidad={total === 1 ? 'variante' : 'variantes'}
-                alCambiarPagina={sinAccion}
                 tarjeta={(f) => (
                     <div className={estilos.tarjeta}>
                         <div className={estilos.tarjetaCabecera}>

@@ -46,6 +46,7 @@ const TONOS_INSIGNIA = {
     aviso: estilos.enPreparacion,
     peligro: estilos.cancelado,
     neutro: estilos.devuelto,
+    informacion: estilos.enviado,
 };
 
 /** Etiqueta de estado: color, icono y texto; nunca solo color. */

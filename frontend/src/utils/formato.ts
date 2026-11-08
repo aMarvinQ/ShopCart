@@ -13,10 +13,40 @@ const FECHA_Y_HORA = new Intl.DateTimeFormat('es-GT', {
     timeZone: 'America/Guatemala',
 });
 
+// Algunas fechas de la API llegan en UTC sin indicarlo; sin la Z se leerían como hora local.
+const instante = (iso: string) => new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`);
+
 /** Fecha y hora en Guatemala, como en los mockups: 2 nov 2026, 14:35 */
-export const fechaHora = (iso: string): string =>
-    // Algunas fechas de la API llegan en UTC sin indicarlo; sin la Z se leerían como hora local.
-    FECHA_Y_HORA.format(new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`)).replace(/\./g, '');
+export const fechaHora = (iso: string): string => FECHA_Y_HORA.format(instante(iso)).replace(/\./g, '');
+
+const DIA_EN_GUATEMALA = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'America/Guatemala',
+});
+const MES_CORTO = new Intl.DateTimeFormat('es-GT', { month: 'short', timeZone: 'UTC' });
+
+/** Día AAAA-MM-DD de Guatemala en que cae un instante de la API. */
+export const diaDe = (iso: string): string => DIA_EN_GUATEMALA.format(instante(iso));
+
+/** Último día incluido por un fin excluido: el fin de "hasta el 30" es el inicio del 31. */
+export const ultimoDiaDe = (iso: string): string => DIA_EN_GUATEMALA.format(new Date(instante(iso).getTime() - 1));
+
+const partesDia = (dia: string) => ({
+    numero: Number(dia.slice(8)),
+    mes: MES_CORTO.format(new Date(`${dia}T00:00:00Z`)).replace(/\./g, ''),
+    anio: dia.slice(0, 4),
+});
+
+/** Rango de días, como en los mockups: 1–30 nov 2026 · 1 ene–28 feb 2027 */
+export function rangoDias(primero: string, ultimo: string): string {
+    const [a, b] = [partesDia(primero), partesDia(ultimo)];
+    if (primero === ultimo) return `${String(b.numero)} ${b.mes} ${b.anio}`;
+    if (a.anio !== b.anio) return `${String(a.numero)} ${a.mes} ${a.anio}–${String(b.numero)} ${b.mes} ${b.anio}`;
+    if (a.mes !== b.mes) return `${String(a.numero)} ${a.mes}–${String(b.numero)} ${b.mes} ${b.anio}`;
+    return `${String(a.numero)}–${String(b.numero)} ${b.mes} ${b.anio}`;
+}
 
 /** Minutos y segundos de una cuenta regresiva: 14:05 */
 export function minutosYSegundos(segundos: number): string {

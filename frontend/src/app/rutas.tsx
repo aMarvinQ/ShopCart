@@ -29,6 +29,7 @@ const PANTALLAS_PANEL: Partial<Record<string, () => Promise<{ default: React.Com
     '/panel/devoluciones': () => import('../features/panel/devoluciones/Devoluciones'),
     '/panel/inventario': () => import('../features/panel/inventario/Inventario'),
     '/panel/catalogo': () => import('../features/panel/catalogo/Catalogo'),
+    '/panel/cupones': () => import('../features/panel/cupones/Cupones'),
 };
 
 function pantallaPanel(ruta: string, etiqueta: string): RouteObject {

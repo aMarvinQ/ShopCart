@@ -1,0 +1,189 @@
+@use '../../../estilos/tokens' as *;
+
+.pagina {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.titulo {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+}
+
+.buscador {
+    flex: 1 1 100%;
+
+    @media (min-width: $corte-lg) {
+        flex: 0 0 20rem;
+    }
+}
+
+.grupos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.opcionGrupo {
+    min-height: 2.25rem;
+    padding: 0.25rem 0.875rem;
+    border: 1px solid $borde;
+    border-radius: 999px;
+    background: #fff;
+    color: $texto;
+    font-size: 0.875rem;
+    font-weight: 600;
+
+    &[aria-pressed='true'] {
+        border-color: $primario-suave;
+        background: $primario-suave;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $primario;
+        outline-offset: 2px;
+    }
+}
+
+.nota {
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+.lista {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.marco {
+    border: 1px solid $borde-suave;
+    border-radius: $radio-tarjeta;
+    background: #fff;
+}
+
+/* Descripción a la izquierda y el valor a la derecha; en móvil, uno debajo del otro. */
+.tarjeta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid $borde-suave;
+    border-radius: $radio-tarjeta;
+    background: #fff;
+
+    @media (min-width: $corte-lg) {
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+        gap: 2rem;
+    }
+}
+
+.pendiente {
+    border-color: $primario;
+    box-shadow: 0 0 0 1px $primario;
+}
+
+.conError {
+    border-color: $peligro;
+    box-shadow: 0 0 0 1px $peligro;
+}
+
+.info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 0;
+}
+
+.nombre {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 600;
+}
+
+.grupo {
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: $borde-suave;
+    color: $texto;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.descripcion {
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.8125rem;
+
+    code {
+        padding: 0.125rem 0.375rem;
+        border-radius: 4px;
+        background: $borde-suave;
+        color: $texto;
+    }
+
+    span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+}
+
+.edicion {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.fila {
+    display: flex;
+    gap: 0.5rem;
+
+    :global(.input-group) {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.estado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+
+    strong {
+        color: $texto;
+    }
+}
+
+.guardado {
+    color: $exito;
+    font-weight: 600;
+}

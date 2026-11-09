@@ -25,6 +25,7 @@ const relativa = (ruta: string, base: string) => ruta.slice(base.length + 1);
 
 /* Pantallas del panel ya implementadas; las demás siguen con EnConstruccion y sus permisos activos. */
 const PANTALLAS_PANEL: Partial<Record<string, () => Promise<{ default: React.ComponentType }>>> = {
+    '/panel': () => import('../features/panel/dashboard/Dashboard'),
     '/panel/pedidos': () => import('../features/panel/pedidos/Pedidos'),
     '/panel/devoluciones': () => import('../features/panel/devoluciones/Devoluciones'),
     '/panel/inventario': () => import('../features/panel/inventario/Inventario'),

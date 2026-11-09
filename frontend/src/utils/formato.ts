@@ -19,6 +19,16 @@ const instante = (iso: string) => new Date(/[zZ]|[+-]\d{2}:?\d{2}$/.test(iso) ? 
 /** Fecha y hora en Guatemala, como en los mockups: 2 nov 2026, 14:35 */
 export const fechaHora = (iso: string): string => FECHA_Y_HORA.format(instante(iso)).replace(/\./g, '');
 
+const SOLO_HORA = new Intl.DateTimeFormat('es-GT', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Guatemala',
+});
+
+/** Solo la hora en Guatemala: 14:35 */
+export const hora = (iso: string): string => SOLO_HORA.format(instante(iso));
+
 const DIA_EN_GUATEMALA = new Intl.DateTimeFormat('en-CA', {
     year: 'numeric',
     month: '2-digit',

@@ -1,0 +1,369 @@
+@use '../../../estilos/tokens' as *;
+
+.pagina {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+}
+
+.titulo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.subtitulo {
+    margin: 0.25rem 0 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+
+    &::first-letter {
+        text-transform: uppercase;
+    }
+}
+
+/* Estado del flujo en tiempo real: punto + texto, nunca solo color. */
+.enVivo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: $texto;
+    font-size: 0.875rem;
+    font-weight: 600;
+
+    &::before {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background: $texto-secundario;
+        content: '';
+    }
+}
+
+.en-vivo::before {
+    background: $info;
+}
+
+.reconectando::before,
+.sin-permiso::before {
+    background: $aviso;
+}
+
+.controles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.exportar.exportar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: $alto-control;
+    font-weight: 600;
+}
+
+/* Cuatro indicadores; dos por fila en pantallas angostas. */
+.indicadores {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+
+    @media (min-width: $corte-lg) {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.indicador {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 0;
+    padding: 1.125rem 1.25rem;
+    border: 1px solid $borde-suave;
+    border-radius: $radio-tarjeta;
+    background: #fff;
+}
+
+.indicadorTitulo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+.indicadorValor {
+    font-size: 1.75rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+
+    @media (max-width: ($corte-md - 0.02px)) {
+        font-size: 1.375rem;
+    }
+}
+
+.indicadorPie {
+    min-height: 1.25rem;
+    color: $texto-secundario;
+    font-size: 0.8125rem;
+}
+
+/* Sección principal a la izquierda y lateral a la derecha; en móvil, una debajo de otra. */
+.fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+
+    @media (min-width: $corte-lg) {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    }
+}
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+    padding: 1.25rem;
+    border: 1px solid $borde-suave;
+    border-radius: $radio-tarjeta;
+    background: #fff;
+}
+
+.panelCabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+
+    h2 {
+        flex: 1;
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+}
+
+.panelDetalle {
+    color: $texto-secundario;
+    font-size: 0.8125rem;
+}
+
+.errorPanel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: $texto-secundario;
+
+    p {
+        margin: 0;
+    }
+}
+
+.vacio {
+    margin: 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+/* --- Gráfica --- */
+.figura {
+    margin: 0;
+}
+
+.rejilla line {
+    stroke: $borde-suave;
+    stroke-dasharray: 4 4;
+}
+
+.eje {
+    font-size: 0.75rem;
+
+    text {
+        fill: $texto-secundario;
+    }
+}
+
+.barra {
+    fill: $primario-suave;
+}
+
+.barraHoy {
+    fill: $primario;
+}
+
+.cursorGrafica {
+    fill: $primario-tenue;
+}
+
+.detalleGrafica {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid $borde-suave;
+    border-radius: $radio-control;
+    background: #fff;
+    box-shadow: $sombra-2;
+    font-size: 0.875rem;
+
+    small {
+        color: $texto-secundario;
+    }
+}
+
+.leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    color: $texto-secundario;
+    font-size: 0.8125rem;
+
+    span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+}
+
+.muestra,
+.muestraHoy {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 2px;
+}
+
+.muestra {
+    background: $primario-suave;
+}
+
+.muestraHoy {
+    background: $primario;
+}
+
+/* --- Categorías --- */
+.categorias {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.categoriaFila {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.pista {
+    display: block;
+    overflow: hidden;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: $primario-tenue;
+
+    span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: $primario;
+    }
+}
+
+/* --- Listas --- */
+.lista {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    > li {
+        padding: 0.75rem 0;
+        border-top: 1px solid $borde-suave;
+        font-size: 0.875rem;
+
+        &:first-child {
+            padding-top: 0;
+            border-top: 0;
+        }
+    }
+
+    small {
+        display: block;
+        color: $texto-secundario;
+        font-size: 0.8125rem;
+    }
+}
+
+.pedido {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.5rem 1rem;
+
+    @media (max-width: ($corte-md - 0.02px)) {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+}
+
+.pedidoCliente {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.variante {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+
+    > span:first-child {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+}
+
+.unidades {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: $aviso-fondo;
+    color: $aviso-texto;
+    font-weight: 600;
+}
+
+.top {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.posicion {
+    color: $texto-secundario;
+    font-weight: 600;
+}

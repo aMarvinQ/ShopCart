@@ -1,0 +1,234 @@
+@use '../../../estilos/tokens' as *;
+
+.pagina {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem;
+
+    /* En móvil el botón sale del encabezado para quedar al final de la página. */
+    @media (max-width: ($corte-md - 0.02px)) {
+        display: contents;
+    }
+}
+
+.titulo {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.subtitulo {
+    margin: 0.25rem 0 0;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+
+    strong {
+        color: $marca-oscura;
+    }
+}
+
+/* En móvil el botón queda abajo, al alcance del pulgar. */
+.nuevo {
+    @media (max-width: ($corte-md - 0.02px)) {
+        position: sticky;
+        z-index: 2;
+        bottom: 0;
+        order: 99;
+        width: 100%;
+        padding: 0.75rem 0;
+        background: $fondo;
+
+        :global(.btn) {
+            width: 100%;
+        }
+    }
+}
+
+.cuadricula {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    gap: 1rem;
+}
+
+.marco {
+    border: 1px solid $borde-suave;
+    border-radius: $radio-tarjeta;
+    background: #fff;
+}
+
+/*
+    Escritorio: cabecera, datos y al pie el interruptor con Editar.
+    Móvil: el interruptor sube junto al nombre y Editar ocupa todo el ancho.
+*/
+.tarjeta {
+    display: grid;
+    grid-template-areas:
+        'cabecera cabecera'
+        'datos datos'
+        'estado editar';
+    grid-template-columns: 1fr auto;
+    align-content: start;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid $borde-suave;
+    border-radius: $radio-tarjeta;
+    background: #fff;
+
+    @media (max-width: ($corte-md - 0.02px)) {
+        grid-template-areas:
+            'cabecera estado'
+            'datos datos'
+            'editar editar';
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+}
+
+.cabecera {
+    display: flex;
+    grid-area: cabecera;
+    align-items: flex-start;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.icono {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: $radio-control;
+    background: $borde-suave;
+    color: $primario;
+}
+
+.nombre {
+    min-width: 0;
+
+    h2 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    p {
+        margin: 0.125rem 0 0;
+        color: $texto-secundario;
+        font-size: 0.875rem;
+
+        @media (max-width: ($corte-md - 0.02px)) {
+            display: none;
+        }
+    }
+}
+
+.datos {
+    display: grid;
+    grid-area: datos;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0;
+    padding: 0.875rem 0;
+    border-block: 1px solid $borde-suave;
+
+    dt {
+        color: $texto-secundario;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    dd {
+        margin: 0.25rem 0 0;
+        font-weight: 600;
+    }
+
+    @media (max-width: ($corte-md - 0.02px)) {
+        align-items: baseline;
+        padding: 0;
+        border: 0;
+
+        dt {
+            position: absolute;
+            overflow: hidden;
+            width: 1px;
+            height: 1px;
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
+
+        div + div dd {
+            color: $texto-secundario;
+            font-size: 0.875rem;
+            font-weight: 400;
+            text-align: right;
+        }
+    }
+}
+
+.costo.costo {
+    color: $primario;
+    font-size: 1.375rem;
+}
+
+.estado {
+    display: flex;
+    flex-direction: column;
+    grid-area: estado;
+    gap: 0.125rem;
+
+    small {
+        color: $texto-secundario;
+        font-size: 0.75rem;
+    }
+
+    @media (max-width: ($corte-md - 0.02px)) {
+        align-items: flex-end;
+        align-self: start;
+    }
+}
+
+.editar {
+    grid-area: editar;
+
+    @media (max-width: ($corte-md - 0.02px)) {
+        :global(.btn) {
+            width: 100%;
+        }
+    }
+}
+
+.formulario {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.resumen {
+    margin: 0 0 0.5rem;
+    color: $texto-secundario;
+    font-size: 0.875rem;
+}
+
+.dosCampos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.activar {
+    margin: 0.5rem 0 1rem;
+}

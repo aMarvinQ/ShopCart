@@ -6,7 +6,7 @@ Plataforma web de ventas con carrito de compras: catálogo con variantes, invent
 |---|---|
 | Base de datos | Microsoft SQL Server 2019 · acceso exclusivo mediante stored procedures |
 | Backend | Node.js 24 LTS · TypeScript (strict) · Express |
-| Frontend | React 19 · TypeScript (strict) · Vite · Bootstrap 5.3 |
+| Frontend | React 19 · TypeScript (strict) · Vite · Bootstrap 5.3 · React Router · TanStack Query y Table · React Hook Form + zod · Recharts |
 
 ---
 
@@ -124,7 +124,7 @@ npm run dev                   # http://localhost:5173
 
 ## Documentación de la API
 
-Base: `/api/v1`. Respuestas `{ data, meta? }`; errores `{ error: { codigo, mensaje, detalles?, requestId } }` con los códigos de [docs/errores.md](docs/errores.md). Cada endpoint, con sus datos de entrada, respuestas y errores, está en **Swagger** (`/api/v1/docs`: 98 operaciones en 79 rutas); el documento OpenAPI se genera de los mismos esquemas que validan las peticiones.
+Base: `/api/v1`. Respuestas `{ data, meta? }`; errores `{ error: { codigo, mensaje, detalles?, requestId } }` con los códigos de [docs/errores.md](docs/errores.md). Cada endpoint, con sus datos de entrada, respuestas y errores, está en **Swagger** (`/api/v1/docs`: 99 operaciones en 80 rutas); el documento OpenAPI se genera de los mismos esquemas que validan las peticiones.
 
 | Módulo | Endpoints | Quién |
 |---|---|---|
@@ -146,6 +146,17 @@ Base: `/api/v1`. Respuestas `{ data, meta? }`; errores `{ error: { codigo, mensa
 
 ---
 
+## Pantallas
+
+| Área | Quién | Qué ofrece |
+|---|---|---|
+| Tienda | Público | Inicio; catálogo con búsqueda, filtros por categoría, precio y disponibilidad, orden y paginación (todo en la URL); detalle con selección de variantes que marca lo que no hay; carrito con cupón; checkout con dirección de la libreta o nueva, método de envío y pago con tarjeta; confirmación y seguimiento del pedido con su enlace, también como invitado |
+| Mi cuenta | Cliente | Registro e ingreso; Mis pedidos con su línea de tiempo, cancelación y devoluciones; libreta de direcciones; perfil y contraseña |
+| Panel: operación | Operador y administrador | Pedidos (filtros, detalle, avance de estado, cancelación con motivo y devoluciones por línea); devoluciones; inventario con existencias, kardex, movimientos y conciliación |
+| Panel: administración | Administrador | Dashboard en tiempo real con exportación a Excel y PDF; catálogo (categorías, atributos y valores, productos con variantes, precios con historial e imágenes); cupones; métodos de envío; usuarios; parámetros; bitácora con exportación a Excel |
+
+---
+
 ## Cumplimiento del enunciado
 
 Cada criterio de aceptación, dónde se garantiza y qué prueba automática lo demuestra. Las pruebas SQL están en `database/tests/` (`.\deploy.ps1 -Probar`) y las de la API en `api/tests/` (`npm test`).
@@ -157,6 +168,7 @@ Cada criterio de aceptación, dónde se garantiza y qué prueba automática lo d
 | RF-01 | Cambiar un ID en la URL o el body no expone datos de otro cliente | El usuario sale del token; cada SP filtra por él y un recurso ajeno responde igual que uno inexistente (404) | `direcciones.test.ts`, `carrito.test.ts`, `checkout.test.ts`, `pedidos.test.ts` |
 | RF-01 | Token vencido → 401; sin permiso → 403 | Middleware de autenticación y roles; los SPs vuelven a validar el rol | `auth.test.ts`, `usuarios.test.ts`, `pedidos.test.ts` |
 | RF-01 | Desactivar sin borrar | `Usuario.Activo`; desactivar revoca sus sesiones en la misma transacción | `008_Procedimientos_Seguridad.sql`, `usuarios.test.ts` |
+| RF-01 | El administrador gestiona al personal | Alta, edición (datos y rol) y estado de operadores y administradores; cambiar el rol revoca sus sesiones y nadie se quita su propio rol ni se desactiva | `008_Procedimientos_Seguridad.sql`, `usuarios.test.ts` |
 | RF-02 | SKU único, atributos, precio y existencia por variante | `UQ_Variante_SKU`, FK compuesta de atributos, `CK_Variante_*` | `002_Integridad_SeguridadCatalogo.sql`, `catalogo.test.ts` |
 | RF-02 | Búsqueda, filtros, orden y paginación | `SP_Tienda_*` con SQL estático y `OPTION (RECOMPILE)` | `011_Procedimientos_CatalogoTienda.sql`, `tienda.test.ts` |
 | RF-02 | Productos con ventas no se eliminan | No existe un SP de borrado: se desactivan y dejan de mostrarse | `010_Procedimientos_CatalogoProductos.sql`, `catalogo.test.ts` |
@@ -190,6 +202,18 @@ Cada criterio de aceptación, dónde se garantiza y qué prueba automática lo d
 | RF-09 | Consultable por administradores con filtro por módulo | `SP_Bitacora_Listar` con filtros y paginación | `020_Procedimientos_BitacoraConfiguracion.sql`, `reportes.test.ts` |
 | RF-09 | La bitácora no se puede modificar ni eliminar | Trigger `TR_Bitacora_Inmutable` (ni siquiera el dueño de la base puede alterarla) y la API sin permisos sobre tablas | `004_Integridad_CheckoutPedidos.sql`, `001_PermisosApi.sql` |
 
+**Frontend**. Las pruebas están en `frontend/src` (`npm test`, unitarias y de componentes) y `frontend/tests/e2e` (`npm run test:e2e`, cada prueba en escritorio y en móvil contra la API real).
+
+| Requisito | Cómo se cumple | Prueba |
+|---|---|---|
+| Rutas protegidas y menús según el rol | Una sola tabla de permisos (`sesion/permisos.ts`) genera las guardas y los menús. Cada sección exige su rol aunque se escriba la URL a mano, y la API vuelve a validarlo (403) | `sesion.test.tsx`, `base.spec.ts` (rutas y menús por rol) |
+| Formularios con validación y mensajes claros | React Hook Form + zod con las mismas reglas de la API, para avisar antes de enviar. El error que devuelve la API se coloca en su campo y lo demás arriba del formulario, siempre en español | `base.spec.ts`, `tienda.spec.ts`, `catalogo.spec.ts` |
+| Tablas con paginación, ordenamiento y filtros del servidor | `TablaDatos` con página, orden y filtros en la URL (se pueden compartir y sobreviven a recargar); la API pagina, ordena y filtra. Solo se ofrecen las columnas que la API sabe ordenar | `ui.test.tsx`, `ordenamiento.test.ts`, `tienda.spec.ts` |
+| Gráficas en el dashboard | Gráfica de barras de ventas por día del periodo elegido (hoy resaltado como parcial), con su tabla equivalente para lectores de pantalla; barras de proporción por categoría. Los indicadores de hoy se actualizan en vivo | `flujoSse.test.ts`, `reportes.test.ts` |
+| Estados de carga, vacío y error en todas las vistas | Esqueletos con la medida del contenido final, estado vacío con una acción y estado de error con "Reintentar" y la referencia de la petición; en el dashboard, cada sección por separado | `ui.test.tsx` |
+| Renovación transparente del token | Varias peticiones vencidas producen una sola renovación y todas se repiten; entre pestañas se coordinan con Web Locks | `cliente.test.ts`, `sesion.test.tsx`, `base.spec.ts` (sesión) |
+| Interfaz responsive | En móvil las tablas pasan a tarjetas con su propio selector de orden, el menú del panel se abre desde un botón y los formularios quedan en una columna | Las pruebas E2E corren en escritorio y en móvil (Pixel 7) |
+
 | Requisito no funcional | Cómo se cumple |
 |---|---|
 | Rendimiento (< 1 s con la semilla) | Ver [Rendimiento](#rendimiento): todos los listados y reportes por debajo de 0,15 s |
@@ -218,6 +242,8 @@ Donde el enunciado no especifica, esta es la postura tomada y su razón:
 - **Carrito**: no reserva existencia (la reserva empieza en el checkout); muestra siempre el precio vigente y el precio se congela al iniciar el checkout. Máximo 10 unidades por línea (`MAXIMO_UNIDADES_POR_LINEA`).
 - **Carrito abandonado**: con productos y sin actividad en 24 horas (`HORAS_CARRITO_ABANDONADO`), calculado al consultar (no es un estado guardado).
 - **Roles**: el personal (operador y administrador) no compra; el operador gestiona pedidos, devoluciones e inventario; el administrador, además, catálogo, precios, cupones, usuarios, parámetros, reportes y bitácora.
+- **Usuarios**: el administrador crea y edita operadores y administradores (datos y rol) y activa o desactiva cualquier cuenta. Los datos de un cliente los edita solo el propio cliente desde su perfil: aparecen en sus pedidos y direcciones, y cambiarlos sin que se entere afectaría su confianza. El correo no se edita: identifica la cuenta.
+- **Teléfonos**: de Guatemala, 8 dígitos (`5555-1234`). El campo solo admite dígitos, pone el guion y descarta el +502 si se pega con él; la API valida la misma regla.
 - **Direcciones**: hasta 5 por cliente, con municipios del catálogo oficial (el departamento se deduce del municipio).
 - **Parámetros configurables** sin reiniciar: reserva, carrito abandonado, IVA, sesiones, unidades por línea, plazo de devolución y existencia mínima, cada uno con su rango permitido.
 
@@ -353,7 +379,7 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Seguridad base**: helmet, CORS solo para los orígenes configurados, cuerpo JSON de hasta 100 KB, imágenes servidas sin listado de carpetas ni archivos ocultos.
 - **Imágenes de productos**: subida en dos pasos (primero los archivos, después se asocian sus rutas al producto). Cada archivo se identifica por su contenido real, no por la extensión ni el `Content-Type`; se aceptan JPEG, PNG y WebP de hasta 5 MB y se vuelven a codificar como WebP de hasta 1600 px, lo que elimina metadatos (p. ej. la ubicación GPS) y cualquier contenido escondido. Se guardan con nombre aleatorio. Al eliminar una imagen del producto se borra su archivo, y un proceso horario borra los archivos subidos que nunca se asociaron (más de 24 horas).
 - **Carrito sin obligar a iniciar sesión**: el comprador es el cliente del access token o el invitado de la cookie `shopcart_invitado` (token aleatorio de 256 bits; la base guarda su SHA-256; `httpOnly`, `SameSite=Strict`, 30 días), que se crea al agregar el primer producto. Un token vencido responde 401 en lugar de tratarse como invitado, y el personal no tiene carrito (403). Al iniciar sesión o registrarse, el carrito del invitado se fusiona con el de la cuenta.
-- **Edición concurrente**: las lecturas devuelven `versionFila` (base64) y las ediciones la reciben; si otro usuario guardó antes, 409 `EDICION_CONCURRENTE`. Un producto con todas sus variantes e imágenes se crea en una sola llamada y transacción (parámetros con valor de tabla).
+- **Edición concurrente**: las lecturas devuelven `versionFila` (base64) y las ediciones la reciben; si otro usuario guardó antes, 409 `EDICION_CONCURRENTE`. En usuarios se usa `fechaModificacion`, porque cada inicio de sesión y cada renovación cambian la `versionFila` sin que nadie haya editado al usuario. Un producto con todas sus variantes e imágenes se crea en una sola llamada y transacción (parámetros con valor de tabla).
 - **Resiliencia**: la API arranca aunque la base no esté lista (se conecta en la primera petición y `/health` responde 503 mientras tanto); ante un deadlock reintenta una vez solo las operaciones seguras de repetir; al detenerse (Ctrl+C o SIGTERM) termina las peticiones en curso y las tareas periódicas, y cierra el pool. En Windows, el modo de desarrollo (`npm run dev`, con recarga automática) termina el proceso sin ese cierre ordenado; con `npm start` sí ocurre.
 - **Tareas periódicas dentro de la API** (SQL Server Express no tiene SQL Agent): expiración de checkouts cada minuto (y una vez al arrancar) y limpieza de imágenes cada hora. Nunca se ejecutan encimadas consigo mismas, un error queda en el log sin detener las siguientes y cada pasada tiene un máximo de lotes, así el ciclo siempre termina.
 - **Ordenamiento del lado del servidor**: los listados del panel y "Mis pedidos" reciben `ordenarPor` y `direccion`. Cada listado tiene su lista blanca de columnas, validada en la API (400) y en el SP (`ORDENAMIENTO_INVALIDO`), con SQL estático: no hay SQL dinámico que inyectar. Siempre hay desempate por ID, para que las páginas no repitan ni salten registros, y los valores nulos quedan al final. Sin parámetros se conserva el orden de siempre. No se ofrecen columnas que obligarían a calcular una subconsulta por cada fila de la tabla (p. ej. artículos del pedido).
@@ -369,7 +395,12 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Seguridad**: redirección después del login solo a rutas internas; sin HTML inyectado (lo prohíbe el lint); la versión de producción se sirve con CSP (`script-src 'self'`), `X-Content-Type-Options` y `Referrer-Policy`, y las pruebas comprueban que no haya violaciones.
 - **Sin fugas ni consumo inútil**: cada consulta se cancela al salir de la pantalla y tiene tiempo máximo; el caché borra lo que no se usa a los 5 minutos; solo se reintentan lecturas con fallas pasajeras y con tope; los efectos limpian sus oyentes (el lint de hooks está en error). Cada layout se carga aparte: quien visita la tienda no descarga el panel.
 - **Componentes sin lógica de negocio**: las pantallas reciben datos de los hooks de su módulo (`features/*/hooks`) y solo dibujan; `ui/` no conoce la API ni la sesión. Bootstrap, ajustado con variables a los valores del diseño, es la base de botones, campos, tarjetas, tablas y rejilla.
-- **Accesibilidad**: enlace para saltar al contenido, foco visible, navegación por teclado y "reducir movimiento"; las pruebas de extremo a extremo pasan axe.
+- **Estado**: lo que viene del servidor vive en TanStack Query (caché por pantalla, invalidación después de cada cambio, la página anterior visible mientras llega la siguiente); lo que el usuario elige para ver (página, orden, filtros, pestaña, periodo del dashboard) vive en la URL, así se comparte, sobrevive a recargar y el botón Atrás funciona. Los formularios, en React Hook Form; no hay un estado global aparte.
+- **Componentes reutilizables** (`ui/`): `TablaDatos` (tabla en escritorio y tarjetas en móvil, con orden, paginación y estados), `Cajon` (panel lateral para crear y editar), `DialogoConfirmacion`, campos (`Campo`, `CampoContrasena`, `CampoTelefono`, `Selector`, `SelectorFechas`), `Insignia`, `Esqueleto`, estados vacío y de error, y avisos con acción (p. ej. "Deshacer").
+- **Tiempo real**: el dashboard escucha el flujo SSE de la API con `fetch` (para enviar el token), reconecta con espera creciente de 1 a 30 s y, si el token vence, lo renueva y se reconecta al instante. Cada venta actualiza los indicadores de hoy y los últimos pedidos sin recargar, y el resto del dashboard se vuelve a pedir.
+- **Sin saltos**: los esqueletos miden lo mismo que el contenido final, la línea de ayuda o error de cada campo tiene su espacio reservado, la barra de desplazamiento siempre ocupa su lugar y el logo y el perfil quedan en la misma posición en la tienda y el panel (lo comprueban las pruebas E2E).
+- **Carga**: cada pantalla se descarga al visitarla. La gráfica (Recharts) solo viaja con el dashboard (111 KB comprimido) y la tienda nunca descarga el código del panel (lo comprueban las pruebas E2E).
+- **Accesibilidad**: enlace para saltar al contenido, foco visible, navegación por teclado (también en el selector propio), etiquetas en cada control, estados que no dependen solo del color y "reducir movimiento". Las pruebas E2E pasan axe en el inicio, el ingreso, la página 404 y el panel.
 
 ### Stored procedures: contrato con la API
 
@@ -379,7 +410,7 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Parámetros más largos que la columna**: los textos se declaran con un carácter más que la columna; un valor demasiado largo se rechaza en lugar de guardarse recortado en silencio.
 - **Búsquedas**: filtros opcionales con SQL estático y `OPTION (RECOMPILE)`; los comodines de `LIKE` que escribe el usuario (`%`, `_`, `[`) se buscan como texto.
 - **Un solo conjunto de resultados por SP**: las listas hijas (los atributos de una categoría, los valores de un atributo) van en una columna JSON. La API lee una sola respuesta con la estructura ya anidada.
-- **Edición concurrente**: los formularios de edición envían la `VersionFila` (`ROWVERSION`) que cargaron; si otro usuario guardó cambios después, el SP responde `EDICION_CONCURRENTE` en lugar de sobrescribirlos.
+- **Edición concurrente**: los formularios de edición envían la `VersionFila` (`ROWVERSION`) que cargaron; si otro usuario guardó cambios después, el SP responde `EDICION_CONCURRENTE` en lugar de sobrescribirlos. En usuarios se compara `FechaModificacion`, que solo cambia con ediciones reales (el último acceso no cuenta).
 - **Bitácora sin ruido**: guardar los mismos valores, o repetir el estado actual, no es un error ni genera registro.
 
 ### Catálogo
@@ -401,7 +432,7 @@ Todas las funciones son *inline*: el optimizador las integra a la consulta que l
 - **Contraseñas**: la API las procesa con Argon2id; la base solo recibe y guarda el hash (un `CHECK` rechaza cualquier otro formato). El inicio de sesión no revela si un correo está registrado.
 - **Refresh token** opaco en cookie `httpOnly`; la base guarda solo su SHA-256. Se **rota en cada uso** y vence a los 7 días sin uso; aunque se use a diario, la sesión termina a los 30 días del inicio de sesión. Ambos valores están en `Parametro`, así la base es la única fuente de la regla.
 - **Robo de sesión**: si se presenta un token que ya fue rotado, se asume robado y se revoca la sesión completa. Excepción: dentro de los 30 segundos siguientes a la rotación se rechaza sin cerrar la sesión, porque es el caso legítimo de dos pestañas renovando a la vez. Dos renovaciones simultáneas se serializan con un bloqueo: una rota y la otra recibe `ROTACION_CONCURRENTE`.
-- **Desactivar un usuario** revoca todas sus sesiones en la misma transacción; el access token ya emitido deja de servir al vencer (máximo 15 minutos). Cambiar la contraseña cierra las demás sesiones.
+- **Desactivar un usuario o cambiarle el rol** revoca todas sus sesiones en la misma transacción; al volver a ingresar recibe un token con el rol nuevo. El access token ya emitido deja de servir al vencer (máximo 15 minutos). Cambiar la contraseña cierra las demás sesiones.
 - **Política de contraseña** (la valida la API, porque la base nunca la ve): de 8 a 128 caracteres, con al menos una letra y un número; sin exigir símbolos (guía NIST). El inicio de sesión responde igual, y con el mismo costo de verificación, si el correo no existe o la contraseña es incorrecta.
 - **Access token**: JWT HS256 de 15 minutos con lo mínimo (`sub`, `rol`), enviado en `Authorization: Bearer`. Vencido → 401 `TOKEN_EXPIRADO` (el frontend renueva); rol insuficiente → 403. El usuario siempre sale del token, nunca del cuerpo de la petición.
 - **Cookie del refresh token**: `httpOnly` (JavaScript no la lee), `SameSite=Strict` (no viaja en peticiones de otros sitios), solo para `/api/v1/auth` y `Secure` en producción.
@@ -549,6 +580,13 @@ Todas ocurren en transacciones que se revierten: no dejan datos. En `tests/proce
 - **Reportes**: que el resumen, los periodos y las categorías cuadren al centavo, la invalidación del caché, las exportaciones (se abre el Excel generado y se revisan sus valores) y el dashboard por SSE sobre HTTP real, incluido que al desconectarse no quede ningún oyente.
 - **Unitarias**: validación de tarjetas (Luhn, marcas, vencimiento), pasarela idempotente, caché, avisos, tareas programadas, centro SSE (latido, vencimiento del token, cliente lento) y que el Excel nunca escriba fórmulas.
 
+### Pruebas del frontend
+
+Pocas y enfocadas en lo que puede romperse sin que se note; lo demás lo cubren las pruebas de la API y de la base.
+
+- **Unitarias y de componentes** (`npm test`, vitest + Testing Library, 54 pruebas): la renovación del token (cinco peticiones vencidas hacen una sola renovación, una falla pasajera no cierra la sesión, los tokens nunca llegan al almacenamiento), la sesión y las guardas de ruta por rol, el cliente HTTP y sus errores, la tabla de datos y el selector con teclado, la selección de variantes, el lector de SSE con eventos cortados por la red, el resumen de cambios de la bitácora y el formato del teléfono.
+- **De extremo a extremo** (`npm run test:e2e`, Playwright, 31 pruebas en escritorio y en móvil): levantan la API contra `ShopCart_Pruebas` y la app compilada con sus cabeceras de producción. Cubren la sesión (renovar sin que se note, recargar a media renovación, cerrar sesión en otra pestaña), rutas y menús por rol, redirecciones abiertas, la CSP, accesibilidad con axe y los flujos completos: un invitado que compra con una tarjeta rechazada y luego aprobada y sigue su pedido; un cliente que busca, filtra, usa un cupón, une su carrito al ingresar y administra sus direcciones; un administrador que crea un producto con imagen y lo ve en la tienda; y un operador que lleva un pedido a entregado, registra una devolución y la ve en el kardex.
+
 ---
 
 ## Trade-offs y mejoras posibles
@@ -563,6 +601,8 @@ Decisiones conscientes de esta versión y lo que cambiaría al crecer:
 - **Imágenes en disco local**: en producción irían a un almacenamiento de objetos (S3, Azure Blob) detrás de un CDN; el almacenamiento ya está aislado en una sola clase.
 - **Cupones avanzados**: cupones asignados a clientes específicos o emitidos por reglas; el modelo actual ya identifica cada uso por cliente.
 - **Observabilidad**: los logs ya son JSON con `X-Request-Id`; el siguiente paso sería enviarlos a un colector y agregar métricas (tiempos por endpoint, cobros anulados, conexiones SSE).
+- **Perfil del personal**: operadores y administradores no tienen pantalla de perfil; sus datos los cambia otro administrador desde Usuarios y la contraseña aún no la pueden cambiar desde el panel. La API ya lo permite (`/perfil` y `/auth/cambiar-contrasena` sirven a cualquier usuario con sesión), así que agregarla solo requiere la pantalla.
+- **Pruebas del frontend acotadas**: se probó con pruebas automáticas lo que es crítico o fácil de romper sin notarlo (sesión, permisos, compra, flujos del panel); el resto de pantallas se verificó a mano en escritorio y móvil.
 
 ---
 

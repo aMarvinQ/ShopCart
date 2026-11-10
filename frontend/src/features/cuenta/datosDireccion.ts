@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { DatosDe } from '../../api/cliente';
+import { MENSAJE_TELEFONO, PATRON_TELEFONO } from '../../utils/telefono';
 
 export type Direccion = DatosDe<'get', '/direcciones'>[number];
 
@@ -15,12 +16,7 @@ export const esquemaAlias = texto('Ponle un nombre, como Casa.', 50);
 /* Los campos de una dirección: los usan la libreta y la compra como invitado. */
 export const esquemaCamposDireccion = z.object({
     nombreDestinatario: texto('Escribe quién recibe.', 150),
-    telefono: z
-        .string()
-        .trim()
-        .min(8, 'Debe tener al menos 8 dígitos.')
-        .max(20, 'Máximo 20 caracteres.')
-        .regex(/^[0-9+\- ]+$/, 'Usa solo dígitos, espacios, + y -.'),
+    telefono: z.string().trim().min(1, 'Escribe el teléfono.').regex(PATRON_TELEFONO, MENSAJE_TELEFONO),
     linea1: texto('Escribe la dirección.', 200),
     linea2: z.string().trim().max(200, 'Máximo 200 caracteres.'),
     idDepartamento: z.string().min(1, 'Elige el departamento.'),

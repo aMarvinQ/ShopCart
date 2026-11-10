@@ -1,5 +1,6 @@
 import { CircleAlert, Eye, EyeOff, Search, type LucideIcon } from 'lucide-react';
 import { useId, useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react';
+import { formatearTelefono } from '../utils/telefono';
 import estilos from './Campo.module.scss';
 
 export interface PropsMarcoCampo {
@@ -137,6 +138,28 @@ export function BotonAdorno({
         >
             <Icono size={20} aria-hidden="true" />
         </button>
+    );
+}
+
+/**
+    Teléfono de Guatemala: al escribir o pegar solo quedan los 8 dígitos, con el guion puesto (5555-1234).
+    Funciona con React Hook Form: el valor se corrige antes de que el formulario lo lea.
+*/
+export function CampoTelefono({ onChange, ...props }: Omit<PropsCampo, 'type' | 'inputMode' | 'maxLength'>) {
+    return (
+        <Campo
+            placeholder="5555-1234"
+            autoComplete="tel-national"
+            {...props}
+            type="tel"
+            inputMode="numeric"
+            // Cabe un número pegado con código de país (+502 5555 1234); al escribir nunca pasa de 9.
+            maxLength={14}
+            onChange={(evento) => {
+                evento.target.value = formatearTelefono(evento.target.value);
+                onChange?.(evento);
+            }}
+        />
     );
 }
 

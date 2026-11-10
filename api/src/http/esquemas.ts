@@ -36,11 +36,11 @@ export const esquemaId = z.object({
 /** "true"/"false" de la query string. */
 export const booleanoQuery = z.enum(['true', 'false']).transform((valor) => valor === 'true');
 
+/** Teléfono de Guatemala: 8 dígitos, con o sin guion en medio. */
 export const esquemaTelefono = z
     .string()
     .trim()
-    .max(20)
-    .regex(/^[0-9+\- ]+$/, 'solo dígitos, espacios, + y -')
+    .regex(/^\d{4}-?\d{4}$/, '8 dígitos, como 5555-1234')
     .openapi({ example: '5555-1234' });
 
 /**

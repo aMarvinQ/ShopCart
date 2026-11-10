@@ -1,6 +1,6 @@
 import { esErrorApi } from '../../api/errores';
 import { Boton } from '../../ui/Boton';
-import { Campo, CampoContrasena } from '../../ui/Campo';
+import { Campo, CampoContrasena, CampoTelefono } from '../../ui/Campo';
 import { Esqueleto } from '../../ui/Esqueleto';
 import { Alerta, EstadoError } from '../../ui/Mensajes';
 import { Tarjeta } from '../../ui/Navegacion';
@@ -52,10 +52,8 @@ function FormularioDatos({ perfil }: { perfil: DatosPerfil }) {
                         />
                     </div>
                     <div className="col-sm-6">
-                        <Campo
+                        <CampoTelefono
                             etiqueta="Teléfono (opcional)"
-                            type="tel"
-                            autoComplete="tel"
                             error={errors.telefono?.message}
                             {...register('telefono')}
                         />

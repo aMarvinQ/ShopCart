@@ -1,5 +1,5 @@
 import { useFormContext } from 'react-hook-form';
-import { Campo } from '../../ui/Campo';
+import { Campo, CampoTelefono } from '../../ui/Campo';
 import { Selector } from '../../ui/Selector';
 import type { DatosCamposDireccion } from './datosDireccion';
 import { useCamposUbicacion } from './hooks/useCamposUbicacion';
@@ -18,13 +18,7 @@ export function CamposDestinatario() {
                 error={errors.nombreDestinatario?.message}
                 {...register('nombreDestinatario')}
             />
-            <Campo
-                etiqueta="Teléfono"
-                type="tel"
-                autoComplete="tel"
-                error={errors.telefono?.message}
-                {...register('telefono')}
-            />
+            <CampoTelefono etiqueta="Teléfono" error={errors.telefono?.message} {...register('telefono')} />
         </>
     );
 }

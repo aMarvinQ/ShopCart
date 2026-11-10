@@ -1,6 +1,6 @@
 import { Link, Navigate } from 'react-router';
 import { Boton } from '../../ui/Boton';
-import { Campo, CampoContrasena } from '../../ui/Campo';
+import { Campo, CampoContrasena, CampoTelefono } from '../../ui/Campo';
 import { Alerta } from '../../ui/Mensajes';
 import { AYUDA_CONTRASENA } from './esquemas';
 import { useRegistro } from './hooks/useAcceso';
@@ -57,10 +57,8 @@ export default function Registro() {
                     error={errors.correo?.message}
                     {...register('correo')}
                 />
-                <Campo
+                <CampoTelefono
                     etiqueta="Teléfono (opcional)"
-                    type="tel"
-                    autoComplete="tel"
                     error={errors.telefono?.message}
                     {...register('telefono')}
                 />

@@ -13,7 +13,7 @@ const textoOpcional = (maximo: number) =>
 export const esquemaDatosDireccion = z.object({
     alias: z.string().trim().min(1).max(50).openapi({ example: 'Casa' }),
     nombreDestinatario: z.string().trim().min(1).max(150).openapi({ example: 'María López' }),
-    telefono: esquemaTelefono.min(8),
+    telefono: esquemaTelefono,
     linea1: z.string().trim().min(1).max(200).openapi({ example: '4a calle 5-20 zona 1' }),
     linea2: textoOpcional(200),
     idMunicipio: z

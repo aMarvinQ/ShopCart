@@ -1,5 +1,5 @@
 import { Boton } from '../../../ui/Boton';
-import { Campo, CampoContrasena } from '../../../ui/Campo';
+import { Campo, CampoContrasena, CampoTelefono } from '../../../ui/Campo';
 import { Alerta } from '../../../ui/Mensajes';
 import { AYUDA_CONTRASENA } from '../../cuenta/esquemas';
 import { ROLES_INTERNOS, useFormularioUsuario } from './hooks/useFormularioUsuario';
@@ -50,11 +50,9 @@ export function FormularioUsuario({
                 error={errors.correo?.message}
                 {...register('correo')}
             />
-            <Campo
+            <CampoTelefono
                 etiqueta="Teléfono (opcional)"
-                type="tel"
                 autoComplete="off"
-                maxLength={20}
                 error={errors.telefono?.message}
                 {...register('telefono')}
             />

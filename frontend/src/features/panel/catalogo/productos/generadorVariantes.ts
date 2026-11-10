@@ -35,7 +35,18 @@ export const precioValido = (precio: string) => /^\d{1,10}(\.\d{1,2})?$/.test(pr
 /** El SP guarda el SKU en mayúsculas: solo admite letras, dígitos y guiones, de 3 a 50 caracteres. */
 export const skuValido = (sku: string) => /^[A-Z0-9-]{3,50}$/.test(sku.trim().toUpperCase());
 
+/** Con lo que empiezan los SKU sugeridos de un producto: "Playera básica" → PLA. */
+export const prefijoSku = (nombre: string) => abreviar(nombre, 3) || 'SKU';
+
 /** "Playera básica" + Negro + M → PLA-NEG-M. Es una sugerencia: se puede cambiar. */
 export function skuSugerido(nombre: string, valores: readonly ValorElegible[]): string {
-    return [abreviar(nombre, 3) || 'SKU', ...valores.map((v) => abreviar(v.valor, 3))].filter(Boolean).join('-');
+    return [prefijoSku(nombre), ...valores.map((v) => abreviar(v.valor, 3))].filter(Boolean).join('-');
+}
+
+/** El SKU tal cual si está libre; si no, el primero libre de BASE-2, BASE-3... (el SKU es único en la tienda). */
+export function skuLibre(base: string, ocupados: ReadonlySet<string>): string {
+    if (!ocupados.has(base)) return base;
+    let numero = 2;
+    while (ocupados.has(`${base}-${String(numero)}`)) numero++;
+    return `${base}-${String(numero)}`;
 }

@@ -1,10 +1,14 @@
+import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { api } from '../../../../../api/cliente';
 import { useAtributosPanel, useNuevoValor } from '../../hooks/useAtributosPanel';
 import { useDetalleCategoria } from '../../hooks/useCategoriasPanel';
 import {
     MAXIMO_VARIANTES,
     combinaciones,
     precioValido,
+    prefijoSku,
+    skuLibre,
     skuSugerido,
     skuValido,
     totalCombinaciones,
@@ -26,6 +30,24 @@ export interface VarianteExistente {
 const SIN_VARIANTES: readonly VarianteExistente[] = [];
 const existenciaValida = (texto: string) => /^\d{1,7}$/.test(texto.trim()) && Number(texto) <= 1_000_000;
 const claveDeValores = (ids: readonly number[]) => [...ids].sort((a, b) => a - b).join('-');
+const POR_PAGINA = 100;
+
+/**
+ * SKU de la tienda que empiezan como los sugeridos para este producto (activos o no: el SKU es único en
+ * toda la tabla). Se piden todas las páginas.
+ */
+async function skusConPrefijo(prefijo: string, signal: AbortSignal) {
+    const skus: string[] = [];
+    for (let pagina = 1; ; pagina++) {
+        const { data, meta } = await api.get('/inventario/existencias', {
+            query: { pagina, tamanoPagina: POR_PAGINA, busqueda: prefijo, ordenarPor: 'SKU', direccion: 'ASC' },
+            signal,
+        });
+        // La búsqueda también halla nombres y SKU que solo contienen el prefijo: se quedan los que empiezan así.
+        skus.push(...data.map((v) => v.sku).filter((sku) => sku.startsWith(prefijo)));
+        if (pagina * POR_PAGINA >= meta.totalRegistros) return skus;
+    }
+}
 
 /**
  * Marca valores y arma una fila por combinación, con SKU sugerido, y precio y existencia comunes que se
@@ -47,6 +69,13 @@ export function useGeneradorVariantes(
     const categoria = useDetalleCategoria(idCategoria);
     const { consulta: consultaAtributos } = useAtributosPanel();
     const nuevoValor = useNuevoValor();
+    const prefijo = prefijoSku(nombre);
+    const enLaTienda = useQuery({
+        queryKey: ['panel', 'catalogo', 'skus', prefijo],
+        queryFn: ({ signal }) => skusConPrefijo(prefijo, signal),
+        enabled: idCategoria !== null,
+        select: (skus) => new Set(skus),
+    });
 
     /* Atributos activos de la categoría, con sus valores activos, en el orden de sus selectores. */
     const atributos = useMemo(() => {
@@ -71,28 +100,34 @@ export function useGeneradorVariantes(
     const faltaValor = atributos.some((_, i) => (grupos[i]?.length ?? 0) === 0);
     const demasiadas = total > MAXIMO_VARIANTES;
     const yaExistentes = new Set(existentes.map((v) => claveDeValores(v.atributos.map((a) => a.idAtributoValor))));
-    const skusExistentes = new Set(existentes.map((v) => v.sku));
+    const skusTomados = new Set([...existentes.map((v) => v.sku), ...(enLaTienda.data ?? [])]);
 
-    const filas = (faltaValor || demasiadas || idCategoria === null || categoria.isPending ? [] : combinaciones(grupos))
+    const vigentes = (
+        faltaValor || demasiadas || idCategoria === null || categoria.isPending ? [] : combinaciones(grupos)
+    )
         .filter((c) => !yaExistentes.has(claveDeValores(c.valores.map((v) => v.idAtributoValor))))
-        .filter((c) => ediciones[c.clave]?.quitada !== true)
-        .map((c) => {
-            const edicion = ediciones[c.clave];
-            return {
-                clave: c.clave,
-                valores: c.valores,
-                sku: edicion?.sku ?? skuSugerido(nombre, c.valores),
-                precio: edicion?.precio ?? precioBase,
-                existencia: edicion?.existencia ?? (existenciaBase || '0'),
-            };
-        });
+        .filter((c) => ediciones[c.clave]?.quitada !== true);
+    /* La sugerencia evita los SKU de la tienda, los escritos a mano y los ya sugeridos a otra fila
+       (Negro y Negrita darían el mismo). Lo escrito a mano no se toca: si choca, se marca el error. */
+    const ocupados = new Set([...skusTomados, ...vigentes.flatMap((c) => ediciones[c.clave]?.sku?.trim() ?? [])]);
+    const filas = vigentes.map((c) => {
+        const edicion = ediciones[c.clave];
+        const sku = edicion?.sku ?? skuLibre(skuSugerido(nombre, c.valores), ocupados);
+        ocupados.add(sku.trim());
+        return {
+            clave: c.clave,
+            valores: c.valores,
+            sku,
+            precio: edicion?.precio ?? precioBase,
+            existencia: edicion?.existencia ?? (existenciaBase || '0'),
+        };
+    });
 
     const errorSku = (sku: string) => {
         const limpio = sku.trim();
         if (!skuValido(limpio)) return '3 a 50 letras, números o guiones.';
-        return skusExistentes.has(limpio) || filas.filter((f) => f.sku.trim() === limpio).length > 1
-            ? 'SKU repetido.'
-            : undefined;
+        if (skusTomados.has(limpio)) return 'Ese SKU ya existe.';
+        return filas.filter((f) => f.sku.trim() === limpio).length > 1 ? 'SKU repetido.' : undefined;
     };
     const errorPrecio = (precio: string) => (precioValido(precio) ? undefined : 'Monto mayor que 0.');
     const errorExistencia = (texto: string) => (existenciaValida(texto) ? undefined : 'De 0 a 1,000,000.');

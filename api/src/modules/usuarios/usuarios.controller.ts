@@ -3,6 +3,7 @@ import { esquemaId } from '../../http/esquemas.js';
 import { responder, validar } from '../../http/respuesta.js';
 import { usuarioDe } from '../../middlewares/autenticacion.js';
 import {
+    esquemaActualizarInterno,
     esquemaActualizarPerfil,
     esquemaCambiarEstado,
     esquemaCrearInterno,
@@ -30,6 +31,12 @@ export async function crearInterno(req: Request, res: Response): Promise<void> {
     responder(res, await servicio.crearInterno(usuarioDe(req).id, validar(esquemaCrearInterno, req.body)), {
         estado: 201,
     });
+}
+
+export async function actualizarInterno(req: Request, res: Response): Promise<void> {
+    const { id } = validar(esquemaId, req.params);
+    const datos = validar(esquemaActualizarInterno, req.body);
+    responder(res, await servicio.actualizarInterno(usuarioDe(req).id, id, datos));
 }
 
 export async function cambiarEstado(req: Request, res: Response): Promise<void> {

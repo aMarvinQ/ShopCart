@@ -8025,7 +8025,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data: components["schemas"]["Usuario"][];
+                            data: components["schemas"]["UsuarioEditable"][];
                             meta: {
                                 pagina: number;
                                 tamanoPagina: number;
@@ -8115,7 +8115,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data: components["schemas"]["Usuario"];
+                            data: components["schemas"]["UsuarioEditable"];
                         };
                     };
                 };
@@ -8166,6 +8166,123 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/usuarios/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Editar un operador o administrador
+         * @description Nombre, apellido, teléfono y rol. El correo no se modifica y los clientes editan su propio perfil. Cambiar el rol revoca sus sesiones. Un administrador no puede quitarse su propio rol. Envía la fechaModificacion de la última lectura: si otro usuario guardó cambios después, responde 409 EDICION_CONCURRENTE (iniciar sesión no cuenta como cambio).
+         *
+         *     **Roles:** ADMIN.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @example Pedro */
+                        nombre: string;
+                        /** @example Álvarez */
+                        apellido: string;
+                        /** @example 5555-1234 */
+                        telefono?: string | null;
+                        /** @enum {string} */
+                        rol: "OPERADOR" | "ADMIN";
+                        /**
+                         * Format: date-time
+                         * @description La fechaModificacion de la última lectura (control de edición concurrente).
+                         */
+                        fechaModificacion: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Éxito */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["UsuarioEditado"];
+                        };
+                    };
+                };
+                /** @description Datos de entrada inválidos */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Sin sesión o token inválido o vencido */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Sin permiso para la acción */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No encontrado */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Conflicto con el estado actual */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Regla de negocio no cumplida */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8973,8 +9090,15 @@ export interface components {
             ultimoAcceso: string | null;
             fechaCreacion: string;
         };
+        UsuarioEditable: components["schemas"]["Usuario"] & {
+            /** @description Enviar en la siguiente edición (control de edición concurrente). */
+            fechaModificacion: string;
+        };
         Usuario: components["schemas"]["Perfil"] & {
             activo: boolean;
+        };
+        UsuarioEditado: components["schemas"]["UsuarioEditable"] & {
+            sesionesRevocadas: number;
         };
         UsuarioEstado: components["schemas"]["Usuario"] & {
             estadoCambiado: boolean;

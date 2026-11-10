@@ -129,7 +129,7 @@ Base: `/api/v1`. Respuestas `{ data, meta? }`; errores `{ error: { codigo, mensa
 | Módulo | Endpoints | Quién |
 |---|---|---|
 | Autenticación | `POST /auth/registro`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/cambiar-contrasena` | Público (cambiar contraseña: con sesión) |
-| Perfil y usuarios | `GET/PUT /perfil`; `GET/POST /usuarios`, `PATCH /usuarios/{id}/estado` | Con sesión; usuarios: ADMIN |
+| Perfil y usuarios | `GET/PUT /perfil`; `GET/POST /usuarios`, `PUT /usuarios/{id}`, `PATCH /usuarios/{id}/estado` | Con sesión; usuarios: ADMIN |
 | Direcciones | `GET/POST /direcciones`, `PUT/DELETE /direcciones/{id}`, `POST /direcciones/{id}/predeterminada` | CLIENTE (solo las suyas) |
 | Tienda | `GET /tienda/categorias`, `/tienda/productos` (búsqueda, filtros, orden y paginación), `/tienda/productos/{slug}`, `/tienda/metodos-envio`, `/departamentos`, `/departamentos/{id}/municipios` | Público |
 | Catálogo | Categorías, atributos y valores, productos con variantes, precios con historial e imágenes (29 endpoints) | ADMIN |

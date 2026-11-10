@@ -160,9 +160,11 @@ No vienen de un SP: los genera la API antes de llegar a la base o al no poder us
 | 51101 | `CORREO_REGISTRADO` | Ya existe una cuenta con ese correo (sin distinguir mayúsculas). |
 | 51102 | `USUARIO_SISTEMA_PROTEGIDO` | Intento de modificar el usuario de sistema. |
 | 51103 | `AUTODESACTIVACION_NO_PERMITIDA` | Un administrador intentó desactivarse a sí mismo. |
+| 51104 | `USUARIO_NO_INTERNO` | Se intenta editar desde el panel a un cliente: solo se editan operadores y administradores (el cliente edita su propio perfil). |
+| 51105 | `AUTOCAMBIO_ROL_NO_PERMITIDO` | Un administrador intentó quitarse su propio rol. |
 | 51201 | `NOMBRE_REGISTRADO` | Ya existe una categoría, atributo o método de envío con ese nombre, o el atributo ya tiene ese valor (sin distinguir mayúsculas ni tildes). |
 | 51202 | `SLUG_REGISTRADO` | Ya existe una categoría o un producto con ese slug. |
-| 51203 | `EDICION_CONCURRENTE` | Otro usuario guardó cambios después de que se cargó el formulario (`VersionFila` distinta). |
+| 51203 | `EDICION_CONCURRENTE` | Otro usuario guardó cambios después de que se cargó el formulario (`VersionFila` distinta; en usuarios, `FechaModificacion`, porque cada inicio de sesión cambia la `VersionFila`). |
 | 51204 | `ATRIBUTO_EN_USO` | Se intenta quitar de una categoría un atributo que usa alguna de sus variantes. |
 | 51205 | `SKU_REGISTRADO` | Un SKU está repetido en la lista o ya lo usa otra variante (sin distinguir mayúsculas). |
 | 51206 | `COMBINACION_REPETIDA` | Dos variantes del producto tienen la misma combinación de valores, aunque una esté desactivada (se reactiva en lugar de crearla de nuevo). |

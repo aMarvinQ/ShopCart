@@ -56,6 +56,7 @@ describe('documentación (D68)', () => {
             expect.arrayContaining([
                 '/api/v1/auth/login',
                 '/api/v1/perfil',
+                '/api/v1/usuarios/{id}',
                 '/api/v1/usuarios/{id}/estado',
                 '/api/v1/direcciones/{id}',
                 '/api/v1/checkout',

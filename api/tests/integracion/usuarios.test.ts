@@ -85,6 +85,35 @@ describe('administración de usuarios', () => {
         await request(app).post('/api/v1/auth/refresh').set('Cookie', operador.cookie).expect(401);
     });
 
+    it('edita un operador que inició sesión: cambiar el rol revoca sus sesiones; una lectura vieja da 409', async () => {
+        const correo = correoUnico('editado');
+        const creado = await request(app)
+            .post('/api/v1/usuarios')
+            .set('Authorization', `Bearer ${admin.token}`)
+            .send({ correo, contrasena: 'Operador2026', nombre: 'Ana', apellido: 'Ruiz', rol: 'OPERADOR' })
+            .expect(201);
+        const datos = (creado.body as { data: { idUsuario: number; fechaModificacion: string } }).data;
+        const { idUsuario, fechaModificacion } = datos;
+        const operador = await iniciarSesion(app, correo, 'Operador2026');
+
+        const editado = await request(app)
+            .put(`/api/v1/usuarios/${idUsuario}`)
+            .set('Authorization', `Bearer ${admin.token}`)
+            .send({ nombre: 'Ana María', apellido: 'Ruiz', telefono: '5555-0101', rol: 'ADMIN', fechaModificacion })
+            .expect(200);
+        expect(editado.body).toMatchObject({
+            data: { correo, nombre: 'Ana María', telefono: '5555-0101', codigoRol: 'ADMIN', sesionesRevocadas: 1 },
+        });
+        await request(app).post('/api/v1/auth/refresh').set('Cookie', operador.cookie).expect(401);
+
+        const concurrente = await request(app)
+            .put(`/api/v1/usuarios/${idUsuario}`)
+            .set('Authorization', `Bearer ${admin.token}`)
+            .send({ nombre: 'Ana', apellido: 'Ruiz', rol: 'OPERADOR', fechaModificacion })
+            .expect(409);
+        expect(codigo(concurrente)).toBe('EDICION_CONCURRENTE');
+    });
+
     it('un administrador no puede desactivarse a sí mismo (409)', async () => {
         const respuesta = await request(app)
             .patch(`/api/v1/usuarios/${admin.idUsuario}/estado`)

@@ -26,6 +26,9 @@ describe('detalle de un cambio de la bitácora', () => {
 
     it('nombra el registro con el dato más reconocible', () => {
         expect(nombreRegistro(null, { idVariante: 1, sku: 'PRU-GRI-S', precio: 21 })).toBe('PRU-GRI-S');
+        expect(nombreRegistro({ nombre: 'Ana', apellido: 'Ruiz' }, { nombre: 'Ana', telefono: '5555' })).toBe(
+            'Ana Ruiz',
+        );
         expect(nombreRegistro({ activo: true }, { activo: false })).toBeNull();
     });
 });

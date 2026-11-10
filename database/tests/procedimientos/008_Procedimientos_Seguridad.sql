@@ -15,7 +15,7 @@ SET XACT_ABORT OFF;
 GO
 
 -- Permite ejecutar el script varias veces en la misma conexión (p. ej. en SSMS).
-DROP TABLE IF EXISTS #Contexto, #Base, #Usuario, #Credenciales, #Sesion, #Rotacion, #Conteo, #Perfil, #Detalle, #Estado;
+DROP TABLE IF EXISTS #Contexto, #Base, #Usuario, #Credenciales, #Sesion, #Rotacion, #Conteo, #Perfil, #Detalle, #Edicion, #Estado;
 DROP PROCEDURE IF EXISTS #Verificar;
 DROP PROCEDURE IF EXISTS #Preparar;
 DROP PROCEDURE IF EXISTS #IniciarSesion;
@@ -40,7 +40,10 @@ CREATE TABLE #Perfil (IDUsuario INT, Correo NVARCHAR(254), Nombre NVARCHAR(100),
                       UltimoAcceso DATETIME2(3), FechaCreacion DATETIME2(3));
 CREATE TABLE #Detalle (IDUsuario INT, Correo NVARCHAR(254), Nombre NVARCHAR(100), Apellido NVARCHAR(100),
                        Telefono VARCHAR(20), CodigoRol VARCHAR(20), NombreRol NVARCHAR(50), Activo BIT,
-                       UltimoAcceso DATETIME2(3), FechaCreacion DATETIME2(3));
+                       UltimoAcceso DATETIME2(3), FechaCreacion DATETIME2(3), FechaModificacion DATETIME2(3));
+CREATE TABLE #Edicion (IDUsuario INT, Correo NVARCHAR(254), Nombre NVARCHAR(100), Apellido NVARCHAR(100),
+                       Telefono VARCHAR(20), CodigoRol VARCHAR(20), NombreRol NVARCHAR(50), Activo BIT,
+                       UltimoAcceso DATETIME2(3), FechaCreacion DATETIME2(3), FechaModificacion DATETIME2(3), SesionesRevocadas INT);
 CREATE TABLE #Estado (IDUsuario INT, Correo NVARCHAR(254), Nombre NVARCHAR(100), Apellido NVARCHAR(100),
                       Telefono VARCHAR(20), CodigoRol VARCHAR(20), NombreRol NVARCHAR(50), Activo BIT,
                       UltimoAcceso DATETIME2(3), FechaCreacion DATETIME2(3), EstadoCambiado BIT, SesionesRevocadas INT);
@@ -628,6 +631,111 @@ BEGIN
     IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
 
     SET @Descripcion = N'Crear interno: ' + @Descripcion;
+    SET @Texto = CAST(@Esperado AS NVARCHAR(10));
+    SET @Obtenido = CAST(@Error AS NVARCHAR(10));
+    EXEC #Verificar @Descripcion, @Texto, @Obtenido;
+    SET @Orden += 1;
+END;
+
+/* === SP_Usuarios_ActualizarInterno ======================================================== */
+DECLARE @Version DATETIME2(3);
+BEGIN TRANSACTION;
+EXEC #Preparar;
+SELECT @IDAdmin = IDAdmin, @IDOperador = IDOperador FROM #Base;
+-- Una fecha anterior conocida: la edición la cambia aunque ocurra en el mismo milisegundo que el alta.
+UPDATE dbo.Usuario SET FechaModificacion = DATEADD(DAY, -1, FechaModificacion) WHERE IDUsuario = @IDOperador;
+SELECT @Version = FechaModificacion FROM dbo.Usuario WHERE IDUsuario = @IDOperador;
+-- Iniciar sesión actualiza UltimoAcceso, pero no es una edición: la fecha leída antes sigue sirviendo.
+EXEC #IniciarSesion @IDOperador, @TokenA;
+EXEC #IniciarSesion @IDOperador, @TokenB;
+
+-- Solo datos: no toca las sesiones.
+EXECUTE AS USER = @Api;
+INSERT INTO #Edicion EXEC dbo.SP_Usuarios_ActualizarInterno
+    @IDAdmin, @IDOperador, N' Olga ', N' Ruiz ', N' 5555-9999 ', 'OPERADOR', @Version;
+REVERT;
+SET @Texto = (SELECT CONCAT(Nombre, N'|', Apellido, N'|', Telefono, N'|', CodigoRol, N'|', SesionesRevocadas, N'|',
+                            CASE WHEN FechaModificacion > @Version THEN N'fecha nueva' END) FROM #Edicion);
+EXEC #Verificar N'Editar interno: aunque inició sesión, guarda los datos limpios, no revoca sesiones y cambia la fecha',
+     N'Olga|Ruiz|5555-9999|OPERADOR|0|fecha nueva', @Texto;
+
+-- Cambio de rol: revoca sus sesiones.
+SELECT @Version = FechaModificacion FROM #Edicion;
+DELETE FROM #Edicion;
+EXECUTE AS USER = @Api;
+INSERT INTO #Edicion EXEC dbo.SP_Usuarios_ActualizarInterno @IDAdmin, @IDOperador, N'Olga', N'Ruiz', N'5555-9999', 'admin', @Version;
+REVERT;
+SET @Texto = (SELECT CONCAT(CodigoRol, N'|', SesionesRevocadas) FROM #Edicion);
+EXEC #Verificar N'Editar interno: cambiar el rol revoca sus 2 sesiones', N'ADMIN|2', @Texto;
+SET @Texto = (SELECT CONCAT(COUNT(*), N'|', MIN(MotivoRevocacion)) FROM dbo.RefreshToken WHERE IDUsuario = @IDOperador);
+EXEC #Verificar N'Editar interno: las sesiones quedan revocadas por CAMBIO_ROL', N'2|CAMBIO_ROL', @Texto;
+EXEC #Rotar @TokenA, @TokenC, @Resultado OUTPUT;
+EXEC #Verificar N'Editar interno: la sesión anterior al cambio de rol ya no rota', N'SESION_INVALIDA', @Resultado;
+
+-- Los mismos datos otra vez: no es un cambio.
+SELECT @Version = FechaModificacion FROM #Edicion;
+DELETE FROM #Edicion;
+EXECUTE AS USER = @Api;
+INSERT INTO #Edicion EXEC dbo.SP_Usuarios_ActualizarInterno @IDAdmin, @IDOperador, N'Olga', N'Ruiz', N'5555-9999', 'ADMIN', @Version;
+REVERT;
+SET @Texto = (SELECT CONCAT(SesionesRevocadas, N'|', CASE WHEN FechaModificacion = @Version THEN N'misma fecha' END) FROM #Edicion);
+EXEC #Verificar N'Editar interno: repetir los datos no modifica nada', N'0|misma fecha', @Texto;
+SET @Texto = (SELECT STRING_AGG(CONCAT(b.Accion, N' ', JSON_VALUE(b.ValorAnterior, '$.Nombre'), N'/',
+                                       JSON_VALUE(b.ValorAnterior, '$.CodigoRol'), N'→', JSON_VALUE(b.ValorNuevo, '$.Nombre'),
+                                       N'/', JSON_VALUE(b.ValorNuevo, '$.CodigoRol')), N' · ')
+                     WITHIN GROUP (ORDER BY b.IDBitacora)
+              FROM dbo.Bitacora AS b
+              WHERE b.Modulo = 'USUARIOS' AND b.IDEntidad = CAST(@IDOperador AS VARCHAR(50)) AND b.IDUsuario = @IDAdmin);
+EXEC #Verificar N'Editar interno: bitácora MODIFICAR de cada cambio (la repetición no se registra)',
+     N'MODIFICAR Operador/OPERADOR→Olga/OPERADOR · MODIFICAR Olga/OPERADOR→Olga/ADMIN', @Texto;
+ROLLBACK TRANSACTION;
+
+DECLARE @Ediciones TABLE (Orden INT IDENTITY, Descripcion NVARCHAR(200), Actor VARCHAR(20), Objetivo VARCHAR(20),
+                          Nombre NVARCHAR(101), CodigoRol VARCHAR(20), Version VARCHAR(10), Esperado INT);
+INSERT INTO @Ediciones (Descripcion, Actor, Objetivo, Nombre, CodigoRol, Version, Esperado) VALUES
+    (N'un operador no puede editar usuarios → PERMISO_DENEGADO',      'OPERADOR', 'ADMIN',       N'Ana', 'ADMIN',    'ACTUAL', 50201),
+    (N'usuario inexistente → USUARIO_NO_ENCONTRADO',                  'ADMIN',    'INEXISTENTE', N'Ana', 'OPERADOR', 'ACTUAL', 50101),
+    (N'usuario de sistema → USUARIO_SISTEMA_PROTEGIDO',               'ADMIN',    'SISTEMA',     N'Ana', 'ADMIN',    'ACTUAL', 51102),
+    (N'un cliente no se edita aquí → USUARIO_NO_INTERNO',             'ADMIN',    'CLIENTE',     N'Ana', 'OPERADOR', 'ACTUAL', 51104),
+    (N'otro lo modificó después → EDICION_CONCURRENTE',               'ADMIN',    'OPERADOR',    N'Ana', 'OPERADOR', 'VIEJA',  51203),
+    (N'el admin no puede quitarse su rol → AUTOCAMBIO_ROL_NO_PERMITIDO', 'ADMIN', 'ADMIN',       N'Ana', 'OPERADOR', 'ACTUAL', 51105),
+    (N'rol CLIENTE → ROL_INVALIDO',                                   'ADMIN',    'OPERADOR',    N'Ana', 'CLIENTE',  'ACTUAL', 50005),
+    (N'nombre vacío → NOMBRE_INVALIDO',                               'ADMIN',    'OPERADOR',    N' ',   'OPERADOR', 'ACTUAL', 50003),
+    (N'sin fecha de modificación → PARAMETRO_REQUERIDO',              'ADMIN',    'OPERADOR',    N'Ana', 'OPERADOR', NULL,     50006);
+
+SET @Orden = 1;
+DECLARE @VersionCaso VARCHAR(10), @NombreCaso NVARCHAR(101), @ObjetivoEdicion VARCHAR(20), @IDObjetivoEdicion INT;
+WHILE @Orden <= (SELECT MAX(Orden) FROM @Ediciones)
+BEGIN
+    SELECT @Descripcion = Descripcion, @Actor = Actor, @ObjetivoEdicion = Objetivo, @NombreCaso = Nombre,
+           @CodigoRol = CodigoRol, @VersionCaso = Version, @Esperado = Esperado
+    FROM @Ediciones WHERE Orden = @Orden;
+
+    BEGIN TRANSACTION;
+    EXEC #Preparar;
+    SELECT @IDActor = CASE @Actor WHEN 'OPERADOR' THEN IDOperador ELSE IDAdmin END,
+           @IDObjetivoEdicion = CASE @ObjetivoEdicion WHEN 'CLIENTE' THEN IDCliente WHEN 'SISTEMA' THEN IDSistema
+                                               WHEN 'ADMIN' THEN IDAdmin WHEN 'OPERADOR' THEN IDOperador ELSE -1 END
+    FROM #Base;
+    SET @Version = ISNULL((SELECT FechaModificacion FROM dbo.Usuario WHERE IDUsuario = @IDObjetivoEdicion), SYSUTCDATETIME());
+    IF @VersionCaso = 'VIEJA'
+        UPDATE dbo.Usuario SET FechaModificacion = DATEADD(SECOND, 1, FechaModificacion) WHERE IDUsuario = @IDObjetivoEdicion;
+    IF @VersionCaso IS NULL SET @Version = NULL;
+
+    SET @Error = 0;
+    BEGIN TRY
+        EXECUTE AS USER = @Api;
+        EXEC dbo.SP_Usuarios_ActualizarInterno @IDActor, @IDObjetivoEdicion, @NombreCaso, N'Prueba', NULL, @CodigoRol, @Version;
+        REVERT;
+    END TRY
+    BEGIN CATCH
+        SET @Error = ERROR_NUMBER();
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        REVERT;
+    END CATCH;
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+
+    SET @Descripcion = N'Editar interno: ' + @Descripcion;
     SET @Texto = CAST(@Esperado AS NVARCHAR(10));
     SET @Obtenido = CAST(@Error AS NVARCHAR(10));
     EXEC #Verificar @Descripcion, @Texto, @Obtenido;

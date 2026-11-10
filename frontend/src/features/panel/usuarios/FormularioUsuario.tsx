@@ -2,14 +2,22 @@ import { Boton } from '../../../ui/Boton';
 import { Campo, CampoContrasena } from '../../../ui/Campo';
 import { Alerta } from '../../../ui/Mensajes';
 import { AYUDA_CONTRASENA } from '../../cuenta/esquemas';
-import { ROLES_INTERNOS, useCrearUsuario } from './hooks/useCrearUsuario';
+import { ROLES_INTERNOS, useFormularioUsuario } from './hooks/useFormularioUsuario';
+import type { FilaUsuario } from './hooks/useUsuariosPanel';
 import estilos from './usuarios.module.scss';
 
-export function FormularioUsuario({ alTerminar }: { alTerminar: () => void }) {
-    const { formulario, errorGeneral, creando, enviar } = useCrearUsuario(alTerminar);
+/** Alta de un usuario del panel o, con `usuario`, edición: el correo se ve pero no cambia, y sin contraseña. */
+export function FormularioUsuario({
+    usuario = null,
+    alTerminar,
+}: {
+    usuario?: FilaUsuario | null;
+    alTerminar: () => void;
+}) {
+    const { formulario, editando, errorGeneral, guardando, enviar } = useFormularioUsuario(usuario, alTerminar);
     const {
         register,
-        formState: { errors },
+        formState: { errors, isDirty },
     } = formulario;
 
     return (
@@ -35,7 +43,10 @@ export function FormularioUsuario({ alTerminar }: { alTerminar: () => void }) {
                 etiqueta="Correo de trabajo"
                 type="email"
                 autoComplete="off"
-                ayuda="Con este correo ingresará al panel."
+                readOnly={editando}
+                ayuda={
+                    editando ? 'El correo no se cambia: identifica la cuenta.' : 'Con este correo ingresará al panel.'
+                }
                 error={errors.correo?.message}
                 {...register('correo')}
             />
@@ -47,14 +58,16 @@ export function FormularioUsuario({ alTerminar }: { alTerminar: () => void }) {
                 error={errors.telefono?.message}
                 {...register('telefono')}
             />
-            <CampoContrasena
-                etiqueta="Contraseña inicial"
-                autoComplete="new-password"
-                ayuda={`${AYUDA_CONTRASENA} Compártela por un medio seguro.`}
-                error={errors.contrasena?.message}
-                {...register('contrasena')}
-            />
-            <fieldset className={estilos.roles}>
+            {!editando && (
+                <CampoContrasena
+                    etiqueta="Contraseña inicial"
+                    autoComplete="new-password"
+                    ayuda={`${AYUDA_CONTRASENA} Compártela por un medio seguro.`}
+                    error={errors.contrasena?.message}
+                    {...register('contrasena')}
+                />
+            )}
+            <fieldset className={estilos.roles} aria-describedby={editando ? 'aviso-rol' : undefined}>
                 <legend>Rol</legend>
                 {ROLES_INTERNOS.map(({ valor, etiqueta, alcance }) => (
                     <label key={valor} className={estilos.opcionRol}>
@@ -65,9 +78,14 @@ export function FormularioUsuario({ alTerminar }: { alTerminar: () => void }) {
                         </span>
                     </label>
                 ))}
+                {editando && (
+                    <small id="aviso-rol" className={estilos.detalle}>
+                        Si cambias el rol se cerrarán sus sesiones abiertas: al volver a ingresar tendrá el nuevo.
+                    </small>
+                )}
             </fieldset>
-            <Boton type="submit" anchoCompleto cargando={creando}>
-                Crear usuario
+            <Boton type="submit" anchoCompleto cargando={guardando} disabled={editando && !isDirty}>
+                {editando ? 'Guardar cambios' : 'Crear usuario'}
             </Boton>
         </form>
     );

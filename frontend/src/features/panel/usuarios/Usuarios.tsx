@@ -1,5 +1,16 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import { CircleCheck, CirclePause, Headset, ShieldCheck, User, UserCheck, UserPlus, Users, UserX } from 'lucide-react';
+import {
+    CircleCheck,
+    CirclePause,
+    Headset,
+    Pencil,
+    ShieldCheck,
+    User,
+    UserCheck,
+    UserPlus,
+    Users,
+    UserX,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { esErrorApi } from '../../../api/errores';
 import { Boton } from '../../../ui/Boton';
@@ -8,6 +19,7 @@ import { Selector } from '../../../ui/Selector';
 import { BuscadorTabla, TablaDatos } from '../../../ui/TablaDatos';
 import { fechaHora } from '../../../utils/formato';
 import { FormularioUsuario } from './FormularioUsuario';
+import { esEditable } from './hooks/useFormularioUsuario';
 import {
     inicialesDe,
     nombreCompleto,
@@ -30,7 +42,9 @@ function Persona({ usuario, propio }: { usuario: FilaUsuario; propio: boolean })
                     {nombreCompleto(usuario)}
                     {propio && ' (tú)'}
                 </strong>
-                {usuario.telefono && <small className={estilos.detalle}>{usuario.telefono}</small>}
+                {usuario.telefono && (
+                    <small className={`${estilos.detalle} ${estilos.telefono}`}>{usuario.telefono}</small>
+                )}
             </span>
         </span>
     );
@@ -60,33 +74,62 @@ const ultimoAcceso = (u: FilaUsuario) => (u.ultimoAcceso ? fechaHora(u.ultimoAcc
 export default function Usuarios() {
     const lista = useUsuariosPanel();
     const { consulta, cambiando, esPropio, activar, pedirDesactivar } = lista;
-    const [creando, setCreando] = useState(false);
+    /*
+        El panel lateral crea (usuario null) o edita al elegido. Al cerrar se conserva a quién mostraba
+        para que el título no cambie mientras se desliza fuera.
+    */
+    const [panel, setPanel] = useState<{ abierto: boolean; usuario: FilaUsuario | null }>({
+        abierto: false,
+        usuario: null,
+    });
+    const cerrarPanel = () => {
+        setPanel((actual) => ({ ...actual, abierto: false }));
+    };
+    const editado = panel.usuario;
 
-    /* Tu propia cuenta no lleva acción: un administrador no se desactiva a sí mismo. */
-    const accion = useMemo(
+    /*
+        Tu propia cuenta no lleva acciones: un administrador no se desactiva ni se quita el rol a sí mismo.
+        Editar solo aplica a operadores y administradores; el cliente edita su propio perfil.
+    */
+    const acciones = useMemo(
         () => (u: FilaUsuario) =>
-            esPropio(u) ? null : u.activo ? (
-                <Boton
-                    variante="fantasma"
-                    icono={UserX}
-                    aria-label={`Desactivar a ${nombreCompleto(u)}`}
-                    title="Desactivar"
-                    disabled={cambiando}
-                    onClick={() => {
-                        pedirDesactivar(u);
-                    }}
-                />
-            ) : (
-                <Boton
-                    variante="fantasma"
-                    icono={UserCheck}
-                    aria-label={`Activar a ${nombreCompleto(u)}`}
-                    title="Activar"
-                    disabled={cambiando}
-                    onClick={() => {
-                        activar(u);
-                    }}
-                />
+            esPropio(u) ? null : (
+                <span className={estilos.acciones}>
+                    {esEditable(u) && (
+                        <Boton
+                            variante="fantasma"
+                            icono={Pencil}
+                            aria-label={`Editar a ${nombreCompleto(u)}`}
+                            title="Editar"
+                            onClick={() => {
+                                setPanel({ abierto: true, usuario: u });
+                            }}
+                        />
+                    )}
+                    {u.activo ? (
+                        <Boton
+                            variante="fantasma"
+                            icono={UserX}
+                            aria-label={`Desactivar a ${nombreCompleto(u)}`}
+                            title="Desactivar"
+                            disabled={cambiando}
+                            onClick={() => {
+                                pedirDesactivar(u);
+                            }}
+                        />
+                    ) : (
+                        <Boton
+                            variante="fantasma"
+                            icono={UserCheck}
+                            aria-label={`Activar a ${nombreCompleto(u)}`}
+                            title="Activar"
+                            disabled={cambiando}
+                            onClick={() => {
+                                activar(u);
+                            }}
+                        />
+                    )}
+                </span>
             ),
         [esPropio, cambiando, activar, pedirDesactivar],
     );
@@ -99,7 +142,12 @@ export default function Usuarios() {
                 meta: { ordenarPor: 'NOMBRE' },
                 cell: ({ row }) => <Persona usuario={row.original} propio={esPropio(row.original)} />,
             },
-            { header: 'Correo', accessorKey: 'correo', meta: { ordenarPor: 'CORREO' } },
+            {
+                id: 'correo',
+                header: 'Correo',
+                meta: { ordenarPor: 'CORREO' },
+                cell: ({ row }) => <span className={estilos.correo}>{row.original.correo}</span>,
+            },
             {
                 id: 'rol',
                 header: 'Rol',
@@ -122,10 +170,10 @@ export default function Usuarios() {
                 id: 'acciones',
                 header: () => <span className="visually-hidden">Acciones</span>,
                 meta: { derecha: true },
-                cell: ({ row }) => accion(row.original),
+                cell: ({ row }) => acciones(row.original),
             },
         ],
-        [esPropio, accion],
+        [esPropio, acciones],
     );
 
     return (
@@ -187,7 +235,7 @@ export default function Usuarios() {
                             </span>
                             <small className={estilos.detalle}>Último acceso: {ultimoAcceso(u)}</small>
                         </div>
-                        {accion(u)}
+                        {acciones(u)}
                     </div>
                 )}
                 filtros={
@@ -229,7 +277,7 @@ export default function Usuarios() {
                     <Boton
                         icono={UserPlus}
                         onClick={() => {
-                            setCreando(true);
+                            setPanel({ abierto: true, usuario: null });
                         }}
                     >
                         Crear usuario
@@ -237,19 +285,16 @@ export default function Usuarios() {
                 }
             />
             <Cajon
-                mostrar={creando}
-                titulo="Crear usuario del panel"
-                subtitulo="Los clientes se registran solos desde la tienda."
-                alCerrar={() => {
-                    setCreando(false);
-                }}
+                mostrar={panel.abierto}
+                titulo={editado ? `Editar a ${nombreCompleto(editado)}` : 'Crear usuario del panel'}
+                subtitulo={
+                    editado ? 'Sus datos de contacto y su rol.' : 'Los clientes se registran solos desde la tienda.'
+                }
+                alCerrar={cerrarPanel}
             >
-                {creando && (
-                    <FormularioUsuario
-                        alTerminar={() => {
-                            setCreando(false);
-                        }}
-                    />
+                {/* La llave reinicia el formulario al pasar de un usuario a otro. */}
+                {panel.abierto && (
+                    <FormularioUsuario key={editado?.idUsuario ?? 'nuevo'} usuario={editado} alTerminar={cerrarPanel} />
                 )}
             </Cajon>
             <DialogoConfirmacion

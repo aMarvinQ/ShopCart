@@ -1,6 +1,11 @@
 import { ejecutarProcedimiento, parametrosOrden, TipoSql } from '../../db/index.js';
 import type { z } from '../../config/zod.js';
-import type { esquemaActualizarPerfil, esquemaCrearInterno, esquemaListarUsuarios } from './usuarios.schemas.js';
+import type {
+    esquemaActualizarInterno,
+    esquemaActualizarPerfil,
+    esquemaCrearInterno,
+    esquemaListarUsuarios,
+} from './usuarios.schemas.js';
 
 export type FilaUsuario = Record<string, unknown>;
 
@@ -37,6 +42,23 @@ export async function crearInterno(
         Apellido: { tipo: TipoSql.NVarChar(101), valor: datos.apellido },
         Telefono: { tipo: TipoSql.NVarChar(21), valor: datos.telefono ?? null },
         CodigoRol: { tipo: TipoSql.VarChar(20), valor: datos.rol },
+    });
+    return filas[0];
+}
+
+export async function actualizarInterno(
+    idAdmin: number,
+    idUsuario: number,
+    datos: z.infer<typeof esquemaActualizarInterno>,
+): Promise<FilaUsuario | undefined> {
+    const { filas } = await ejecutarProcedimiento('SP_Usuarios_ActualizarInterno', {
+        IDUsuarioAccion: { tipo: TipoSql.Int, valor: idAdmin },
+        IDUsuario: { tipo: TipoSql.Int, valor: idUsuario },
+        Nombre: { tipo: TipoSql.NVarChar(101), valor: datos.nombre },
+        Apellido: { tipo: TipoSql.NVarChar(101), valor: datos.apellido },
+        Telefono: { tipo: TipoSql.NVarChar(21), valor: datos.telefono ?? null },
+        CodigoRol: { tipo: TipoSql.VarChar(20), valor: datos.rol },
+        FechaModificacion: { tipo: TipoSql.DateTime2(3), valor: datos.fechaModificacion },
     });
     return filas[0];
 }

@@ -200,6 +200,13 @@ $theme-colors: map-merge(
     box-shadow: none;
 }
 
+/* Un campo de solo lectura se ve como deshabilitado (Bootstrap no lo distingue), pero se puede enfocar y copiar. */
+.form-control[readonly] {
+    border-color: $input-disabled-border-color;
+    background-color: $input-disabled-bg;
+    color: $texto-secundario;
+}
+
 /* La barra de scroll siempre ocupa su lugar: el contenido no se corre entre páginas cortas y largas. */
 html {
     overflow-y: scroll;

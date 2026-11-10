@@ -2,7 +2,12 @@ import type { z } from '../../config/zod.js';
 import { ErrorApi } from '../../errors/ErrorApi.js';
 import { hashearContrasena } from '../../seguridad/contrasenas.js';
 import * as repositorio from './usuarios.repository.js';
-import type { esquemaActualizarPerfil, esquemaCrearInterno, esquemaListarUsuarios } from './usuarios.schemas.js';
+import type {
+    esquemaActualizarInterno,
+    esquemaActualizarPerfil,
+    esquemaCrearInterno,
+    esquemaListarUsuarios,
+} from './usuarios.schemas.js';
 
 /* Las reglas (permisos, validaciones, bitácora) viven en los SPs; aquí solo el hash de la contraseña. */
 
@@ -22,6 +27,14 @@ export async function actualizarPerfil(idUsuario: number, datos: z.infer<typeof 
 
 export async function crearInterno(idAdmin: number, datos: z.infer<typeof esquemaCrearInterno>) {
     return existente(await repositorio.crearInterno(idAdmin, datos, await hashearContrasena(datos.contrasena)));
+}
+
+export async function actualizarInterno(
+    idAdmin: number,
+    idUsuario: number,
+    datos: z.infer<typeof esquemaActualizarInterno>,
+) {
+    return existente(await repositorio.actualizarInterno(idAdmin, idUsuario, datos));
 }
 
 export async function cambiarEstado(idAdmin: number, idUsuario: number, activo: boolean) {

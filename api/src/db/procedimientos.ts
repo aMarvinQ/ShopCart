@@ -13,6 +13,7 @@ export const PROCEDIMIENTOS = [
     'SP_Usuarios_ObtenerPerfil',
     'SP_Usuarios_ActualizarPerfil',
     'SP_Usuarios_CrearInterno',
+    'SP_Usuarios_ActualizarInterno',
     'SP_Usuarios_CambiarEstado',
     'SP_Usuarios_Listar',
     'SP_Catalogo_ObtenerCategoria',

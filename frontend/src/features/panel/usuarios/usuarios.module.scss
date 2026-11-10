@@ -61,10 +61,20 @@
     font-weight: 700;
 }
 
+/* En la tabla el nombre no se angosta a una palabra por línea: el correo es el que cede. */
 .personaDatos {
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    min-width: 8.5rem;
+}
+
+.telefono {
+    white-space: nowrap;
+}
+
+/* Un correo no tiene espacios: sin esto ensancharía la tabla más allá de la pantalla. */
+.correo {
+    overflow-wrap: anywhere;
 }
 
 .detalle {
@@ -78,6 +88,12 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.375rem;
+}
+
+.acciones {
+    display: inline-flex;
+    flex: none;
+    gap: 0.25rem;
 }
 
 .tarjeta {

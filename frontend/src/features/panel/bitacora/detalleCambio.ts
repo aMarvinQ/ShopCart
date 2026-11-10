@@ -153,11 +153,15 @@ const ENTIDADES: Record<string, string> = {
 
 export const etiquetaEntidad = (entidad: string) => ENTIDADES[entidad] ?? separar(entidad);
 
-/** El nombre más reconocible del registro, si el JSON lo trae: código, SKU, nombre o correo. */
+/** El nombre más reconocible del registro, si el JSON lo trae: código, SKU, nombre (con apellido) o correo. */
 export function nombreRegistro(anterior: ValorJson, nuevo: ValorJson): string | null {
-    for (const clave of ['codigo', 'sku', 'nombre', 'correo']) {
+    const texto = (clave: string) => {
         const valor = nuevo?.[clave] ?? anterior?.[clave];
-        if (typeof valor === 'string' && valor) return valor;
-    }
-    return null;
+        return typeof valor === 'string' && valor ? valor : null;
+    };
+    const nombre = texto('nombre');
+    const apellido = texto('apellido');
+    return (
+        texto('codigo') ?? texto('sku') ?? (nombre && apellido ? `${nombre} ${apellido}` : nombre) ?? texto('correo')
+    );
 }

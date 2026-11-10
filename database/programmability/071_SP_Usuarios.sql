@@ -1,6 +1,7 @@
 /*
     071_SP_Usuarios.sql
-    Perfil del propio usuario y administración de usuarios internos (RF-01).
+    Perfil del propio usuario y administración de usuarios internos (RF-01): alta, edición,
+    estado y listado.
 
     - @IDUsuarioSolicitante: el propio usuario, tomado del JWT por la API (nunca del body).
     - @IDUsuarioAccion: el administrador que ejecuta la acción. El SP vuelve a validar que sea
@@ -123,7 +124,115 @@ BEGIN
     END CATCH;
 
     SELECT d.IDUsuario, d.Correo, d.Nombre, d.Apellido, d.Telefono, d.CodigoRol, d.NombreRol,
-           d.Activo, d.UltimoAcceso, d.FechaCreacion
+           d.Activo, d.UltimoAcceso, d.FechaCreacion, d.FechaModificacion
+    FROM dbo.VW_Usuarios_Detalle AS d
+    WHERE d.IDUsuario = @IDUsuario;
+END;
+GO
+
+/*
+    Edición de un operador o administrador: nombre, apellido, teléfono y rol. El correo no se
+    modifica (identifica la cuenta y su historial) y los clientes editan su propio perfil.
+    - Cambiar el rol revoca todas sus sesiones (CAMBIO_ROL): el rol viaja en el access token y
+      así vuelve a entrar con el nuevo; el token ya emitido vence en máximo 15 minutos.
+    - Un administrador no puede quitarse su propio rol, igual que no puede desactivarse.
+    - Sin cambios no se modifica nada ni se registra bitácora.
+    - Edición concurrente: se compara FechaModificacion y no VersionFila, porque cada inicio de
+      sesión y cada renovación actualizan UltimoAcceso (y con él VersionFila) sin que nadie haya
+      editado al usuario. FechaModificacion solo cambia con ediciones reales.
+*/
+CREATE OR ALTER PROCEDURE dbo.SP_Usuarios_ActualizarInterno
+    @IDUsuarioAccion   INT,
+    @IDUsuario         INT,
+    @Nombre            NVARCHAR(101),
+    @Apellido          NVARCHAR(101),
+    @Telefono          NVARCHAR(21) = NULL,
+    @CodigoRol         VARCHAR(20),
+    @FechaModificacion DATETIME2(3)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    DECLARE @Ahora DATETIME2(3) = SYSUTCDATETIME();
+    DECLARE @NumeroError INT, @MensajeError NVARCHAR(200), @IDRol TINYINT, @ModificacionActual DATETIME2(3), @EsSistema BIT,
+            @RolActual VARCHAR(20), @Anterior NVARCHAR(MAX), @Nuevo NVARCHAR(MAX), @SesionesRevocadas INT = 0;
+
+    IF @IDUsuario IS NULL OR @FechaModificacion IS NULL
+        THROW 50006, N'PARAMETRO_REQUERIDO: se requiere el usuario y la fecha de su última modificación.', 1;
+
+    IF NOT EXISTS (SELECT 1 FROM dbo.FU_Seguridad_Actor(@IDUsuarioAccion) AS a WHERE a.CodigoRol = 'ADMIN')
+        THROW 50201, N'PERMISO_DENEGADO: solo un administrador activo puede editar usuarios.', 1;
+
+    SELECT @Nombre    = TRIM(ISNULL(@Nombre, N'')),
+           @Apellido  = TRIM(ISNULL(@Apellido, N'')),
+           @Telefono  = NULLIF(TRIM(@Telefono), N''),
+           @CodigoRol = UPPER(TRIM(ISNULL(@CodigoRol, '')));
+
+    SELECT @NumeroError = v.NumeroError, @MensajeError = v.MensajeError
+    FROM dbo.FU_Usuarios_ValidarDatos(NULL, NULL, @Nombre, @Apellido, @Telefono) AS v;
+    IF @NumeroError IS NOT NULL
+        THROW @NumeroError, @MensajeError, 1;
+
+    SELECT @IDRol = r.IDRol FROM dbo.Rol AS r WHERE r.Codigo = @CodigoRol AND r.Codigo IN ('OPERADOR', 'ADMIN');
+    IF @IDRol IS NULL
+        THROW 50005, N'ROL_INVALIDO: un usuario interno debe ser OPERADOR o ADMIN.', 1;
+
+    SET @Nuevo = (SELECT @Nombre AS Nombre, @Apellido AS Apellido, @Telefono AS Telefono, @CodigoRol AS CodigoRol
+                  FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES);
+
+    BEGIN TRY
+        EXEC sys.sp_set_session_context @key = N'IDUsuario', @value = @IDUsuarioAccion;
+
+        BEGIN TRANSACTION;
+
+        SELECT @ModificacionActual = u.FechaModificacion, @EsSistema = u.EsSistema, @RolActual = r.Codigo,
+               @Anterior = (SELECT u.Nombre, u.Apellido, u.Telefono, r.Codigo AS CodigoRol
+                            FOR JSON PATH, WITHOUT_ARRAY_WRAPPER, INCLUDE_NULL_VALUES)
+        FROM dbo.Usuario AS u WITH (UPDLOCK)
+        JOIN dbo.Rol AS r ON r.IDRol = u.IDRol
+        WHERE u.IDUsuario = @IDUsuario;
+
+        IF @ModificacionActual IS NULL
+            THROW 50101, N'USUARIO_NO_ENCONTRADO: el usuario no existe.', 1;
+        IF @EsSistema = 1
+            THROW 51102, N'USUARIO_SISTEMA_PROTEGIDO: el usuario de sistema no se puede modificar.', 1;
+        IF @RolActual NOT IN ('OPERADOR', 'ADMIN')
+            THROW 51104, N'USUARIO_NO_INTERNO: solo se editan operadores y administradores; el cliente edita su propio perfil.', 1;
+        IF @ModificacionActual <> @FechaModificacion
+            THROW 51203, N'EDICION_CONCURRENTE: otro usuario modificó el registro; vuelva a cargarlo.', 1;
+        IF @IDUsuario = @IDUsuarioAccion AND @CodigoRol <> 'ADMIN'
+            THROW 51105, N'AUTOCAMBIO_ROL_NO_PERMITIDO: un administrador no puede quitarse su propio rol.', 1;
+
+        -- Comparación binaria: un cambio solo de mayúsculas o tildes también es un cambio.
+        IF @Anterior COLLATE Latin1_General_100_BIN2 <> @Nuevo
+        BEGIN
+            -- Primero el usuario y después sus tokens (orden de bloqueo del módulo).
+            UPDATE dbo.Usuario
+            SET Nombre = @Nombre, Apellido = @Apellido, Telefono = @Telefono, IDRol = @IDRol, FechaModificacion = @Ahora
+            WHERE IDUsuario = @IDUsuario;
+
+            IF @RolActual <> @CodigoRol
+            BEGIN
+                UPDATE dbo.RefreshToken
+                SET FechaRevocacion = @Ahora, MotivoRevocacion = 'CAMBIO_ROL'
+                WHERE IDUsuario = @IDUsuario AND FechaRevocacion IS NULL;
+                SET @SesionesRevocadas = @@ROWCOUNT;
+            END;
+
+            INSERT INTO dbo.Bitacora (IDUsuario, Modulo, Entidad, IDEntidad, Accion, ValorAnterior, ValorNuevo)
+            VALUES (@IDUsuarioAccion, 'USUARIOS', 'Usuario', CAST(@IDUsuario AS VARCHAR(50)), 'MODIFICAR', @Anterior, @Nuevo);
+        END;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+
+    SELECT d.IDUsuario, d.Correo, d.Nombre, d.Apellido, d.Telefono, d.CodigoRol, d.NombreRol,
+           d.Activo, d.UltimoAcceso, d.FechaCreacion, d.FechaModificacion, @SesionesRevocadas AS SesionesRevocadas
     FROM dbo.VW_Usuarios_Detalle AS d
     WHERE d.IDUsuario = @IDUsuario;
 END;
@@ -251,7 +360,7 @@ BEGIN
     OPTION (RECOMPILE);
 
     SELECT d.IDUsuario, d.Correo, d.Nombre, d.Apellido, d.Telefono, d.CodigoRol, d.NombreRol,
-           d.Activo, d.UltimoAcceso, d.FechaCreacion
+           d.Activo, d.UltimoAcceso, d.FechaCreacion, d.FechaModificacion
     FROM dbo.VW_Usuarios_Detalle AS d
     WHERE (@CodigoRol IS NULL OR d.CodigoRol = @CodigoRol)
       AND (@Activo IS NULL OR d.Activo = @Activo)

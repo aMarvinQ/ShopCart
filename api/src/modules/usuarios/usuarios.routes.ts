@@ -5,12 +5,14 @@ import { esquemaId } from '../../http/esquemas.js';
 import type { DependenciasRutas } from '../../http/dependencias.js';
 import * as controlador from './usuarios.controller.js';
 import {
+    esquemaActualizarInterno,
     esquemaActualizarPerfil,
     esquemaCambiarEstado,
     esquemaCrearInterno,
     esquemaListarUsuarios,
     esquemaPerfil,
-    esquemaUsuario,
+    esquemaUsuarioEditable,
+    esquemaUsuarioEditado,
     esquemaUsuarioEstado,
 } from './usuarios.schemas.js';
 
@@ -41,7 +43,7 @@ documentar({
     resumen: 'Listar usuarios',
     roles: ['ADMIN'],
     query: esquemaListarUsuarios,
-    respuesta: z.array(esquemaUsuario),
+    respuesta: z.array(esquemaUsuarioEditable),
     conMeta: true,
     errores: [400, 422],
 });
@@ -53,9 +55,25 @@ documentar({
     descripcion: 'Los clientes se registran solos en /auth/registro.',
     roles: ['ADMIN'],
     cuerpo: esquemaCrearInterno,
-    respuesta: esquemaUsuario,
+    respuesta: esquemaUsuarioEditable,
     estado: 201,
     errores: [400, 409, 422],
+});
+documentar({
+    metodo: 'put',
+    ruta: '/usuarios/{id}',
+    etiqueta: 'Usuarios',
+    resumen: 'Editar un operador o administrador',
+    descripcion:
+        'Nombre, apellido, teléfono y rol. El correo no se modifica y los clientes editan su propio perfil. ' +
+        'Cambiar el rol revoca sus sesiones. Un administrador no puede quitarse su propio rol. ' +
+        'Envía la fechaModificacion de la última lectura: si otro usuario guardó cambios después, ' +
+        'responde 409 EDICION_CONCURRENTE (iniciar sesión no cuenta como cambio).',
+    roles: ['ADMIN'],
+    params: esquemaId,
+    cuerpo: esquemaActualizarInterno,
+    respuesta: esquemaUsuarioEditado,
+    errores: [400, 404, 409, 422],
 });
 documentar({
     metodo: 'patch',
@@ -77,6 +95,7 @@ export function crearRutasUsuarios({ autenticacion: { autenticar, autorizar } }:
     rutas.put('/perfil', autenticar, controlador.actualizarPerfil);
     rutas.get('/usuarios', autenticar, autorizar('ADMIN'), controlador.listar);
     rutas.post('/usuarios', autenticar, autorizar('ADMIN'), controlador.crearInterno);
+    rutas.put('/usuarios/:id', autenticar, autorizar('ADMIN'), controlador.actualizarInterno);
     rutas.patch('/usuarios/:id/estado', autenticar, autorizar('ADMIN'), controlador.cambiarEstado);
     return rutas;
 }
